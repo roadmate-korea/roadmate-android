@@ -9,8 +9,8 @@ import com.roadmatekorea.android.voice.PleosTtsEngine
 
 private const val TAG = "RoadMateGuidance"
 
-/** 실제 앱의 [DriveViewModel]: Pleos TTS와 프로필 언어 리소스를 붙인다. */
-fun createDriveViewModel(app: RoadMateApplication) = DriveViewModel(
+/** 실제 앱의 [DriveController]: Pleos TTS와 프로필 언어 리소스를 붙인다. 앱 범위에서 한 번만 만든다. */
+fun createDriveController(app: RoadMateApplication) = DriveController(
     hub = app.signalHub,
     ttsEngine = PleosTtsEngine(app),
     textFor = { profile ->
@@ -22,4 +22,5 @@ fun createDriveViewModel(app: RoadMateApplication) = DriveViewModel(
         }
         text
     },
+    scope = app.appScope,
 )

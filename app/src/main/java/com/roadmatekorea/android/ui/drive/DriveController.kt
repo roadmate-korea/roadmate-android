@@ -1,7 +1,5 @@
 package com.roadmatekorea.android.ui.drive
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.roadmatekorea.android.demo.DemoPersona
 import com.roadmatekorea.android.demo.DemoSignalSource
 import com.roadmatekorea.android.drive.DriveSession
@@ -12,6 +10,7 @@ import com.roadmatekorea.android.profile.model.DriverProfile
 import com.roadmatekorea.android.rules.Guidance
 import com.roadmatekorea.android.voice.GuidanceSpeaker
 import com.roadmatekorea.android.voice.TtsEngine
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,23 +47,26 @@ data class DriveUiState(
 )
 
 /**
- * 앱 화면(Activity) 하나에 하나. [DriveSignalHub]의 실제 차량·내비 신호를 받아
+ * 앱 프로세스에 하나. [DriveSignalHub]의 실제 차량·내비 신호를 받아
  * ① 화면 잠금용 실제 기어 상태를 갱신하고 ② 안내 세션에 넣는다.
- * 앱이 뒤로 가도(다른 앱이 앞에 있어도) 화면이 살아 있는 동안 안내는 계속된다.
  *
- * TTS 엔진은 여기서 한 번 쓰고 [onCleared]에서 한 번 해제한다.
+ * 화면(Activity)과 수명이 따로다. 내비를 앞에 띄우거나 화면을 닫아도 세션과 음성은 계속되며,
+ * 프로세스가 얼지 않게 DriveGuidanceService(포그라운드 서비스)가 붙잡아 둔다. 화면은 다시 열리면 이 상태를 그대로 그린다.
+ *
+ * TTS 엔진은 여기서 한 번 쓰고 [release]에서 한 번 해제한다.
  * Android 의존성(TTS 엔진, 언어별 문장)은 주입받아 JVM에서 테스트할 수 있다.
  *
  * @param textFor 프로필 언어로 안내 문장을 만드는 함수를 돌려준다.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class DriveViewModel(
+class DriveController(
     private val hub: DriveSignalHub,
     ttsEngine: TtsEngine,
     private val textFor: (DriverProfile) -> (Guidance) -> String,
-) : ViewModel() {
+    private val scope: CoroutineScope,
+) {
 
-    private val speaker = GuidanceSpeaker(ttsEngine, viewModelScope).also { it.start() }
+    private val speaker = GuidanceSpeaker(ttsEngine, scope).also { it.start() }
 
     // 허브가 보관한 마지막 기어로 시작한다(이 화면보다 먼저 들어온 신호). 그 뒤 오류가 있었다면 잠근다.
     private val _vehicle = MutableStateFlow(
@@ -84,7 +86,7 @@ class DriveViewModel(
     private var savedProfile: DriverProfile? = null
 
     init {
-        viewModelScope.launch {
+        scope.launch {
             hub.signals.collect { signal ->
                 // 잠금은 시연 중에도 항상 실제 차량을 따른다
                 _vehicle.value = _vehicle.value.on(signal)
@@ -120,7 +122,7 @@ class DriveViewModel(
                 voiceUnavailable = voiceUnavailable,
             )
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, DriveUiState())
+    }.stateIn(scope, SharingStarted.Eagerly, DriveUiState())
 
     /**
      * 주행 화면에 들어올 때 부른다. 프로필이 바뀌었으면 새 세션을 연다.
@@ -161,7 +163,7 @@ class DriveViewModel(
         val demoSession = newSession(persona.profile)
         _demo.value = DemoStatus(persona)
         session.value = demoSession
-        demoJob = viewModelScope.launch {
+        demoJob = scope.launch {
             DemoSignalSource(awaitIdle = { speaker.idle.first { it } }).signals().collect(demoSession::onSignal)
             speaker.idle.first { it }
             _demo.update { it?.copy(finished = true) }
@@ -195,7 +197,8 @@ class DriveViewModel(
         locale = AppLocales.localeOf(profile.language),
     )
 
-    override fun onCleared() {
+    /** 프로세스가 끝날 때까지 보통 부르지 않는다(테스트와 정리용). */
+    fun release() {
         speaker.release()
     }
 }

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 포그라운드 서비스 알림. 기기 언어를 따른다 -->
+    <string name="guidance_service_channel">Guía por voz</string>
+    <string name="guidance_service_text">La guía por voz sigue activa mientras usas otras apps.</string>
+</resources>

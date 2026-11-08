@@ -30,7 +30,7 @@ import ai.pleos.playground.navi.data.CautionPoint as SdkCautionPoint
 
 /** 실제 신호·시연·설정 화면 사이의 세션 전환을 JVM에서 확인한다(TTS와 문장은 가짜). */
 @OptIn(ExperimentalCoroutinesApi::class)
-class DriveViewModelTest {
+class DriveControllerTest {
 
     private val dispatcher = StandardTestDispatcher()
 
@@ -56,13 +56,13 @@ class DriveViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private class Rig(val vm: DriveViewModel, val upstream: MutableSharedFlow<RawSignal>, val tts: InstantTts)
+    private class Rig(val vm: DriveController, val upstream: MutableSharedFlow<RawSignal>, val tts: InstantTts)
 
     private fun TestScope.rig(): Rig {
         val upstream = MutableSharedFlow<RawSignal>()
         val hub = DriveSignalHub(DriveSignalSource { upstream }, backgroundScope).also { it.start() }
         val tts = InstantTts()
-        val vm = DriveViewModel(hub, tts) { profile -> { g -> (listOf("${profile.language}:${g.id.name}") + g.args).joinToString(":") } }
+        val vm = DriveController(hub, tts, { profile -> { g -> (listOf("${profile.language}:${g.id.name}") + g.args).joinToString(":") } }, backgroundScope)
         runCurrent()
         return Rig(vm, upstream, tts)
     }

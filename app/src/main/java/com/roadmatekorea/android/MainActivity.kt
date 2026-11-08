@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
+import com.roadmatekorea.android.drive.DriveGuidanceService
 import com.roadmatekorea.android.ui.RoadMateApp
 import com.roadmatekorea.android.ui.theme.RoadMateTheme
 import kotlinx.coroutines.flow.first
@@ -33,6 +34,12 @@ class MainActivity : ComponentActivity() {
             }
         }
         askSpeedPermissionWhenParked(savedInstanceState == null)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // 화면이 보일 때 안내 서비스를 켜 둔다. 내비로 넘어가도 음성 안내가 계속된다.
+        DriveGuidanceService.start(this)
     }
 
     override fun onResume() {

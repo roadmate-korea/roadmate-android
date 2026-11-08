@@ -6,6 +6,8 @@ import com.roadmatekorea.android.drive.DriveSignalHub
 import com.roadmatekorea.android.drive.RealDriveSignalSource
 import com.roadmatekorea.android.navi.NaviSignalSource
 import com.roadmatekorea.android.profile.ProfileRepository
+import com.roadmatekorea.android.ui.drive.DriveController
+import com.roadmatekorea.android.ui.drive.createDriveController
 import com.roadmatekorea.android.vehicle.VehicleSignalSource
 import com.roadmatekorea.android.vehicle.VehicleSpeedSource
 import kotlinx.coroutines.CoroutineScope
@@ -33,6 +35,9 @@ class RoadMateApplication : Application() {
             appScope,
         ).also { it.start() }
     }
+
+    /** 안내 세션(판단, 음성). 화면과 상관없이 프로세스 수명 동안 하나. */
+    val driveController: DriveController by lazy { createDriveController(this) }
 
     companion object {
         /** Android Automotive 차량 속도 권한. Pleos 권한이 아닌 표준 권한이라 문자열로 둔다. */

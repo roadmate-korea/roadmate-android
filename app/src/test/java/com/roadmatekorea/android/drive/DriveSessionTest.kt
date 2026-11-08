@@ -87,6 +87,26 @@ class DriveSessionTest {
     }
 
     @Test
+    fun pendingOverSpeedWarning_isUpdatedToTheCurrentSpeedAndLimit_whileStillOver() = runTest {
+        val tts = HoldTts()
+        val clock = Clock { testScheduler.currentTime }
+        val speaker = GuidanceSpeaker(tts, backgroundScope, clock).also { it.start() }
+        val s = DriveSession(Personas.CARLOS, speaker, { g -> (listOf(g.id.name) + g.args).joinToString(":") }, Locale.US, clock)
+        fun kmh(v: Int) = RawSignal.Vehicle.Speed(v / 3.6f)
+        s.onSignal(RawSignal.Vehicle.Gear(VehicleGear.GEAR_DRIVE)) // 시작 인사가 재생 중(끝나지 않음)
+        s.onSignal(RawSignal.Navi.SpeedLimit(50))
+        s.onSignal(kmh(25))
+        s.onSignal(RawSignal.Navi.CautionPoints(listOf(SdkCautionPoint("sz", CautionPointType.SCHOOL_ZONE, 300))))
+        s.onSignal(RawSignal.Navi.SpeedLimit(40))
+        s.onSignal(kmh(45)) // "45, 제한 40"이 대기열에
+        s.onSignal(RawSignal.Navi.SpeedLimit(30))
+        s.onSignal(kmh(43)) // 아직 말하기 전: 지금은 "43, 제한 30"
+        repeat(8) { tts.finish() }
+        val over = tts.spoken.filter { it.startsWith("SCHOOL_ZONE_OVER_SPEED") }
+        assertEquals(listOf("SCHOOL_ZONE_OVER_SPEED:43:30"), over)
+    }
+
+    @Test
     fun nakamura_afterStart_hearsRightSideGreetingThenLhdIntro() = runTest {
         val (s, tts) = session(Personas.NAKAMURA)
         s.announceStart()

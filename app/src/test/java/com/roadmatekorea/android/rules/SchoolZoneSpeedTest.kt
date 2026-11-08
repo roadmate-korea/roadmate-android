@@ -260,6 +260,34 @@ class SchoolZoneSpeedTest {
     }
 
     @Test
+    fun sameZoneAgainAfterLeaving_restartsWatchingSilently() {
+        val e = engine().also { it.speed(25) }
+        val point = DriveEvent.CautionPointsUpdated(listOf(CautionPoint("zoneA", CautionKind.SCHOOL_ZONE, 300)))
+        val cam = DriveEvent.CameraAlertsUpdated(listOf(CameraAlert("camA", CameraKind.SCHOOL_ZONE, 30, 200)))
+        e.onEvent(point); e.onEvent(cam); e.onEvent(DriveEvent.SpeedLimitChanged(30))
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(45, 30))), e.speed(45))
+        e.speed(25)
+        e.onEvent(DriveEvent.SpeedLimitChanged(50)) // 이탈
+        clock.advanceSeconds(60)
+        // 같은 구역에 다시 들어옴: 접근 경고는 다시 하지 않지만 감시는 다시 한다
+        assertTrue(e.onEvent(point).isEmpty())
+        e.onEvent(cam)
+        e.onEvent(DriveEvent.SpeedLimitChanged(30))
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(45, 30))), e.speed(45))
+    }
+
+    @Test
+    fun nextZonePointArrivesBeforeLeavingThePreviousZone_nextZoneIsStillWatched() {
+        val e = engine().also { it.speed(25); it.enterZone(); it.onEvent(DriveEvent.SpeedLimitChanged(30)) }
+        val pointB = { m: Int -> DriveEvent.CautionPointsUpdated(listOf(CautionPoint("zoneB", CautionKind.SCHOOL_ZONE, m))) }
+        e.onEvent(pointB(300)) // A 안에서 B 접근 경고
+        e.onEvent(DriveEvent.SpeedLimitChanged(50)) // A 이탈
+        e.onEvent(pointB(100))
+        e.onEvent(DriveEvent.SpeedLimitChanged(30)) // B 진입
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(45, 30))), e.speed(45))
+    }
+
+    @Test
     fun overSpeed_isSafetyPriority() {
         assertEquals(Priority.SAFETY, SCHOOL_ZONE_OVER_SPEED.priority)
     }

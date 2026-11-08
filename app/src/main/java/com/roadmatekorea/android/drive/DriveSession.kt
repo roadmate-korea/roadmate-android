@@ -54,8 +54,14 @@ class DriveSession(
         if (event is DriveEvent.SpeedLimitChanged) _speedLimitKmh.value = event.kmh.takeIf { it > 0 }
         if (event is DriveEvent.VehicleSpeedChanged) _speedKmh.value = event.kmh
         val out = engine.onEvent(event)
-        // 감속하거나 구역을 벗어났으면 아직 말하지 않은 과속 경고를 버린다(지난 속도를 "지금"이라고 말하지 않게)
-        if (!engine.overSpeedNow()) speaker.drop(GuidanceId.SCHOOL_ZONE_OVER_SPEED)
+        // 아직 말하지 않은 과속 경고는 지금 상황에 맞춘다: 풀렸으면 버리고, 계속 빠르면 지금 속도·제한으로 바꾼다
+        // (지난 숫자를 "지금"이라고 말하지 않게)
+        val overSpeed = engine.overSpeedNow()
+        if (overSpeed == null) {
+            speaker.drop(GuidanceId.SCHOOL_ZONE_OVER_SPEED)
+        } else {
+            speaker.refreshQueued(overSpeed, textOf(overSpeed))
+        }
         out.forEach { guidance ->
             val text = textOf(guidance)
             speaker.say(guidance, text, locale)

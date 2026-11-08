@@ -159,7 +159,16 @@ class GuidanceEngine(
             it.kind == CautionKind.SCHOOL_ZONE && it.remainMeters in 1..SCHOOL_ZONE_AHEAD_METERS
         }
         val fresh = inRange.filter { it.id !in announcedCautionIds }
-        if (fresh.isEmpty()) return emptyList()
+        if (fresh.isEmpty()) {
+            // 이미 안내한 지점이 다시 왔는데 지금 감시 중인 구역이 없다(같은 구역 재진입, 앞 구역을 벗어난 뒤 다음 구역):
+            // 다시 말하지 않고 감시만 시작한다
+            if (activeSchoolZone() == null) {
+                inRange.minByOrNull { it.remainMeters }?.let { point ->
+                    schoolZone = SchoolZoneContext(lastEvidenceMs = clock.nowMillis(), speedLimitBefore = currentSpeedLimit, cautionId = point.id)
+                }
+            }
+            return emptyList()
+        }
         // 한꺼번에 여러 곳이 들어오면 가장 가까운 곳 하나만 말한다.
         // 나머지는 완료 처리하지 않으므로 다음 갱신에서 가장 가까운 곳이 되면 안내한다.
         val nearest = fresh.minBy { it.remainMeters }
@@ -197,6 +206,17 @@ class GuidanceEngine(
             val evidence = if (active) schoolCameras.any { it.speedLimitKmh == zone.zoneLimitKmh }
             else zone.cameraId != null && schoolCameras.any { it.id == zone.cameraId }
             if (evidence) schoolZone = revive(zone)
+        }
+        if (activeSchoolZone() == null && schoolCameras.none { it.id !in announcedCameraIds }) {
+            // 이미 안내한 카메라가 다시 왔는데 지금 감시 중인 구역이 없다: 다시 말하지 않고 감시만 시작한다
+            schoolCameras.minByOrNull { it.remainMeters }?.let { camera ->
+                schoolZone = SchoolZoneContext(clock.nowMillis(), currentSpeedLimit).copy(
+                    zoneLimitKmh = camera.speedLimitKmh,
+                    cameraId = camera.id,
+                    entry = entryFor(camera.speedLimitKmh),
+                )
+            }
+            return emptyList()
         }
         val zone = activeSchoolZone()
         // 도로 제한으로 진입이 확인된 구역에서는 그 제한이 기준이다. 앞쪽 카메라의 다른 값으로 바꾸지 않는다.
@@ -343,12 +363,16 @@ class GuidanceEngine(
         else -> Entry.NONE
     }
 
-    /** 지금 어린이보호구역에서 제한보다 빠른가. 아니면 아직 말하지 않은 과속 경고를 버린다(DriveSession). */
-    fun overSpeedNow(): Boolean {
-        val zone = activeSchoolZone() ?: return false
-        val limit = zone.zoneLimitKmh ?: return false
-        val speed = vehicleSpeed ?: return false
-        return zone.entry != Entry.NONE && !isParked && isOver(speed, limit)
+    /**
+     * 지금 어린이보호구역에서 제한보다 빠르면 지금 값으로 만든 과속 경고, 아니면 null.
+     * DriveSession이 아직 말하지 않은 과속 경고를 버리거나 지금 값으로 바꾸는 데 쓴다(쿨다운과 상관없는 상태 조회).
+     */
+    fun overSpeedNow(): Guidance? {
+        val zone = activeSchoolZone() ?: return null
+        val limit = zone.zoneLimitKmh ?: return null
+        val speed = vehicleSpeed ?: return null
+        if (zone.entry == Entry.NONE || isParked || !isOver(speed, limit)) return null
+        return Guidance(GuidanceId.SCHOOL_ZONE_OVER_SPEED, listOf(speed, limit))
     }
 
     /** 구역 근거를 다시 받았다. 만료됐던 구역이면 진입 여부를 지금 도로 제한으로 다시 정하고 경고 상태를 지운다. */

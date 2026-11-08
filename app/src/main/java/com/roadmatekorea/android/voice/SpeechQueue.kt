@@ -49,6 +49,15 @@ class SpeechQueue(private val clock: Clock) {
 
     fun clear() = items.clear()
 
+    /**
+     * 아직 말하지 않은 [guidance]와 같은 종류의 안내가 있으면 내용을 바꾼다(유효 시간은 처음 넣은 때부터 그대로).
+     * 없으면 아무 일도 하지 않는다.
+     */
+    fun replace(guidance: Guidance, text: String) {
+        val i = items.indexOfFirst { it.guidance.id == guidance.id }
+        if (i >= 0) items[i] = items[i].copy(guidance = guidance, text = text)
+    }
+
     /** 아직 말하지 않은 [id] 안내를 버린다(상황이 풀려 더는 맞지 않을 때). */
     fun remove(id: GuidanceId) {
         items.removeAll { it.guidance.id == id }

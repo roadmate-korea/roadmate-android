@@ -73,6 +73,9 @@ class GuidanceSpeaker(
         if (playing == null && engineState != EngineState.INITIALIZING) playNext()
     }
 
+    /** 기다리는 같은 종류의 안내를 지금 값으로 바꾼다. 지금 말하고 있는 것은 그대로 둔다. */
+    fun refreshQueued(guidance: Guidance, text: String) = queue.replace(guidance, text)
+
     /** 기다리는 [id] 안내를 버린다. 지금 말하고 있는 것은 그대로 둔다. */
     fun drop(id: GuidanceId) {
         queue.remove(id)

@@ -17,6 +17,9 @@
     <!-- FusedLocation SDK -->
     <uses-permission android:name="pleos.car.permission.FUSED_LOCATION" />
 
+    <!-- TextToSpeech SDK: 음성 안내. 없으면 initialize에서 SecurityException (에뮬레이터 2.1.0에서 확인, normal 권한) -->
+    <uses-permission android:name="pleos.car.permission.TTS_SERVICE" />
+
     <!-- SpeechToText SDK (정차 중 통역, 2단계) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 

@@ -8,10 +8,8 @@ import androidx.activity.ComponentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.roadmatekorea.android.drive.RealDriveSignalSource
+import com.roadmatekorea.android.RoadMateApplication
 import com.roadmatekorea.android.drive.SignalMapper
-import com.roadmatekorea.android.navi.NaviSignalSource
-import com.roadmatekorea.android.vehicle.VehicleSignalSource
 import kotlinx.coroutines.launch
 
 /**
@@ -30,11 +28,12 @@ class SignalLogActivity : ComponentActivity() {
         log = TextView(this).apply { textSize = 20f; setPadding(32, 32, 32, 32) }
         setContentView(ScrollView(this).apply { addView(log) })
 
-        val source = RealDriveSignalSource(VehicleSignalSource(this), NaviSignalSource(this))
+        // 앱과 같은 허브를 구독한다(SDK를 따로 붙였다 떼지 않음)
+        val hub = (application as RoadMateApplication).signalHub
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                write("collect start")
-                source.signals().collect { raw ->
+                write("collect start, last gear=${hub.lastGear.value}, vehicleUnavailable=${hub.vehicleUnavailable.value}")
+                hub.signals.collect { raw ->
                     write("RAW $raw")
                     write("  -> ${SignalMapper.map(raw)}")
                 }

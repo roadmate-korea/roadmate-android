@@ -8,7 +8,6 @@ import ai.pleos.playground.navi.helper.NaviHelper
 import ai.pleos.playground.navi.helper.listener.NaviHelperEventListener
 import android.content.Context
 import android.util.Log
-import java.util.concurrent.atomic.AtomicBoolean
 import com.roadmatekorea.android.drive.DriveSignalSource
 import com.roadmatekorea.android.drive.RawSignal
 import kotlinx.coroutines.channels.BufferOverflow
@@ -21,6 +20,7 @@ import kotlinx.coroutines.flow.callbackFlow
  * NaviHelper 주행 안내 이벤트 → [RawSignal].
  * 수집을 시작하면 `initialize` 성공 뒤 리스너 등록, 수집을 멈추면 리스너 해제 → `release`.
  * 위치나 경로 원본은 앱 밖으로 보내지 않는다.
+ * Vehicle과 마찬가지로 [com.roadmatekorea.android.drive.DriveSignalHub]에서 프로세스 수명 동안 한 번만 수집한다.
  */
 class NaviSignalSource(context: Context) : DriveSignalSource {
 
@@ -49,18 +49,23 @@ class NaviSignalSource(context: Context) : DriveSignalSource {
                 trySend(RawSignal.Navi.Arrived)
             }
         }
-        val added = AtomicBoolean(false)
+        // 리스너 등록(initialize 성공 콜백)과 종료(awaitClose)를 같은 잠금으로 묶는다
+        val lock = Any()
+        var closed = false
+        var added = false
 
         try {
             navi.initialize(
                 {
-                    if (!isClosedForSend) {
-                        runCatching {
-                            navi.addListener(listener)
-                            added.set(true)
-                        }.onFailure { e ->
-                            Log.w(TAG, "addListener failed", e)
-                            trySend(RawSignal.Navi.Unavailable(e.javaClass.simpleName))
+                    synchronized(lock) {
+                        if (!closed) {
+                            runCatching {
+                                navi.addListener(listener)
+                                added = true
+                            }.onFailure { e ->
+                                Log.w(TAG, "addListener failed", e)
+                                trySend(RawSignal.Navi.Unavailable(e.javaClass.simpleName))
+                            }
                         }
                     }
                 },
@@ -75,7 +80,10 @@ class NaviSignalSource(context: Context) : DriveSignalSource {
         }
 
         awaitClose {
-            if (added.get()) runCatching { navi.removeListener(listener) }
+            synchronized(lock) {
+                closed = true
+                if (added) runCatching { navi.removeListener(listener) }
+            }
             runCatching { navi.release() }
         }
     }.buffer(capacity = 64, onBufferOverflow = BufferOverflow.DROP_OLDEST)

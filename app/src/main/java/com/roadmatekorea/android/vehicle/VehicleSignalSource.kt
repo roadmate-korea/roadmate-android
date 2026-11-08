@@ -8,7 +8,7 @@ import ai.pleos.playground.vehicle.listener.GearSelectionListener
 import ai.pleos.playground.vehicle.listener.TurnSignalStateListener
 import android.content.Context
 import android.util.Log
-import java.util.concurrent.atomic.AtomicBoolean
+import com.roadmatekorea.android.drive.DriveSignalHub
 import com.roadmatekorea.android.drive.DriveSignalSource
 import com.roadmatekorea.android.drive.RawSignal
 import kotlinx.coroutines.channels.awaitClose
@@ -22,6 +22,10 @@ import kotlinx.coroutines.channels.BufferOverflow
  *
  * 수집을 시작하면 `initialize` → 리스너 등록 → 현재 값 한 번 읽기,
  * 수집을 멈추면 리스너 해제 → `release`. 권한: 기어 `CAR_DRIVE`, 방향지시등 `CAR_LIGHTS`.
+ *
+ * 주의: Vehicle SDK 2.3.2의 `release()`는 `initialize()`가 시작한 비동기 연결 작업을 취소하지 않는다.
+ * 연결 중에 수집을 멈추면 해제 뒤 서비스에 다시 붙을 수 있으므로, 앱은 이 Flow를 [DriveSignalHub]에서
+ * 프로세스 수명 동안 한 번만 수집하고 중간에 끊지 않는다.
  */
 class VehicleSignalSource(context: Context) : DriveSignalSource {
 
@@ -56,7 +60,11 @@ class VehicleSignalSource(context: Context) : DriveSignalSource {
                 Log.w(TAG, "turn signal listener failed", e)
             }
         }
-        val turnRegistered = AtomicBoolean(false)
+        // 방향지시등 등록(capability 응답 스레드)과 종료(awaitClose)를 같은 잠금으로 묶는다.
+        // 종료 뒤에는 등록하지 않고, 등록이 끝났으면 종료 때 반드시 해제한다.
+        val lock = Any()
+        var closed = false
+        var turnRegistered = false
 
         runCatching {
             val gear = vehicle.getGear()
@@ -76,17 +84,23 @@ class VehicleSignalSource(context: Context) : DriveSignalSource {
             turn.checkTurnSignalStateCapabilities(
                 { config ->
                     val readable = config.accessType == AccessType.READ || config.accessType == AccessType.READ_WRITE
-                    if (readable && !isClosedForSend) {
-                        runCatching {
-                            turn.registerTurnSignalState(turnListener)
-                            turnRegistered.set(true)
+                    if (!readable) {
+                        Log.w(TAG, "turn signal not readable: ${config.accessType}")
+                    } else {
+                        synchronized(lock) {
+                            if (!closed) {
+                                runCatching {
+                                    turn.registerTurnSignalState(turnListener)
+                                    turnRegistered = true
+                                }.onFailure { e -> Log.w(TAG, "turn signal register failed", e) }
+                            }
+                        }
+                        if (turnRegistered) {
                             turn.getCurrentTurnSignalState(
                                 { value -> value?.let { trySend(RawSignal.Vehicle.TurnSignal(it)) } },
                                 { e -> Log.w(TAG, "current turn signal failed", e) },
                             )
-                        }.onFailure { e -> Log.w(TAG, "turn signal register failed", e) }
-                    } else {
-                        Log.w(TAG, "turn signal not readable: ${config.accessType}")
+                        }
                     }
                 },
                 { e -> Log.w(TAG, "turn signal capability failed", e) },
@@ -94,8 +108,11 @@ class VehicleSignalSource(context: Context) : DriveSignalSource {
         }.onFailure { e -> Log.w(TAG, "turn signal check failed", e) }
 
         awaitClose {
-            runCatching { vehicle.getGear().unregisterGearSelection(gearListener) }
-            if (turnRegistered.get()) runCatching { vehicle.getTurnSignal().unregisterTurnSignalState(turnListener) }
+            synchronized(lock) {
+                closed = true
+                runCatching { vehicle.getGear().unregisterGearSelection(gearListener) }
+                if (turnRegistered) runCatching { vehicle.getTurnSignal().unregisterTurnSignalState(turnListener) }
+            }
             runCatching { vehicle.release() }
         }
     }.buffer(capacity = 64, onBufferOverflow = BufferOverflow.DROP_OLDEST)

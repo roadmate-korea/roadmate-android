@@ -41,6 +41,10 @@ data class RoadMatePalette(
     val onDanger: Long,
     /** signal/danger-surface: 안전 경고 카드 바탕 */
     val dangerSurface: Long,
+    /** sign/red: 표지판 빨강(제한 속도 테두리). 실제 도로 물건이라 두 모드에서 같다 */
+    val signRed: Long,
+    /** sign/white: 표지판 흰 바탕. 다크에서는 눈부심을 줄이려 조금 낮춘다 */
+    val signWhite: Long,
     /** signal/bus: 버스전용차로 */
     val bus: Long,
     /** signal/go: 녹색 신호 */
@@ -65,6 +69,8 @@ data class RoadMatePalette(
             danger = 0xFFC4261A,
             onDanger = 0xFFFFFFFF,
             dangerSurface = 0xFFFBE4E1,
+            signRed = 0xFFC4261A,
+            signWhite = 0xFFFFFFFF,
             bus = 0xFF1F5FBF,
             go = 0xFF1E8A4C,
         )
@@ -87,6 +93,8 @@ data class RoadMatePalette(
             danger = 0xFFFF5A4A,
             onDanger = 0xFF191A17,
             dangerSurface = 0xFF3A1A17,
+            signRed = 0xFFC4261A,
+            signWhite = 0xFFF2F2EE,
             bus = 0xFF5A8FE6,
             go = 0xFF3DBE73,
         )

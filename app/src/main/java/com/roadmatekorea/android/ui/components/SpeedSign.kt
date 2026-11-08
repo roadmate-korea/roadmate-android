@@ -18,7 +18,7 @@ import com.roadmatekorea.android.ui.theme.RoadMate
 
 /**
  * 한국 제한 속도 표지판(흰 원, 빨간 테두리, 먹색 숫자). 값은 NaviHelper가 준 제한 속도를 그대로 쓴다.
- * 두 모드에서 같은 모양이라 바탕은 흰 차선 색, 숫자는 노랑 위 글자 색(두 모드 모두 먹색)을 쓴다.
+ * 실제 표지판처럼 두 모드에서 같은 빨강 테두리(sign/red)와 흰 바탕(sign/white), 먹색 숫자를 쓴다.
  */
 @Composable
 fun SpeedSign(kmh: Int, description: String, modifier: Modifier = Modifier, size: Dp = 160.dp) {
@@ -29,8 +29,8 @@ fun SpeedSign(kmh: Int, description: String, modifier: Modifier = Modifier, size
         modifier = modifier
             .size(size)
             .semantics { contentDescription = description }
-            .background(c.paint, CircleShape)
-            .border((18 * scale).dp, c.danger, CircleShape),
+            .background(c.signWhite, CircleShape)
+            .border((18 * scale).dp, c.signRed, CircleShape),
     ) {
         Text(
             text = kmh.toString(),

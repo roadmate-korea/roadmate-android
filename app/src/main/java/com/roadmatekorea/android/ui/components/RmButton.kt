@@ -48,14 +48,14 @@ fun RmButton(
             containerColor = bg,
             contentColor = fg,
             disabledContainerColor = if (style == RmButtonStyle.Text) Color.Transparent else c.sunken,
-            disabledContentColor = c.inkTertiary,
+            disabledContentColor = c.inkSecondary,
         ),
         border = if (style == RmButtonStyle.Secondary) BorderStroke(2.dp, if (enabled) c.lineStrong else c.line) else null,
         contentPadding = PaddingValues(horizontal = 40.dp, vertical = 16.dp),
         elevation = null,
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (icon != null) RmIcon(icon, size = 36.dp, tint = if (enabled) fg else c.inkTertiary)
+            if (icon != null) RmIcon(icon, size = 36.dp, tint = if (enabled) fg else c.inkSecondary)
             Text(text, style = RoadMate.type.titleS)
         }
     }

@@ -19,7 +19,9 @@ class RoadMatePaletteTest {
         Triple("빨간 버튼 글자", { it.onDanger }, { it.danger }),
         Triple("안전 경고 머리글", { it.danger }, { it.dangerSurface }),
         Triple("안전 경고 본문", { it.ink }, { it.dangerSurface }),
-        Triple("표지판 숫자", { it.onCenterline }, { it.paint }),
+        Triple("표지판 숫자", { it.onCenterline }, { it.signWhite }),
+        Triple("표지판 테두리", { it.signRed }, { it.signWhite }),
+        Triple("비활성 버튼 글자", { it.inkSecondary }, { it.sunken }),
     )
 
     @Test

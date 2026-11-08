@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 앱 아이콘 바탕(아스팔트). Figma road/asphalt -->
+    <color name="rm_launcher_background">#FF3A3B38</color>
+    <!-- 첫 화면이 뜨기 전 창 바탕. Figma bg/canvas (Light) -->
+    <color name="rm_window_background">#FFF4F4F2</color>
+</resources>

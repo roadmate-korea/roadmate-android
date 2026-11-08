@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name" translatable="false">RoadMate Korea</string>
+    <!-- 로고 옆 글자 -->
+    <string name="app_name_short" translatable="false">RoadMate</string>
 </resources>

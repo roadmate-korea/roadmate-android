@@ -56,4 +56,20 @@ class OnboardingStringsTest {
             assertEquals(name to false, en.getValue("language_name_$code"))
         }
     }
+
+    @Test
+    fun screenText_hasNoMiddleDotOrEmDash() {
+        // 디자인 규칙: 화면 문구에서 가운데 점과 엠대시로 정보를 잇지 않는다(쉼표나 줄바꿈을 쓴다)
+        folders.forEach { folder ->
+            load(folder).forEach { (key, value) ->
+                assertTrue("$folder $key: ${value.first}", '\u00B7' !in value.first && '\u2014' !in value.first)
+            }
+        }
+    }
+
+    @Test
+    fun everyExperience_hasADescription() {
+        val keys = load("values").keys
+        KoreaExperience.entries.forEach { assertTrue("experience_desc_${it.name.lowercase()}" in keys) }
+    }
 }

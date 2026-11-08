@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 노란 겹중앙선(왼쪽) -->
+    <path android:fillColor="#FFFFC20E" android:pathData="M36,0h6v108h-6z" />
+    <path android:fillColor="#FFFFC20E" android:pathData="M46,0h6v108h-6z" />
+    <!-- 내 차선 화살표(오른쪽) -->
+    <path
+        android:pathData="M73,76V37"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="8" />
+    <path
+        android:pathData="M62,47L73,32L84,47"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineJoin="miter"
+        android:strokeWidth="8" />
+</vector>

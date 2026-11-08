@@ -23,7 +23,10 @@ import com.roadmatekorea.android.ui.theme.RoadMateColors
 import com.roadmatekorea.android.ui.theme.RoadMateType
 
 /** 위에서 본 상황 그림. Figma의 scene 컴포넌트와 같은 그림이다. */
-enum class SceneKind { KEEP_RIGHT, RIGHT_TURN_RED, UNPROTECTED_LEFT, LEFT_TURN_ARROW, LEFT_TURN_KEEP_RIGHT, SCHOOL_ZONE, LANE_CHANGE_LHD }
+enum class SceneKind {
+    KEEP_RIGHT, RIGHT_TURN_RED, UNPROTECTED_LEFT, LEFT_TURN_ARROW, LEFT_TURN_KEEP_RIGHT,
+    SCHOOL_ZONE, LANE_CHANGE_LHD, BUS_LANE, SECTION_CHECK,
+}
 
 /**
  * 상황 그림(640×480 비율). 내 차와 내 길은 노랑, 빨강은 멈출 곳과 안 되는 것, 흰색은 차선과 다른 차.
@@ -50,6 +53,12 @@ fun Scene(kind: SceneKind, modifier: Modifier = Modifier, speedLimitKmh: Int? = 
                 }
             }
             SceneKind.LANE_CHANGE_LHD -> p.laneChangeLhd()
+            SceneKind.BUS_LANE -> {
+                p.busLane()
+                val text = measurer.measure("BUS", TextStyle(fontFamily = RoadMateType.numberL.fontFamily, fontWeight = RoadMateType.numberL.fontWeight, fontSize = (24 * p.u / density).sp, color = colors.paint))
+                drawText(text, topLeft = Offset(352 * p.u - text.size.width / 2f, 300 * p.u))
+            }
+            SceneKind.SECTION_CHECK -> p.sectionCheck()
         }
     }
 }
@@ -235,4 +244,42 @@ private class ScenePainter(private val d: DrawScope, private val c: RoadMateColo
         round(232f, 300f, 34f, 58f, 9f, c.danger, stroke = 4f, dash = true)
         cross(234f, 236f)
     }
+
+    /** 한국 버스전용차로는 1차로(중앙선 바로 옆)다. 시내 중앙버스전용차로, 고속도로 버스전용차로 모두. */
+    fun busLane() {
+        rect(200f, 0f, 240f, 480f, c.asphalt)
+        doubleCenterVertical(0f, 480f)
+        laneDash(259f, 0f, 259f, 480f)
+        // 1차로: 옅은 파란 바닥, 일반 차로와 나누는 파란 선
+        rect(325f, 0f, 54f, 480f, c.bus, alpha = 0.24f)
+        rect(379f, 0f, 5f, 480f, c.bus)
+        round(333f, 30f, 38f, 110f, 8f, c.bus)
+        round(338f, 38f, 28f, 14f, 3f, c.paint)
+        car(395f, 330f)
+        // 들어가면 안 된다
+        path(c.danger, 6f, dash = true) { m(412f, 324f); cb(412f, 286f, 352f, 280f, 352f, 232f) }
+        line(338f, 204f, 366f, 232f, c.danger, 7f)
+        line(366f, 204f, 338f, 232f, c.danger, 7f)
+    }
+
+    fun sectionCheck() {
+        rect(0f, 180f, 640f, 120f, c.asphalt)
+        rect(0f, 234f, 640f, 4f, c.centerline); rect(0f, 240f, 640f, 4f, c.centerline)
+        laneDash(0f, 208f, 640f, 208f); laneDash(0f, 272f, 640f, 272f)
+        // 내 차(오른쪽을 향함)
+        round(40f, 255f, 58f, 34f, 9f, c.centerline)
+        round(75f, 260f, 12f, 24f, 3f, c.onCenterline)
+        // 시작과 끝 카메라, 그 사이가 구간
+        for (x in listOf(120f, 520f)) {
+            round(x, 122f, 40f, 26f, 4f, c.ink)
+            d.drawCircle(c.surfaceForCamera(), 6 * u, Offset((x + 14) * u, 135 * u))
+            rect(x + 18, 148f, 5f, 32f, c.ink)
+        }
+        path(c.ink, 4f) { m(140f, 104f); l(140f, 88f); l(540f, 88f); l(540f, 104f) }
+        line(110f, 272f, 600f, 272f, c.centerline, 6f, floatArrayOf(4f, 14f))
+        arrowHead(596f, 260f, 620f, 272f, 596f, 284f)
+    }
+
+    /** 카메라 렌즈: 먹색 몸통 위 바탕색 점 */
+    private fun RoadMateColors.surfaceForCamera() = canvas
 }

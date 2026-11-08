@@ -17,4 +17,7 @@
     <string name="guidance_school_zone_crosswalk">Dans les zones scolaires, arrêtez-vous toujours avant un passage piéton sans feu, même si personne ne traverse.</string>
 
     <string name="guidance_arrived">Vous êtes arrivé à destination. Merci d\'avoir conduit prudemment en Corée.</string>
+    <string name="guidance_bus_lane_ahead">Voie de bus dans %1$d mètres. Ne roulez pas dans la voie de bus bleue pendant les horaires indiqués sur le panneau.</string>
+    <string name="guidance_section_start">Début du contrôle de vitesse moyenne. Gardez une vitesse moyenne de %1$d kilomètres par heure au maximum jusqu\'à la fin de la section.</string>
+    <string name="guidance_section_over_average">Votre vitesse moyenne est de %1$d, au-dessus de la limite de %2$d. Ralentissez.</string>
 </resources>

@@ -28,7 +28,7 @@ object DemoRoute {
     private fun tbt(vararg turns: Pair<TurnType, Double>) =
         RawSignal.Navi.Tbt(turns.map { TBTInfo(it.first, it.second, "demo") })
 
-    /** 출발 → 어린이보호구역 300m 전 → 제한 속도 30 → 차선 변경 → 우회전 → 좌회전 → 도착 */
+    /** 출발 → 어린이보호구역 300m 전 → 제한 속도 30 → 버스전용차로 → 차선 변경 → 우회전 → 좌회전 → 구간 단속 → 도착 */
     val DEFAULT: List<DemoStep> = listOf(
         // 출발: 기어 D. 시작 안내
         DemoStep(0, listOf(gear(VehicleGear.GEAR_DRIVE))),
@@ -55,6 +55,9 @@ object DemoRoute {
                 tbt(TurnType.TURN_RIGHT to 600.0, TurnType.TURN_STRAIGHT to 1_500.0),
             ),
         ),
+        // 250m 앞 버스전용차로 단속 지점(상세 안내 대상)
+        DemoStep(2_000, listOf(RawSignal.Navi.CautionPoints(listOf(CautionPoint("demo-bl-1", CautionPointType.BUS_LANE_VIOLATION_ENFORCEMENT, 250))))),
+        DemoStep(3_000, listOf(RawSignal.Navi.CautionPoints(emptyList()))),
         // 근처에 좌회전이 없는데 좌측 깜빡이 → 차선 변경
         DemoStep(2_000, listOf(turnSignal(TurnSignalValue.LEFT))),
         DemoStep(3_000, listOf(turnSignal(TurnSignalValue.OFF))),
@@ -66,6 +69,15 @@ object DemoRoute {
         DemoStep(2_000, listOf(tbt(TurnType.TURN_LEFT to 120.0))),
         DemoStep(1_000, listOf(turnSignal(TurnSignalValue.LEFT))),
         DemoStep(3_000, listOf(turnSignal(TurnSignalValue.OFF), tbt())),
+        // 구간 단속 시작(제한 80). 평균 속도는 아직 없음
+        DemoStep(
+            2_000,
+            listOf(
+                RawSignal.Navi.SpeedLimit(80),
+                RawSignal.Navi.CameraAlerts(listOf(CameraAlert("demo-sec-1", CameraType.SPEED_CAMERA_SECTION_START, true, 80, 300, 0, false, false))),
+            ),
+        ),
+        DemoStep(3_000, listOf(RawSignal.Navi.CameraAlerts(emptyList()), RawSignal.Navi.SpeedLimit(50))),
         // 도착, 정차
         DemoStep(2_000, listOf(RawSignal.Navi.Arrived)),
         DemoStep(1_000, listOf(gear(VehicleGear.GEAR_PARK))),

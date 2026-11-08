@@ -37,4 +37,13 @@
     <string name="card_arrived_kicker">Arrived</string>
     <string name="card_arrived_headline">You have arrived.</string>
     <string name="card_arrived_body">Thank you for driving safely in Korea.</string>
+    <string name="card_bus_lane_ahead_kicker">Bus lane in %1$d m</string>
+    <string name="card_bus_lane_ahead_headline">Stay out of the blue lane.</string>
+    <string name="card_bus_lane_ahead_body">Check the hours on the sign.</string>
+    <string name="card_section_start_kicker">Average speed check</string>
+    <string name="card_section_start_headline">Keep your average at or below %1$d km/h.</string>
+    <string name="card_section_start_body">Cameras at the start and the end measure your speed.</string>
+    <string name="card_section_over_average_kicker">Average speed check</string>
+    <string name="card_section_over_average_headline">Average %1$d km/h. Slow down.</string>
+    <string name="card_section_over_average_body">The limit is %2$d km/h.</string>
 </resources>

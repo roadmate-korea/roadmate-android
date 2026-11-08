@@ -42,6 +42,9 @@ object GuidanceCards {
             GuidanceId.SCHOOL_ZONE_AHEAD -> card(R.string.card_school_zone_ahead_kicker, R.string.card_school_zone_ahead_headline, R.string.card_school_zone_ahead_body, R.drawable.ic_rm_children, SceneKind.SCHOOL_ZONE, safety)
             GuidanceId.SCHOOL_ZONE_SPEED_LIMIT -> card(R.string.card_school_zone_speed_limit_kicker, R.string.card_school_zone_speed_limit_headline, R.string.card_school_zone_speed_limit_body, R.drawable.ic_rm_children, SceneKind.SCHOOL_ZONE, safety).copy(sceneSpeedArg = 0)
             GuidanceId.SCHOOL_ZONE_CROSSWALK -> card(R.string.card_school_zone_crosswalk_kicker, R.string.card_school_zone_crosswalk_headline, R.string.card_school_zone_crosswalk_body, R.drawable.ic_rm_children, SceneKind.SCHOOL_ZONE, safety)
+            GuidanceId.BUS_LANE_AHEAD -> card(R.string.card_bus_lane_ahead_kicker, R.string.card_bus_lane_ahead_headline, R.string.card_bus_lane_ahead_body, R.drawable.ic_rm_bus, SceneKind.BUS_LANE, safety)
+            GuidanceId.SECTION_START -> card(R.string.card_section_start_kicker, R.string.card_section_start_headline, R.string.card_section_start_body, R.drawable.ic_rm_camera, SceneKind.SECTION_CHECK, safety)
+            GuidanceId.SECTION_OVER_AVERAGE -> card(R.string.card_section_over_average_kicker, R.string.card_section_over_average_headline, R.string.card_section_over_average_body, R.drawable.ic_rm_camera, SceneKind.SECTION_CHECK, safety)
             GuidanceId.ARRIVED -> card(R.string.card_arrived_kicker, R.string.card_arrived_headline, R.string.card_arrived_body, R.drawable.ic_rm_flag, null, safety)
         }
     }

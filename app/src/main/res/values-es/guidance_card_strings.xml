@@ -37,4 +37,13 @@
     <string name="card_arrived_kicker">Llegada</string>
     <string name="card_arrived_headline">Has llegado.</string>
     <string name="card_arrived_body">Gracias por conducir con prudencia en Corea.</string>
+    <string name="card_bus_lane_ahead_kicker">Carril bus a %1$d m</string>
+    <string name="card_bus_lane_ahead_headline">No entres en el carril azul.</string>
+    <string name="card_bus_lane_ahead_body">Revisa el horario en la señal.</string>
+    <string name="card_section_start_kicker">Control de velocidad media</string>
+    <string name="card_section_start_headline">Media máxima de %1$d km/h.</string>
+    <string name="card_section_start_body">Hay cámaras al inicio y al final del tramo.</string>
+    <string name="card_section_over_average_kicker">Control de velocidad media</string>
+    <string name="card_section_over_average_headline">Media de %1$d km/h. Reduce la velocidad.</string>
+    <string name="card_section_over_average_body">El límite es de %2$d km/h.</string>
 </resources>

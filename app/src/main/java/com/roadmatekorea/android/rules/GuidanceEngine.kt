@@ -34,7 +34,16 @@ class GuidanceEngine(
 
     private val isParked get() = gear == Gear.PARK
 
-    fun onEvent(event: DriveEvent): List<Guidance> = when (event) {
+    /**
+     * 한 이벤트에서 나온 안내는 안전 경고를 먼저 둔다(나머지는 원래 순서). 음성 큐는 비어 있으면 첫 항목을 바로
+     * 재생하므로, 같은 묶음 안의 순서가 곧 재생 순서다.
+     */
+    fun onEvent(event: DriveEvent): List<Guidance> = route(event).let { list ->
+        val (safety, rest) = list.partition { it.priority == Priority.SAFETY }
+        safety + rest
+    }
+
+    private fun route(event: DriveEvent): List<Guidance> = when (event) {
         DriveEvent.SessionStarted -> greet()
         is DriveEvent.GearChanged -> onGear(event.gear)
         is DriveEvent.TurnSignalChanged -> onTurnSignal(event.signal)
@@ -130,7 +139,9 @@ class GuidanceEngine(
 
     // ---- 어린이보호구역 (모든 사용자) ----
 
-    private fun onCautionPoints(points: List<CautionPoint>): List<Guidance> {
+    private fun onCautionPoints(points: List<CautionPoint>): List<Guidance> = schoolZoneAhead(points) + busLaneAhead(points)
+
+    private fun schoolZoneAhead(points: List<CautionPoint>): List<Guidance> {
         val inRange = points.filter {
             it.kind == CautionKind.SCHOOL_ZONE && it.remainMeters in 1..SCHOOL_ZONE_AHEAD_METERS
         }
@@ -147,7 +158,22 @@ class GuidanceEngine(
         }
     }
 
-    private fun onCameras(cameras: List<CameraAlert>): List<Guidance> {
+    // ---- 버스전용차로 (상세 안내 대상) ----
+
+    private fun busLaneAhead(points: List<CautionPoint>): List<Guidance> {
+        if (isParked || scope.detail != DetailLevel.DETAILED) return emptyList()
+        val nearest = points
+            .filter { it.kind == CautionKind.BUS_LANE && it.remainMeters in 1..BUS_LANE_AHEAD_METERS && it.id !in announcedCautionIds }
+            .minByOrNull { it.remainMeters } ?: return emptyList()
+        // 실제로 말한 지점만 완료로 둔다. 간격 제한에 걸린 지점은 범위 안에 남아 있으면 다음 갱신에서 다시 판단한다.
+        if (!cooldown.tryAcquire(GuidanceId.BUS_LANE_AHEAD)) return emptyList()
+        announcedCautionIds += nearest.id
+        return listOf(Guidance(GuidanceId.BUS_LANE_AHEAD, listOf(roundDistance(nearest.remainMeters))))
+    }
+
+    private fun onCameras(cameras: List<CameraAlert>): List<Guidance> = schoolZoneCamera(cameras) + sectionCheck(cameras)
+
+    private fun schoolZoneCamera(cameras: List<CameraAlert>): List<Guidance> {
         val fresh = cameras.filter {
             it.kind == CameraKind.SCHOOL_ZONE && it.speedLimitKmh > 0 && it.id !in announcedCameraIds
         }
@@ -163,6 +189,30 @@ class GuidanceEngine(
         schoolZone = (zone ?: SchoolZoneContext(clock.nowMillis(), currentSpeedLimit))
             .copy(announcedLimitKmh = camera.speedLimitKmh)
         return listOf(Guidance(GuidanceId.SCHOOL_ZONE_SPEED_LIMIT, listOf(camera.speedLimitKmh)))
+    }
+
+    // ---- 구간 단속: 시작 설명(상세 안내 대상), 평균 속도 초과(모든 사용자) ----
+
+    private fun sectionCheck(cameras: List<CameraAlert>): List<Guidance> {
+        if (isParked) return emptyList()
+        return buildList {
+            if (scope.detail == DetailLevel.DETAILED) {
+                cameras.filter { it.kind == CameraKind.SECTION_START && it.speedLimitKmh > 0 && it.id !in announcedCameraIds }
+                    .minByOrNull { it.remainMeters }
+                    ?.let { start ->
+                        if (cooldown.tryAcquire(GuidanceId.SECTION_START)) {
+                            announcedCameraIds += start.id
+                            add(Guidance(GuidanceId.SECTION_START, listOf(start.speedLimitKmh)))
+                        }
+                    }
+            }
+            cameras.firstOrNull { it.kind == CameraKind.SECTION_AVERAGE && it.speedLimitKmh > 0 && it.sectionAverageKmh > it.speedLimitKmh }
+                ?.let { over ->
+                    if (cooldown.tryAcquire(GuidanceId.SECTION_OVER_AVERAGE)) {
+                        add(Guidance(GuidanceId.SECTION_OVER_AVERAGE, listOf(over.sectionAverageKmh, over.speedLimitKmh)))
+                    }
+                }
+        }
     }
 
     private fun onSpeedLimit(kmh: Int): List<Guidance> {
@@ -199,6 +249,9 @@ class GuidanceEngine(
 
         /** 어린이보호구역 접근 경고 거리. */
         const val SCHOOL_ZONE_AHEAD_METERS = 300
+
+        /** 버스전용차로 안내 거리. */
+        const val BUS_LANE_AHEAD_METERS = 300
 
         /** 접근 경고 뒤 이 시간 안에 들어온 제한 속도를 어린이보호구역 제한 속도로 본다. */
         const val SCHOOL_ZONE_LIMIT_WINDOW_MS = 90_000L

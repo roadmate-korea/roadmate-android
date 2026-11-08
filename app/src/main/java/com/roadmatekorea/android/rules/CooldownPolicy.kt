@@ -20,7 +20,7 @@ data class CooldownRule(val minIntervalMs: Long, val maxPerDay: Int?)
  * 기록은 메모리에만 둔다(MVP). 앱을 다시 시작하거나 시연 세션을 새로 열면 초기화된다.
  * 여기 규칙이 없는 안내는 엔진이 지점 ID나 세션 단위로 직접 중복을 막는다.
  * 어린이보호구역 횡단보도 설명(SCHOOL_ZONE_CROSSWALK)은 필수 경고가 아니라 상세 설명이라 하루 2회로 제한한다.
- * 접근 경고와 제한 속도는 상한이 없다.
+ * 접근 경고와 제한 속도는 상한이 없다. 구간 평균 속도 초과 경고는 상한 없이 1분 간격.
  */
 class CooldownPolicy(
     private val clock: Clock,
@@ -51,6 +51,11 @@ class CooldownPolicy(
             GuidanceId.RIGHT_SIDE_LEFT_TURN to CooldownRule(minIntervalMs = 120 * SECOND_MS, maxPerDay = 2),
             GuidanceId.LHD_MIRROR_CHECK to CooldownRule(minIntervalMs = 120 * SECOND_MS, maxPerDay = 2),
             GuidanceId.SCHOOL_ZONE_CROSSWALK to CooldownRule(minIntervalMs = 0, maxPerDay = 2),
+            // 규칙 설명은 하루 2회. 지점마다의 중복은 엔진이 ID로 막는다.
+            GuidanceId.BUS_LANE_AHEAD to CooldownRule(minIntervalMs = 60 * SECOND_MS, maxPerDay = 2),
+            GuidanceId.SECTION_START to CooldownRule(minIntervalMs = 60 * SECOND_MS, maxPerDay = 2),
+            // 과속 경고는 상한 없이, 계속 넘으면 1분마다
+            GuidanceId.SECTION_OVER_AVERAGE to CooldownRule(minIntervalMs = 60 * SECOND_MS, maxPerDay = null),
         )
     }
 }

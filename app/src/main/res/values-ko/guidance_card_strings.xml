@@ -37,4 +37,13 @@
     <string name="card_arrived_kicker">도착</string>
     <string name="card_arrived_headline">도착했어요.</string>
     <string name="card_arrived_body">한국에서 안전하게 운전해 주셔서 고마워요.</string>
+    <string name="card_bus_lane_ahead_kicker">버스전용차로 %1$dm 앞</string>
+    <string name="card_bus_lane_ahead_headline">파란 차로에 들어가지 마세요.</string>
+    <string name="card_bus_lane_ahead_body">표지판의 운영 시간을 확인하세요.</string>
+    <string name="card_section_start_kicker">구간 단속</string>
+    <string name="card_section_start_headline">평균 시속 %1$dkm 이하로 달리세요.</string>
+    <string name="card_section_start_body">시작과 끝의 카메라가 속도를 재요.</string>
+    <string name="card_section_over_average_kicker">구간 단속</string>
+    <string name="card_section_over_average_headline">평균 시속 %1$dkm예요. 속도를 줄이세요.</string>
+    <string name="card_section_over_average_body">제한 속도는 시속 %2$dkm예요.</string>
 </resources>

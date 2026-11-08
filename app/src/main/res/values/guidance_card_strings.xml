@@ -20,8 +20,8 @@
     <string name="card_right_side_left_turn_headline">Keep to the right side of the new road.</string>
     <string name="card_right_side_left_turn_body">The yellow center line stays on your left.</string>
     <string name="card_right_turn_rule_kicker">Right turn</string>
-    <string name="card_right_turn_rule_headline">On a red light, stop at the line first.</string>
-    <string name="card_right_turn_rule_body">Then turn slowly only if you will not block traffic on a green light. Stop for anyone crossing or about to cross.</string>
+    <string name="card_right_turn_rule_headline">Right-turn signal: go only on its green arrow.</string>
+    <string name="card_right_turn_rule_body">No such signal and the light is red: stop at the line first, then turn slowly only if you will not block traffic on a green light. Stop for anyone crossing or about to cross.</string>
     <string name="card_left_turn_rule_kicker">Left turn</string>
     <string name="card_left_turn_rule_headline">Turn on a green left arrow.</string>
     <string name="card_left_turn_rule_body">With an unprotected left turn sign, you may turn on green after giving way.</string>

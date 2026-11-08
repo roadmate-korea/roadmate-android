@@ -20,8 +20,8 @@
     <string name="card_right_side_left_turn_headline">Restez du côté droit de la nouvelle route.</string>
     <string name="card_right_side_left_turn_body">La ligne jaune centrale reste à votre gauche.</string>
     <string name="card_right_turn_rule_kicker">Virage à droite</string>
-    <string name="card_right_turn_rule_headline">Au feu rouge, arrêtez-vous d\'abord à la ligne.</string>
-    <string name="card_right_turn_rule_body">Puis tournez lentement seulement si vous ne gênez pas les véhicules au vert. Arrêtez-vous pour tout piéton qui traverse ou va traverser.</string>
+    <string name="card_right_turn_rule_headline">Feu de virage à droite : flèche verte seulement.</string>
+    <string name="card_right_turn_rule_body">Sans ce feu, au rouge : arrêtez-vous d\'abord à la ligne, puis tournez lentement seulement si vous ne gênez pas les véhicules au vert. Arrêtez-vous pour tout piéton qui traverse ou va traverser.</string>
     <string name="card_left_turn_rule_kicker">Virage à gauche</string>
     <string name="card_left_turn_rule_headline">Tournez à la flèche verte vers la gauche.</string>
     <string name="card_left_turn_rule_body">Avec un panneau de virage à gauche non protégé, vous pouvez tourner au vert après avoir cédé le passage.</string>

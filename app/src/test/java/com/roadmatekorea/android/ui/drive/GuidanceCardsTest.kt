@@ -69,12 +69,12 @@ class GuidanceCardsTest {
 
     @Test
     fun rightTurnSummary_keepsTheLegalConditions_inEveryLanguage() {
-        // 적색 신호 우회전: 정지 후, 녹색 신호 차량을 막지 않을 때만, 건너거나 건너려는 보행자가 있으면 정지
+        // 우회전 신호등이 있으면 녹색 화살표만. 없을 때 적색이면 정지 후, 녹색 신호 차량을 막지 않을 때만, 건너거나 건너려는 보행자 앞 정지
         val required = mapOf(
-            "values" to listOf("stop at the line", "green", "about to cross"),
-            "values-fr" to listOf("arrêtez-vous d'abord", "au vert", "va traverser"),
-            "values-es" to listOf("detente primero", "luz verde", "vaya a cruzar"),
-            "values-ko" to listOf("정지선에서 먼저 멈추세요", "녹색 신호", "건너려는"),
+            "values" to listOf("right-turn signal", "green arrow", "no such signal", "stop at the line", "green light", "about to cross"),
+            "values-fr" to listOf("feu de virage à droite", "flèche verte", "sans ce feu", "arrêtez-vous d'abord", "au vert", "va traverser"),
+            "values-es" to listOf("semáforo de giro a la derecha", "flecha verde", "sin ese semáforo", "detente primero", "luz verde", "vaya a cruzar"),
+            "values-ko" to listOf("우회전 신호등이 있으면", "녹색 화살표", "신호등이 없고", "정지선에서 먼저 멈추", "녹색 신호", "건너려는"),
         )
         required.forEach { (folder, words) ->
             val strings = load(folder)

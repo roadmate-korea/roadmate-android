@@ -153,25 +153,26 @@ class GuidanceEngine(
         }
         if (fresh.isEmpty()) return emptyList()
         val zone = activeSchoolZone()
-        // 지금 구역의 제한 속도를 이미 말했으면 이 카메라들도 그 구역 것으로 보고 넘어간다.
-        if (zone != null && zone.limitAnnounced) {
-            announcedCameraIds += fresh.map { it.id }
-            return emptyList()
-        }
-        val camera = fresh.minBy { it.remainMeters }
+        // 카메라에는 구역 정보가 없다. 같은 구역인지 알 수 없으므로, 방금 같은 제한 속도를 말한 경우에만 건너뛴다.
+        // 건너뛴 카메라는 완료 처리하지 않는다(구역이 끝난 뒤 다시 들어오면 안내한다).
+        val camera = fresh
+            .filter { zone?.announcedLimitKmh != it.speedLimitKmh }
+            .minByOrNull { it.remainMeters }
+            ?: return emptyList()
         announcedCameraIds += camera.id
-        schoolZone = (zone ?: SchoolZoneContext(clock.nowMillis(), currentSpeedLimit)).copy(limitAnnounced = true)
+        schoolZone = (zone ?: SchoolZoneContext(clock.nowMillis(), currentSpeedLimit))
+            .copy(announcedLimitKmh = camera.speedLimitKmh)
         return listOf(Guidance(GuidanceId.SCHOOL_ZONE_SPEED_LIMIT, listOf(camera.speedLimitKmh)))
     }
 
     private fun onSpeedLimit(kmh: Int): List<Guidance> {
         currentSpeedLimit = kmh.takeIf { it > 0 }
         val zone = activeSchoolZone() ?: return emptyList()
-        if (zone.limitAnnounced || kmh <= 0) return emptyList()
+        if (zone.announcedLimitKmh != null || kmh <= 0) return emptyList()
         // 접근 경고 뒤 제한 속도가 내려가면 그 값을 어린이보호구역 제한 속도로 본다.
         val before = zone.speedLimitBefore
         if (before != null && kmh >= before) return emptyList()
-        schoolZone = zone.copy(limitAnnounced = true)
+        schoolZone = zone.copy(announcedLimitKmh = kmh)
         return listOf(Guidance(GuidanceId.SCHOOL_ZONE_SPEED_LIMIT, listOf(kmh)))
     }
 
@@ -188,7 +189,8 @@ class GuidanceEngine(
     private data class SchoolZoneContext(
         val startedAtMs: Long,
         val speedLimitBefore: Int?,
-        val limitAnnounced: Boolean = false,
+        /** 이 구역에서 이미 말한 제한 속도. null이면 아직 말하지 않음. */
+        val announcedLimitKmh: Int? = null,
     )
 
     companion object {

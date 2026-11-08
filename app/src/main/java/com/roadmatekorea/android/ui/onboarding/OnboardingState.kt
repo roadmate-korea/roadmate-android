@@ -25,13 +25,16 @@ data class OnboardingState(
 
     val canStart: Boolean get() = language != null && country != null && experience != null && !saving && !saved
 
-    fun selectLanguage(language: AppLanguage) = copy(language = language, page = Page.DRIVING)
+    /** 저장 중이거나 저장이 끝나면 선택을 바꿀 수 없다(보이는 값과 저장된 값이 달라지지 않게). */
+    val editable: Boolean get() = !saving && !saved
 
-    fun selectCountry(country: DrivingCountry) = copy(country = country)
+    fun selectLanguage(language: AppLanguage) = if (editable) copy(language = language, page = Page.DRIVING) else this
 
-    fun selectExperience(experience: KoreaExperience) = copy(experience = experience)
+    fun selectCountry(country: DrivingCountry) = if (editable) copy(country = country) else this
 
-    fun back() = copy(page = Page.LANGUAGE)
+    fun selectExperience(experience: KoreaExperience) = if (editable) copy(experience = experience) else this
+
+    fun back() = if (editable) copy(page = Page.LANGUAGE) else this
 
     fun toProfile(): DriverProfile? {
         return DriverProfile(language ?: return null, country ?: return null, experience ?: return null)

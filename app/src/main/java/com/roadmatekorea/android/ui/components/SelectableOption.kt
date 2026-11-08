@@ -25,12 +25,13 @@ fun SelectableOption(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     minHeight: Dp = 112.dp,
+    enabled: Boolean = true,
 ) {
     val colors = MaterialTheme.colorScheme
     Surface(
         modifier = modifier
             .heightIn(min = minHeight)
-            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick),
+            .selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onClick),
         shape = RoundedCornerShape(20.dp),
         color = if (selected) colors.primaryContainer else colors.surface,
         contentColor = if (selected) colors.onPrimaryContainer else colors.onSurface,

@@ -79,7 +79,7 @@ private fun DrivingPage(
     onStart: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 64.dp, vertical = 40.dp)) {
-        TextButton(onClick = onBack, modifier = Modifier.heightIn(min = 72.dp)) {
+        TextButton(onClick = onBack, enabled = state.editable, modifier = Modifier.heightIn(min = 72.dp)) {
             Text(stringResource(R.string.onboarding_back), style = MaterialTheme.typography.headlineSmall)
         }
         Spacer(Modifier.height(16.dp))
@@ -93,6 +93,7 @@ private fun DrivingPage(
                         text = stringResource(ProfileLabels.country(country)),
                         selected = country == state.country,
                         onClick = { onCountry(country) },
+                        enabled = state.editable,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -111,6 +112,7 @@ private fun DrivingPage(
                     text = stringResource(ProfileLabels.experience(experience)),
                     selected = experience == state.experience,
                     onClick = { onExperience(experience) },
+                    enabled = state.editable,
                     modifier = Modifier.weight(1f),
                     minHeight = 140.dp,
                 )

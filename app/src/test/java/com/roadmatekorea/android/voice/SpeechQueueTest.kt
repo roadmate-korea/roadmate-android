@@ -17,7 +17,7 @@ class SpeechQueueTest {
     private fun add(id: GuidanceId, vararg args: Int) = queue.enqueue(Guidance(id, args.toList()), id.name, Locale.US)
 
     @Test
-    fun higherPriorityFirst_thenFifo() {
+    fun higherUrgencyFirst_thenFifoWithinTier() {
         add(GuidanceId.WELCOME_FIRST_TIME)
         add(GuidanceId.RIGHT_TURN_RULE)
         add(GuidanceId.LHD_INTRO)
@@ -29,11 +29,29 @@ class SpeechQueueTest {
                 GuidanceId.SCHOOL_ZONE_AHEAD,
                 GuidanceId.SCHOOL_ZONE_CROSSWALK,
                 GuidanceId.RIGHT_TURN_RULE,
-                GuidanceId.LHD_INTRO,
+                // 시작 인사와 적응 안내는 같은 단계라 들어온 순서대로
                 GuidanceId.WELCOME_FIRST_TIME,
+                GuidanceId.LHD_INTRO,
             ),
             order,
         )
+    }
+
+    @Test
+    fun greetingThenLhdIntro_keepOrder() {
+        add(GuidanceId.WELCOME_RIGHT_SIDE)
+        add(GuidanceId.LHD_INTRO)
+        assertEquals(GuidanceId.WELCOME_RIGHT_SIDE, queue.poll()?.guidance?.id)
+        assertEquals(GuidanceId.LHD_INTRO, queue.poll()?.guidance?.id)
+    }
+
+    @Test
+    fun expiredItem_doesNotBlockFreshSameGuidance() {
+        add(GuidanceId.SCHOOL_ZONE_AHEAD, 300)
+        clock.advanceSeconds(16)
+        assertEquals(true, add(GuidanceId.SCHOOL_ZONE_AHEAD, 300))
+        assertEquals(GuidanceId.SCHOOL_ZONE_AHEAD, queue.poll()?.guidance?.id)
+        assertNull(queue.poll())
     }
 
     @Test
@@ -42,11 +60,13 @@ class SpeechQueueTest {
         add(GuidanceId.RIGHT_TURN_RULE)
         add(GuidanceId.SCHOOL_ZONE_AHEAD, 300)
         add(GuidanceId.LHD_INTRO)
-        clock.advanceSeconds(16)
-        assertEquals(GuidanceId.LHD_INTRO, queue.poll()?.guidance?.id)
-        clock.advanceSeconds(10)
+        clock.advanceSeconds(16) // 회전 규칙(10초)과 안전 경고(15초)는 만료
         assertEquals(GuidanceId.WELCOME_RIGHT_SIDE, queue.poll()?.guidance?.id)
+        clock.advanceSeconds(5) // 적응 안내(20초)도 만료
         assertNull(queue.poll())
+        add(GuidanceId.WELCOME_FIRST_TIME)
+        clock.advanceSeconds(3600) // 시작 안내는 버리지 않음
+        assertEquals(GuidanceId.WELCOME_FIRST_TIME, queue.poll()?.guidance?.id)
     }
 
     @Test

@@ -187,6 +187,43 @@ class GuidanceSpeakerTest {
     }
 
     @Test
+    fun startupGuidanceQueuedBeforeInit_keepsGreetingFirst() = runTest {
+        val engine = FakeEngine()
+        val s = GuidanceSpeaker(engine, backgroundScope, Clock { testScheduler.currentTime })
+        s.start()
+        s.say(g(GuidanceId.WELCOME_RIGHT_SIDE), "welcome", en)
+        s.say(g(GuidanceId.LHD_INTRO), "lhd", en)
+        engine.finishInit()
+        engine.complete()
+        assertEquals(listOf("welcome", "lhd"), engine.spoken)
+    }
+
+    @Test
+    fun stoppedSignal_movesToNextLikeDone() = runTest {
+        val engine = FakeEngine()
+        val s = speaker(engine)
+        s.say(g(GuidanceId.WELCOME_FIRST_TIME), "A", en)
+        s.say(g(GuidanceId.LHD_INTRO), "B", en)
+        engine.registered!!.onStart()
+        engine.registered!!.onStopped()
+        assertEquals(listOf("A", "B"), engine.spoken)
+    }
+
+    @Test
+    fun releaseDuringPlayback_doesNotCallStopBeforeRelease() = runTest {
+        val engine = FakeEngine()
+        val s = speaker(engine)
+        s.say(g(GuidanceId.WELCOME_FIRST_TIME), "A", en)
+        s.say(g(GuidanceId.LHD_INTRO), "B", en)
+        s.release()
+        assertEquals(0, engine.stops)
+        assertTrue(engine.released)
+        assertNull(s.current.value)
+        advanceTimeBy(60_000)
+        assertEquals(listOf("A"), engine.spoken)
+    }
+
+    @Test
     fun release_releasesEngine() = runTest {
         val engine = FakeEngine()
         val s = speaker(engine)

@@ -76,8 +76,13 @@ class GuidanceSpeaker(
         _idle.value = true
     }
 
+    /** 해제할 때는 엔진 stop을 부르지 않는다([TtsEngine.release] 참고). 재생 중이던 소리는 엔진 해제로 끝난다. */
     fun release() {
-        stopAll()
+        queue.clear()
+        timer?.cancel()
+        playing = null
+        _current.value = null
+        _idle.value = true
         engine.setListener(null)
         engine.release()
     }

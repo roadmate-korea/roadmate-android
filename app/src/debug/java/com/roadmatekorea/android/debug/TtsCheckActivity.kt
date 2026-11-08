@@ -43,6 +43,7 @@ class TtsCheckActivity : Activity() {
         engine.setListener(object : TtsEngine.Listener {
             override fun onStart() = log("onStart +${elapsed()}ms")
             override fun onDone() = log("onDone +${elapsed()}ms RESULT=OK")
+            override fun onStopped() = log("onStop +${elapsed()}ms RESULT=STOPPED")
             override fun onError(error: TtsError) = log("onError $error +${elapsed()}ms RESULT=FAIL")
         })
         engine.initialize { ready ->

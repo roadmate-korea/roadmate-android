@@ -15,6 +15,9 @@ sealed interface DriveEvent {
 
     data class TurnSignalChanged(val signal: TurnSignal) : DriveEvent
 
+    /** 차량 속도(km/h, 0 이상). */
+    data class VehicleSpeedChanged(val kmh: Int) : DriveEvent
+
     /** 현재 도로 제한 속도(km/h). NaviHelper `onCurrentRoadSpeedLimit`. */
     data class SpeedLimitChanged(val kmh: Int) : DriveEvent
 

@@ -10,7 +10,7 @@ import com.roadmatekorea.android.ui.scene.SceneKind
 /**
  * 안내 카드 내용(Figma `GuidanceCard`): 머리글, 한 줄 지시, 한 줄 설명, 상황 그림.
  * 음성은 guidance_strings.xml의 전체 문장을 읽고, 카드는 1~2초에 읽히는 요약을 보여 준다.
- * 형식 인자(거리, 제한 속도)는 세 문장 모두에 넘긴다. 자리표시자가 없는 문장은 인자를 무시한다.
+ * 형식 인자(거리, 속도)는 세 문장 모두에 넘긴다. 자리표시자가 없는 문장은 인자를 무시한다.
  */
 data class GuidanceCardContent(
     @StringRes val kicker: Int,
@@ -42,6 +42,8 @@ object GuidanceCards {
             GuidanceId.SCHOOL_ZONE_AHEAD -> card(R.string.card_school_zone_ahead_kicker, R.string.card_school_zone_ahead_headline, R.string.card_school_zone_ahead_body, R.drawable.ic_rm_children, SceneKind.SCHOOL_ZONE, safety)
             GuidanceId.SCHOOL_ZONE_SPEED_LIMIT -> card(R.string.card_school_zone_speed_limit_kicker, R.string.card_school_zone_speed_limit_headline, R.string.card_school_zone_speed_limit_body, R.drawable.ic_rm_children, SceneKind.SCHOOL_ZONE, safety).copy(sceneSpeedArg = 0)
             GuidanceId.SCHOOL_ZONE_CROSSWALK -> card(R.string.card_school_zone_crosswalk_kicker, R.string.card_school_zone_crosswalk_headline, R.string.card_school_zone_crosswalk_body, R.drawable.ic_rm_children, SceneKind.SCHOOL_ZONE, safety)
+            // 그림의 숫자는 제한 속도(두 번째 인자). 지금 속도는 제목에 쓴다.
+            GuidanceId.SCHOOL_ZONE_OVER_SPEED -> card(R.string.card_school_zone_over_speed_kicker, R.string.card_school_zone_over_speed_headline, R.string.card_school_zone_over_speed_body, R.drawable.ic_rm_children, SceneKind.SCHOOL_ZONE, safety).copy(sceneSpeedArg = 1)
             GuidanceId.BUS_LANE_AHEAD -> card(R.string.card_bus_lane_ahead_kicker, R.string.card_bus_lane_ahead_headline, R.string.card_bus_lane_ahead_body, R.drawable.ic_rm_bus, SceneKind.BUS_LANE, safety)
             GuidanceId.SECTION_START -> card(R.string.card_section_start_kicker, R.string.card_section_start_headline, R.string.card_section_start_body, R.drawable.ic_rm_camera, SceneKind.SECTION_CHECK, safety)
             GuidanceId.SECTION_OVER_AVERAGE -> card(R.string.card_section_over_average_kicker, R.string.card_section_over_average_headline, R.string.card_section_over_average_body, R.drawable.ic_rm_camera, SceneKind.SECTION_CHECK, safety)

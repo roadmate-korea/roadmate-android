@@ -19,6 +19,7 @@
     <string name="guidance_school_zone_ahead">School zone in %1$d meters. Slow down and watch for children.</string>
     <string name="guidance_school_zone_speed_limit">School zone. The speed limit is %1$d kilometers per hour.</string>
     <string name="guidance_school_zone_crosswalk">In school zones, always stop before a crosswalk without traffic lights, even if no one is crossing.</string>
+    <string name="guidance_school_zone_over_speed">School zone. You are going %1$d kilometers per hour, over the limit of %2$d. Slow down now.</string>
 
     <string name="guidance_arrived">You have arrived. Thank you for driving safely in Korea.</string>
     <string name="guidance_bus_lane_ahead">Bus lane in %1$d meters. Do not drive in the blue bus lane during the hours shown on the sign.</string>

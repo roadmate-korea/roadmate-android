@@ -104,6 +104,7 @@ class StringResourcesTest {
         val withArgs = listOf(
             GuidanceId.SCHOOL_ZONE_AHEAD, GuidanceId.SCHOOL_ZONE_SPEED_LIMIT,
             GuidanceId.BUS_LANE_AHEAD, GuidanceId.SECTION_START, GuidanceId.SECTION_OVER_AVERAGE,
+            GuidanceId.SCHOOL_ZONE_OVER_SPEED,
         ).map(::keyOf).toSet()
         english.forEach { (key, text) ->
             assertEquals("$key 인자 유무", key in withArgs, argPattern.containsMatchIn(text))

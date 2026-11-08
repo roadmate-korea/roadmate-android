@@ -54,6 +54,8 @@ class CooldownPolicy(
             // 규칙 설명은 하루 2회. 지점마다의 중복은 엔진이 ID로 막는다.
             GuidanceId.BUS_LANE_AHEAD to CooldownRule(minIntervalMs = 60 * SECOND_MS, maxPerDay = 2),
             GuidanceId.SECTION_START to CooldownRule(minIntervalMs = 60 * SECOND_MS, maxPerDay = 2),
+            // 어린이보호구역 과속: 상한 없이. 속도를 줄였다가 다시 넘으면 20초 뒤부터 다시 경고한다.
+            GuidanceId.SCHOOL_ZONE_OVER_SPEED to CooldownRule(minIntervalMs = 20 * SECOND_MS, maxPerDay = null),
             // 과속 경고는 상한 없이, 계속 넘으면 1분마다
             GuidanceId.SECTION_OVER_AVERAGE to CooldownRule(minIntervalMs = 60 * SECOND_MS, maxPerDay = null),
         )

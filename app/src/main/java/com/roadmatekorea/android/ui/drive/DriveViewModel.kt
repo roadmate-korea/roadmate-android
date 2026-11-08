@@ -42,6 +42,8 @@ data class DriveUiState(
     val guidanceVoiced: Boolean = true,
     val history: List<String> = emptyList(),
     val speedLimitKmh: Int? = null,
+    /** 차량 속도(km/h). 읽을 수 없으면 null이고 화면에 보이지 않는다. */
+    val speedKmh: Int? = null,
     val voiceUnavailable: Boolean = false,
 )
 
@@ -100,11 +102,11 @@ class DriveViewModel(
             _vehicle,
             speaker.current,
             s?.history ?: flowOf(emptyList()),
-            s?.speedLimitKmh ?: flowOf(null),
+            combine(s?.speedLimitKmh ?: flowOf(null), s?.speedKmh ?: flowOf(null)) { limit, speed -> limit to speed },
             combine(speaker.unavailableLocales, speaker.engineFailed) { locales, failed ->
                 failed || (s != null && AppLocales.localeOf(s.profile.language) in locales)
             },
-        ) { vehicle, caption, history, limit, voiceUnavailable ->
+        ) { vehicle, caption, history, (limit, speed), voiceUnavailable ->
             DriveUiState(
                 profile = s?.profile,
                 demo = demo,
@@ -114,6 +116,7 @@ class DriveViewModel(
                 guidanceVoiced = caption?.voiced ?: true,
                 history = history,
                 speedLimitKmh = limit,
+                speedKmh = speed,
                 voiceUnavailable = voiceUnavailable,
             )
         }

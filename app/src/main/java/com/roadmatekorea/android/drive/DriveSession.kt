@@ -37,6 +37,11 @@ class DriveSession(
     /** NaviHelper가 준 현재 도로 제한 속도. 0이나 값 없음은 null. */
     val speedLimitKmh: StateFlow<Int?> = _speedLimitKmh.asStateFlow()
 
+    private val _speedKmh = MutableStateFlow<Int?>(null)
+
+    /** 차량 속도(km/h). 읽을 수 없으면 null. */
+    val speedKmh: StateFlow<Int?> = _speedKmh.asStateFlow()
+
     /** START 직후처럼 바로 시작 안내를 낼 때 부른다. 주행 시작(기어 D) 때는 엔진이 알아서 낸다. */
     fun announceStart() = onEvent(DriveEvent.SessionStarted)
 
@@ -46,6 +51,7 @@ class DriveSession(
 
     private fun onEvent(event: DriveEvent) {
         if (event is DriveEvent.SpeedLimitChanged) _speedLimitKmh.value = event.kmh.takeIf { it > 0 }
+        if (event is DriveEvent.VehicleSpeedChanged) _speedKmh.value = event.kmh
         engine.onEvent(event).forEach { guidance ->
             val text = textOf(guidance)
             speaker.say(guidance, text, locale)

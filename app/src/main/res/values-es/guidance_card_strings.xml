@@ -34,6 +34,9 @@
     <string name="card_school_zone_crosswalk_kicker">Zona escolar</string>
     <string name="card_school_zone_crosswalk_headline">Detente antes de los pasos peatonales sin semáforo.</string>
     <string name="card_school_zone_crosswalk_body">Aunque nadie esté cruzando.</string>
+    <string name="card_school_zone_over_speed_kicker">Zona escolar</string>
+    <string name="card_school_zone_over_speed_headline">Vas a %1$d km/h. Reduce la velocidad.</string>
+    <string name="card_school_zone_over_speed_body">El límite aquí es de %2$d km/h.</string>
     <string name="card_arrived_kicker">Llegada</string>
     <string name="card_arrived_headline">Has llegado.</string>
     <string name="card_arrived_body">Gracias por conducir con prudencia en Corea.</string>

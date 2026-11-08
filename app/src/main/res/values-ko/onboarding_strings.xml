@@ -49,4 +49,5 @@
     <string name="experience_desc_first_time_left_hand_drive">한국 규칙과 좌핸들 적응 안내</string>
     <string name="drive_last_guidance">마지막 안내</string>
     <string name="drive_speed_limit_desc">제한 속도 %1$d km/h</string>
+    <string name="drive_current_speed_desc">현재 속도 %1$d km/h</string>
 </resources>

@@ -23,6 +23,9 @@ class GuidanceEngine(
     private var arrived = false
     private var currentSpeedLimit: Int? = null
 
+    /** 차량 속도(km/h). 읽을 수 없으면 null이고, 그때는 속도에 따른 안내를 하지 않는다. */
+    private var vehicleSpeed: Int? = null
+
     /** 비어 있으면 경로 안내 정보가 없는 것으로 본다. */
     private var turns: List<TurnInstruction> = emptyList()
     private var rightTurnNear = false
@@ -47,6 +50,7 @@ class GuidanceEngine(
         DriveEvent.SessionStarted -> greet()
         is DriveEvent.GearChanged -> onGear(event.gear)
         is DriveEvent.TurnSignalChanged -> onTurnSignal(event.signal)
+        is DriveEvent.VehicleSpeedChanged -> onVehicleSpeed(event.kmh)
         is DriveEvent.SpeedLimitChanged -> onSpeedLimit(event.kmh)
         is DriveEvent.CautionPointsUpdated -> onCautionPoints(event.points)
         is DriveEvent.CameraAlertsUpdated -> onCameras(event.cameras)
@@ -188,7 +192,7 @@ class GuidanceEngine(
         announcedCameraIds += camera.id
         schoolZone = (zone ?: SchoolZoneContext(clock.nowMillis(), currentSpeedLimit))
             .copy(announcedLimitKmh = camera.speedLimitKmh)
-        return listOf(Guidance(GuidanceId.SCHOOL_ZONE_SPEED_LIMIT, listOf(camera.speedLimitKmh)))
+        return listOf(schoolZoneLimit(camera.speedLimitKmh))
     }
 
     // ---- 구간 단속: 시작 설명(상세 안내 대상), 평균 속도 초과(모든 사용자) ----
@@ -218,13 +222,52 @@ class GuidanceEngine(
     private fun onSpeedLimit(kmh: Int): List<Guidance> {
         currentSpeedLimit = kmh.takeIf { it > 0 }
         val zone = activeSchoolZone() ?: return emptyList()
-        if (zone.announcedLimitKmh != null || kmh <= 0) return emptyList()
+        val zoneLimit = zone.announcedLimitKmh
+        // 도로 제한 속도가 구역 제한보다 다시 올라가면 구역을 벗어난 것으로 본다(과속 경고도 멈춘다).
+        if (zoneLimit != null && kmh > zoneLimit) {
+            schoolZone = null
+            return emptyList()
+        }
+        if (zoneLimit != null || kmh <= 0) return emptyList()
         // 접근 경고 뒤 제한 속도가 내려가면 그 값을 어린이보호구역 제한 속도로 본다.
         val before = zone.speedLimitBefore
         if (before != null && kmh >= before) return emptyList()
         schoolZone = zone.copy(announcedLimitKmh = kmh)
-        return listOf(Guidance(GuidanceId.SCHOOL_ZONE_SPEED_LIMIT, listOf(kmh)))
+        return listOf(schoolZoneLimit(kmh))
     }
+
+    /**
+     * 어린이보호구역 제한 속도를 알게 된 순간의 안내. 이미 제한보다 빠르면 "지금 몇 km, 제한 몇"으로 바꿔 말하고,
+     * 아니면 제한 속도만 말한다. 제한 속도 자체는 항상 NaviHelper 값이다.
+     */
+    private fun schoolZoneLimit(limit: Int): Guidance {
+        val speed = vehicleSpeed
+        if (speed != null && !isParked && isOver(speed, limit) && cooldown.tryAcquire(GuidanceId.SCHOOL_ZONE_OVER_SPEED)) {
+            schoolZone = schoolZone?.copy(overSpeedWarned = true)
+            return Guidance(GuidanceId.SCHOOL_ZONE_OVER_SPEED, listOf(speed, limit))
+        }
+        return Guidance(GuidanceId.SCHOOL_ZONE_SPEED_LIMIT, listOf(limit))
+    }
+
+    /**
+     * 구역 안에서 제한을 넘는 순간 한 번 경고한다. 계속 빠른 동안에는 다시 말하지 않고(잔소리 금지),
+     * 제한 아래로 줄였다가 다시 넘으면 다시 경고한다. 제한보다 느리면 아무 말도 하지 않는다.
+     */
+    private fun onVehicleSpeed(kmh: Int): List<Guidance> {
+        vehicleSpeed = kmh.coerceAtLeast(0)
+        val zone = activeSchoolZone() ?: return emptyList()
+        val limit = zone.announcedLimitKmh ?: return emptyList()
+        if (kmh <= limit) {
+            if (zone.overSpeedWarned) schoolZone = zone.copy(overSpeedWarned = false)
+            return emptyList()
+        }
+        if (zone.overSpeedWarned || isParked || !isOver(kmh, limit)) return emptyList()
+        if (!cooldown.tryAcquire(GuidanceId.SCHOOL_ZONE_OVER_SPEED)) return emptyList()
+        schoolZone = zone.copy(overSpeedWarned = true)
+        return listOf(Guidance(GuidanceId.SCHOOL_ZONE_OVER_SPEED, listOf(kmh, limit)))
+    }
+
+    private fun isOver(speed: Int, limit: Int) = speed > limit + OVER_SPEED_MARGIN_KMH
 
     /** 마지막 구역 시작(접근 경고나 첫 카메라)에서 [SCHOOL_ZONE_LIMIT_WINDOW_MS]가 지나면 구역이 끝난 것으로 본다. */
     private fun activeSchoolZone(): SchoolZoneContext? =
@@ -241,6 +284,8 @@ class GuidanceEngine(
         val speedLimitBefore: Int?,
         /** 이 구역에서 이미 말한 제한 속도. null이면 아직 말하지 않음. */
         val announcedLimitKmh: Int? = null,
+        /** 지금 제한을 넘은 상태로 이미 경고했는지. 제한 아래로 내려오면 false로 돌아간다. */
+        val overSpeedWarned: Boolean = false,
     )
 
     companion object {
@@ -255,6 +300,9 @@ class GuidanceEngine(
 
         /** 접근 경고 뒤 이 시간 안에 들어온 제한 속도를 어린이보호구역 제한 속도로 본다. */
         const val SCHOOL_ZONE_LIMIT_WINDOW_MS = 90_000L
+
+        /** 속도계 오차를 생각해 제한보다 이만큼 넘게 빠를 때만 과속으로 본다. */
+        const val OVER_SPEED_MARGIN_KMH = 2
 
         /** 음성으로 읽기 좋게 50m 단위로 반올림한다(최소 50m). */
         fun roundDistance(meters: Int): Int = maxOf(50, (meters / 50.0).roundToInt() * 50)

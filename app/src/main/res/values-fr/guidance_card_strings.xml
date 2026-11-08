@@ -34,6 +34,9 @@
     <string name="card_school_zone_crosswalk_kicker">Zone scolaire</string>
     <string name="card_school_zone_crosswalk_headline">Arrêtez-vous avant les passages piétons sans feux.</string>
     <string name="card_school_zone_crosswalk_body">Même si personne ne traverse.</string>
+    <string name="card_school_zone_over_speed_kicker">Zone scolaire</string>
+    <string name="card_school_zone_over_speed_headline">Vous êtes à %1$d km/h. Ralentissez.</string>
+    <string name="card_school_zone_over_speed_body">La limite ici est de %2$d km/h.</string>
     <string name="card_arrived_kicker">Arrivée</string>
     <string name="card_arrived_headline">Vous êtes arrivé.</string>
     <string name="card_arrived_body">Merci d\'avoir conduit prudemment en Corée.</string>

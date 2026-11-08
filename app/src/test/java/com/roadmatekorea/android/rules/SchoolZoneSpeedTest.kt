@@ -1,0 +1,121 @@
+package com.roadmatekorea.android.rules
+
+import com.roadmatekorea.android.profile.model.AppLanguage
+import com.roadmatekorea.android.profile.model.DriverProfile
+import com.roadmatekorea.android.profile.model.DrivingCountry
+import com.roadmatekorea.android.profile.model.KoreaExperience
+import com.roadmatekorea.android.profile.model.Personas
+import com.roadmatekorea.android.rules.GuidanceId.SCHOOL_ZONE_OVER_SPEED
+import com.roadmatekorea.android.rules.GuidanceId.SCHOOL_ZONE_SPEED_LIMIT
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+/** 차량 속도에 따른 어린이보호구역 안내: 제한보다 빠르면 "지금 몇 km, 제한 몇", 느리면 더 말하지 않음. 모든 사용자. */
+class SchoolZoneSpeedTest {
+
+    private val clock = FakeClock()
+    private val experienced = DriverProfile(AppLanguage.EN, DrivingCountry.OTHER, KoreaExperience.DROVE_IN_KOREA)
+
+    private fun engine(profile: DriverProfile = Personas.CARLOS) = GuidanceEngine(profile, clock).also {
+        it.onEvent(DriveEvent.SessionStarted)
+        it.onEvent(DriveEvent.GearChanged(Gear.DRIVE))
+        it.onEvent(DriveEvent.SpeedLimitChanged(50))
+    }
+
+    private fun GuidanceEngine.enterZone() =
+        onEvent(DriveEvent.CautionPointsUpdated(listOf(CautionPoint("sz", CautionKind.SCHOOL_ZONE, 300))))
+
+    private fun GuidanceEngine.speed(kmh: Int) = onEvent(DriveEvent.VehicleSpeedChanged(kmh))
+
+    private fun ids(list: List<Guidance>) = list.map { it.id }
+
+    @Test
+    fun alreadyFast_whenLimitIsKnown_saysSpeedAndLimitInsteadOfLimitOnly_forEveryone() {
+        listOf(Personas.NAKAMURA, Personas.CARLOS, experienced).forEach { profile ->
+            val e = engine(profile)
+            e.speed(45)
+            e.enterZone()
+            assertEquals("$profile", listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(45, 30))), e.onEvent(DriveEvent.SpeedLimitChanged(30)))
+        }
+    }
+
+    @Test
+    fun cameraLimit_alsoUsesSpeed() {
+        val e = engine()
+        e.speed(41)
+        e.enterZone()
+        val out = e.onEvent(DriveEvent.CameraAlertsUpdated(listOf(CameraAlert("c", CameraKind.SCHOOL_ZONE, 30, 100))))
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(41, 30))), out)
+    }
+
+    @Test
+    fun slowEnough_orUnknownSpeed_keepsTheLimitOnlyGuidance() {
+        val slow = engine().also { it.speed(28); it.enterZone() }
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), slow.onEvent(DriveEvent.SpeedLimitChanged(30)))
+        val unknown = engine().also { it.enterZone() }
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), unknown.onEvent(DriveEvent.SpeedLimitChanged(30)))
+    }
+
+    @Test
+    fun withinMargin_isNotOverSpeed() {
+        val e = engine().also { it.speed(30 + GuidanceEngine.OVER_SPEED_MARGIN_KMH); it.enterZone() }
+        assertEquals(listOf(SCHOOL_ZONE_SPEED_LIMIT), ids(e.onEvent(DriveEvent.SpeedLimitChanged(30))))
+        assertTrue(e.speed(30 + GuidanceEngine.OVER_SPEED_MARGIN_KMH).isEmpty())
+    }
+
+    @Test
+    fun speedingUpInsideZone_warnsOnce_untilBackUnderLimit() {
+        val e = engine().also { it.speed(25); it.enterZone(); it.onEvent(DriveEvent.SpeedLimitChanged(30)) }
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(38, 30))), e.speed(38))
+        // 계속 빠른 동안에는 다시 말하지 않는다
+        clock.advanceSeconds(30)
+        assertTrue(e.speed(40).isEmpty())
+        assertTrue(e.speed(36).isEmpty())
+        // 제한 아래로 줄였다가 다시 넘으면 다시 경고
+        assertTrue(e.speed(29).isEmpty())
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(35, 30))), e.speed(35))
+    }
+
+    @Test
+    fun rapidReSpeeding_isLimitedByCooldown() {
+        val e = engine().also { it.speed(25); it.enterZone(); it.onEvent(DriveEvent.SpeedLimitChanged(30)) }
+        assertEquals(1, e.speed(38).size)
+        e.speed(29)
+        clock.advanceSeconds(5)
+        assertTrue(e.speed(38).isEmpty())
+        e.speed(29)
+        clock.advanceSeconds(20)
+        assertEquals(1, e.speed(38).size)
+    }
+
+    @Test
+    fun noWarning_outsideZone_beforeLimitIsKnown_orWhenParked() {
+        val e = engine()
+        assertTrue(e.speed(80).isEmpty())
+        e.enterZone()
+        // 구역 접근 중이지만 제한 속도를 아직 모름
+        assertTrue(e.speed(70).isEmpty())
+        // 구역이 끝나면(유효 시간 경과) 말하지 않는다
+        e.onEvent(DriveEvent.SpeedLimitChanged(30))
+        e.speed(20)
+        clock.advanceSeconds(GuidanceEngine.SCHOOL_ZONE_LIMIT_WINDOW_MS / 1000 + 1)
+        assertTrue(e.speed(60).isEmpty())
+
+        val parked = engine().also { it.speed(20); it.enterZone(); it.onEvent(DriveEvent.SpeedLimitChanged(30)) }
+        parked.onEvent(DriveEvent.GearChanged(Gear.PARK))
+        assertTrue(parked.speed(40).isEmpty())
+    }
+
+    @Test
+    fun leavingZone_whenRoadLimitRisesAgain_stopsOverSpeedWarnings() {
+        val e = engine().also { it.speed(25); it.enterZone(); it.onEvent(DriveEvent.SpeedLimitChanged(30)) }
+        assertTrue(e.onEvent(DriveEvent.SpeedLimitChanged(50)).isEmpty())
+        assertTrue(e.speed(45).isEmpty())
+    }
+
+    @Test
+    fun overSpeed_isSafetyPriority() {
+        assertEquals(Priority.SAFETY, SCHOOL_ZONE_OVER_SPEED.priority)
+    }
+}

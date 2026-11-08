@@ -28,6 +28,7 @@ object GuidanceStrings {
         GuidanceId.BUS_LANE_AHEAD -> R.string.guidance_bus_lane_ahead
         GuidanceId.SECTION_START -> R.string.guidance_section_start
         GuidanceId.SECTION_OVER_AVERAGE -> R.string.guidance_section_over_average
+        GuidanceId.SCHOOL_ZONE_OVER_SPEED -> R.string.guidance_school_zone_over_speed
         GuidanceId.ARRIVED -> R.string.guidance_arrived
     }
 

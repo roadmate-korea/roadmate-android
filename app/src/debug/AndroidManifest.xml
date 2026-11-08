@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 디버그 빌드에만 들어가는 확인용 화면. release APK에는 포함되지 않는다. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- STT 확인용(임시). 본 기능에 넣을 때 main 매니페스트로 옮긴다 -->
+    <uses-permission android:name="pleos.car.permission.STT_SERVICE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <application>
         <activity
             android:name=".debug.TtsCheckActivity"
@@ -10,6 +13,9 @@
             android:exported="true" />
         <activity
             android:name=".debug.NaviRouteProbeActivity"
+            android:exported="true" />
+        <activity
+            android:name=".debug.SttCheckActivity"
             android:exported="true" />
     </application>
 </manifest>

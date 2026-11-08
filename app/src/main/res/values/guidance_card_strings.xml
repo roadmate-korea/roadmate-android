@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 주행 화면 안내 카드: 머리글(kicker), 한 줄 지시(headline), 한 줄 설명(body). 음성은 guidance_strings.xml의 전체 문장을 읽는다. -->
+<resources>
+    <string name="card_welcome_right_side_kicker">Welcome to Korea</string>
+    <string name="card_welcome_right_side_headline">Keep the yellow center line on your left.</string>
+    <string name="card_welcome_right_side_body">Vehicles drive on the right. Take extra care at intersections.</string>
+    <string name="card_welcome_first_time_kicker">Welcome to Korea</string>
+    <string name="card_welcome_first_time_headline">We will guide you through Korean traffic rules.</string>
+    <string name="card_welcome_first_time_body">Guidance plays as you reach each situation.</string>
+    <string name="card_welcome_experienced_kicker">Welcome back</string>
+    <string name="card_welcome_experienced_headline">We will alert you to essential safety points.</string>
+    <string name="card_welcome_experienced_body">School zones and other key warnings.</string>
+    <string name="card_lhd_intro_kicker">Left-hand drive car</string>
+    <string name="card_lhd_intro_headline">The right side is farther than it feels.</string>
+    <string name="card_lhd_intro_body">You sit on the left. The turn signal lever is on the left of the wheel.</string>
+    <string name="card_lhd_mirror_check_kicker">Turning or changing lanes</string>
+    <string name="card_lhd_mirror_check_headline">Check your mirrors and look over your shoulder.</string>
+    <string name="card_lhd_mirror_check_body">The passenger side is now on your right.</string>
+    <string name="card_right_side_left_turn_kicker">After the left turn</string>
+    <string name="card_right_side_left_turn_headline">Keep to the right side of the new road.</string>
+    <string name="card_right_side_left_turn_body">The yellow center line stays on your left.</string>
+    <string name="card_right_turn_rule_kicker">Right turn</string>
+    <string name="card_right_turn_rule_headline">Right-turn signal: go only on its green arrow.</string>
+    <string name="card_right_turn_rule_body">No such signal and the light is red: stop at the line first, then turn slowly only if you will not block traffic on a green light. Stop for anyone crossing or about to cross.</string>
+    <string name="card_left_turn_rule_kicker">Left turn</string>
+    <string name="card_left_turn_rule_headline">Turn on a green left arrow.</string>
+    <string name="card_left_turn_rule_body">With an unprotected left turn sign, you may turn on green after giving way.</string>
+    <string name="card_school_zone_ahead_kicker">School zone in %1$d m</string>
+    <string name="card_school_zone_ahead_headline">Slow down. Watch for children.</string>
+    <string name="card_school_zone_ahead_body">Follow the speed limit sign for this zone.</string>
+    <string name="card_school_zone_speed_limit_kicker">School zone</string>
+    <string name="card_school_zone_speed_limit_headline">Speed limit %1$d km/h.</string>
+    <string name="card_school_zone_speed_limit_body">Watch for children near the road.</string>
+    <string name="card_school_zone_crosswalk_kicker">School zone</string>
+    <string name="card_school_zone_crosswalk_headline">Stop before crosswalks without lights.</string>
+    <string name="card_school_zone_crosswalk_body">Even if no one is crossing.</string>
+    <string name="card_arrived_kicker">Arrived</string>
+    <string name="card_arrived_headline">You have arrived.</string>
+    <string name="card_arrived_body">Thank you for driving safely in Korea.</string>
+</resources>

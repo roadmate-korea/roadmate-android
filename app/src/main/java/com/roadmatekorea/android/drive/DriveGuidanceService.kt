@@ -26,14 +26,15 @@ import com.roadmatekorea.android.RoadMateApplication
  * 그 세션을 시작해 두고 프로세스를 포그라운드로 유지하는 일만 한다(판단 로직 없음).
  *
  * 화면이 보일 때(MainActivity.onStart)만 시작한다. 백그라운드에서 포그라운드 서비스를 새로 시작하는 것은 Android가 막는다.
- * 사용자가 최근 앱에서 RoadMate를 지우면 함께 끝난다.
+ * 사용자가 최근 앱에서 RoadMate를 지우면 안내 세션과 함께 끝난다.
+ * 알림은 Android 13 이상에서 알림 권한이 있어야 보인다(없어도 서비스는 동작한다).
  */
 class DriveGuidanceService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        // 세션과 신호 수집을 시작해 둔다(화면이 없어도 동작)
-        (application as RoadMateApplication).driveController
+        // 신호 수집을 시작하고 저장된 프로필로 세션을 연다(화면 없이 서비스만 다시 만들어져도 안전 경고가 나가게)
+        (application as RoadMateApplication).restoreSavedSession()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -48,7 +49,9 @@ class DriveGuidanceService : Service() {
         return START_STICKY
     }
 
+    /** 최근 앱에서 지우면 안내도 끝낸다(알림만 사라지고 음성이 남지 않게). */
     override fun onTaskRemoved(rootIntent: Intent?) {
+        (application as RoadMateApplication).driveController.endSession()
         stopSelf()
     }
 

@@ -114,6 +114,32 @@ class DriveControllerTest {
     }
 
     @Test
+    fun endSession_stopsDemoAndGuidance_untilTheScreenOpensASessionAgain() = runTest(dispatcher) {
+        val r = rig()
+        r.real(RawSignal.Vehicle.Gear(VehicleGear.GEAR_PARK))
+        runCurrent()
+        r.vm.ensureSession(Personas.CARLOS)
+        r.vm.startDemo(DemoPersona.NAKAMURA)
+        runCurrent()
+        // 최근 앱에서 지움
+        r.vm.endSession()
+        runCurrent()
+        assertNull(r.vm.uiState.value.demo)
+        assertNull(r.vm.uiState.value.profile)
+        val spokenBefore = r.tts.spoken.size
+        r.real(RawSignal.Vehicle.Gear(VehicleGear.GEAR_DRIVE))
+        r.real(schoolZone("after-end"))
+        advanceTimeBy(60_000)
+        runCurrent()
+        assertEquals("세션이 없으면 말하지 않음", spokenBefore, r.tts.spoken.size)
+        // 다시 열면(화면이 저장된 프로필로) 새 세션
+        r.vm.ensureSession(Personas.CARLOS)
+        r.real(schoolZone("reopened"))
+        runCurrent()
+        assertTrue(r.tts.spoken.contains("ES:SCHOOL_ZONE_AHEAD:300"))
+    }
+
+    @Test
     fun parkedDemo_ignoresRealNaviSignals() = runTest(dispatcher) {
         val r = rig()
         r.real(RawSignal.Vehicle.Gear(VehicleGear.GEAR_PARK))

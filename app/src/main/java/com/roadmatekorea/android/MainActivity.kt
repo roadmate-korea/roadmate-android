@@ -1,5 +1,8 @@
 package com.roadmatekorea.android
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -20,8 +23,10 @@ class MainActivity : ComponentActivity() {
 
     private val app get() = application as RoadMateApplication
 
-    private val requestSpeedPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        app.speedPermissionGranted.value = granted
+    private val requestPermissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+        if (result[RoadMateApplication.CAR_SPEED] == true) app.speedPermissionGranted.value = true
+        // 알림을 허용했으면 서비스 알림을 다시 올린다(거부 상태에서 올린 알림은 보이지 않았다)
+        if (result[Manifest.permission.POST_NOTIFICATIONS] == true) DriveGuidanceService.start(this)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,7 +39,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        askSpeedPermissionWhenParked()
+        askPermissionsWhenParked()
     }
 
     override fun onStart() {
@@ -50,21 +55,31 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * 차량 속도 권한은 정차(P)가 정상적으로 확인되고 화면이 앞에 있을 때 한 번만 묻는다. 주행 중이나 기어 오류 뒤에는 띄우지 않는다.
-     * 화면이 다시 만들어지면 대기를 다시 시작하고, 실제로 띄웠는지는 앱 범위에서 기억한다.
-     * 거부해도 속도에 따른 안내만 빠지고 나머지는 그대로 동작한다.
+     * 차량 속도 권한과 알림 권한(Android 13 이상)은 정차(P)가 정상적으로 확인되고 화면이 앞에 있을 때 한 번만 묻는다.
+     * 주행 중이나 기어 오류 뒤에는 띄우지 않는다. 화면이 다시 만들어지면 대기를 다시 시작하고, 실제로 띄웠는지는 앱 범위에서 기억한다.
+     * 거부해도 속도에 따른 안내나 알림만 빠지고 나머지는 그대로 동작한다.
      */
-    private fun askSpeedPermissionWhenParked() {
+    private fun askPermissionsWhenParked() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                if (app.hasSpeedPermission() || app.speedPermissionAsked) return@repeatOnLifecycle
+                if (missingPermissions().isEmpty() || app.permissionsAsked) return@repeatOnLifecycle
                 app.signalHub.parkedConfirmed.first { it }
                 // 띄우기 직전에 다시 확인한다
-                if (app.signalHub.parkedConfirmed.value && !app.hasSpeedPermission() && !app.speedPermissionAsked) {
-                    app.speedPermissionAsked = true
-                    requestSpeedPermission.launch(RoadMateApplication.CAR_SPEED)
+                val missing = missingPermissions()
+                if (app.signalHub.parkedConfirmed.value && missing.isNotEmpty() && !app.permissionsAsked) {
+                    app.permissionsAsked = true
+                    requestPermissions.launch(missing.toTypedArray())
                 }
             }
+        }
+    }
+
+    private fun missingPermissions(): List<String> = buildList {
+        if (!app.hasSpeedPermission()) add(RoadMateApplication.CAR_SPEED)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            add(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 }

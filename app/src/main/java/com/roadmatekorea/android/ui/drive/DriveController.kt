@@ -197,6 +197,17 @@ class DriveController(
         locale = AppLocales.localeOf(profile.language),
     )
 
+    /**
+     * 사용자가 최근 앱에서 RoadMate를 지웠을 때: 시연과 안내 세션을 끝내고 음성을 멈춘다.
+     * 신호 수집과 TTS 엔진은 그대로 두어, 앱을 다시 열면 화면이 저장된 프로필로 새 세션을 연다.
+     */
+    fun endSession() {
+        cancelDemo()
+        speaker.stopAll()
+        session.value = null
+        savedProfile = null
+    }
+
     /** 프로세스가 끝날 때까지 보통 부르지 않는다(테스트와 정리용). */
     fun release() {
         speaker.release()

@@ -21,7 +21,8 @@ class GuidanceCardsTest {
         val nodes = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file).getElementsByTagName("string")
         return (0 until nodes.length).associate { i ->
             val n = nodes.item(i)
-            n.attributes.getNamedItem("name").nodeValue to n.textContent
+            // Android 리소스의 \' 이스케이프를 푼다
+            n.attributes.getNamedItem("name").nodeValue to n.textContent.replace("\\'", "'")
         }
     }
 
@@ -64,5 +65,44 @@ class GuidanceCardsTest {
     @Test
     fun safetyLook_followsPriority() {
         GuidanceId.entries.forEach { assertEquals("$it", it.priority == Priority.SAFETY, GuidanceCards.of(it).safety) }
+    }
+
+    @Test
+    fun rightTurnSummary_keepsTheLegalConditions_inEveryLanguage() {
+        // 적색 신호 우회전: 정지 후, 녹색 신호 차량을 막지 않을 때만, 건너거나 건너려는 보행자가 있으면 정지
+        val required = mapOf(
+            "values" to listOf("stop at the line", "green", "about to cross"),
+            "values-fr" to listOf("arrêtez-vous d'abord", "au vert", "va traverser"),
+            "values-es" to listOf("detente primero", "luz verde", "vaya a cruzar"),
+            "values-ko" to listOf("정지선에서 먼저 멈추세요", "녹색 신호", "건너려는"),
+        )
+        required.forEach { (folder, words) ->
+            val strings = load(folder)
+            val card = listOf("headline", "body").joinToString(" ") { strings.getValue("card_right_turn_rule_$it") }.lowercase()
+            words.forEach { assertTrue("$folder: '$it' 없음 ($card)", it.lowercase() in card) }
+        }
+    }
+
+    @Test
+    fun withoutVoice_cardShowsTheFullSentence() {
+        assertEquals("FULL", GuidanceCards.bodyText(voiced = false, summary = { "SUMMARY" }, fullText = "FULL"))
+        assertEquals("SUMMARY", GuidanceCards.bodyText(voiced = true, summary = { "SUMMARY" }, fullText = "FULL"))
+        assertEquals("SUMMARY", GuidanceCards.bodyText(voiced = false, summary = { "SUMMARY" }, fullText = null))
+    }
+
+    @Test
+    fun schoolZonePicture_drawsANumberOnlyFromTheNaviLimit() {
+        // 제한 속도 안내만 그림에 숫자를 넘긴다(인자 0번). 접근 경고와 횡단보도 안내는 숫자를 모르므로 그리지 않는다.
+        assertEquals(0, GuidanceCards.of(GuidanceId.SCHOOL_ZONE_SPEED_LIMIT).sceneSpeedArg)
+        assertNull(GuidanceCards.of(GuidanceId.SCHOOL_ZONE_AHEAD).sceneSpeedArg)
+        assertNull(GuidanceCards.of(GuidanceId.SCHOOL_ZONE_CROSSWALK).sceneSpeedArg)
+    }
+
+    @Test
+    fun leftTurnPictures_matchTheirMeaning() {
+        // 녹색 좌회전 화살표 안내는 화살표 신호 그림, 좌회전 뒤 우측 진입 안내는 신호 없는 그림. 원형 녹색(비보호) 그림은 쓰지 않는다.
+        assertEquals(SceneKind.LEFT_TURN_ARROW, GuidanceCards.of(GuidanceId.LEFT_TURN_RULE).scene)
+        assertEquals(SceneKind.LEFT_TURN_KEEP_RIGHT, GuidanceCards.of(GuidanceId.RIGHT_SIDE_LEFT_TURN).scene)
+        GuidanceId.entries.forEach { assertTrue("$it", GuidanceCards.of(it).scene != SceneKind.UNPROTECTED_LEFT) }
     }
 }

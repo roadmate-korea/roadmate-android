@@ -21,7 +21,7 @@
     <string name="card_right_side_left_turn_body">La línea amarilla central queda a tu izquierda.</string>
     <string name="card_right_turn_rule_kicker">Giro a la derecha</string>
     <string name="card_right_turn_rule_headline">Con luz roja, detente primero en la línea.</string>
-    <string name="card_right_turn_rule_body">Si hay semáforo para girar a la derecha, gira solo con su flecha verde. Detente siempre ante los peatones.</string>
+    <string name="card_right_turn_rule_body">Luego gira despacio solo si no estorbas a los vehículos con luz verde. Detente ante cualquier peatón que cruce o vaya a cruzar.</string>
     <string name="card_left_turn_rule_kicker">Giro a la izquierda</string>
     <string name="card_left_turn_rule_headline">Gira con la flecha verde a la izquierda.</string>
     <string name="card_left_turn_rule_body">Con la señal de giro a la izquierda no protegido, puedes girar en verde después de ceder el paso.</string>

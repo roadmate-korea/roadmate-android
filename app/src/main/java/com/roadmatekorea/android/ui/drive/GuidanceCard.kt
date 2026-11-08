@@ -27,10 +27,10 @@ import com.roadmatekorea.android.ui.theme.RoadMate
 
 /**
  * 주행 중 안내 카드(Figma 05): 왼쪽 띠(일반 노랑, 안전 경고 빨강), 상황 그림, 머리글, 한 줄 지시, 한 줄 설명.
- * 문구는 지금 화면 언어(프로필 언어)의 리소스에서 꺼낸다.
+ * 문구는 지금 화면 언어(프로필 언어)의 리소스에서 꺼낸다. 음성을 쓸 수 없으면 설명 줄에 [fullText](전체 문장)를 보여 준다.
  */
 @Composable
-fun GuidanceCard(guidance: Guidance, modifier: Modifier = Modifier) {
+fun GuidanceCard(guidance: Guidance, fullText: String?, voiced: Boolean, modifier: Modifier = Modifier) {
     val c = RoadMate.colors
     val content = GuidanceCards.of(guidance.id)
     val res = LocalContext.current.resources
@@ -46,7 +46,11 @@ fun GuidanceCard(guidance: Guidance, modifier: Modifier = Modifier) {
     ) {
         Box(Modifier.width(14.dp).fillMaxHeight().background(accent))
         if (content.scene != null) {
-            Scene(content.scene, Modifier.padding(start = 40.dp, top = 40.dp, bottom = 40.dp).height(540.dp))
+            Scene(
+                content.scene,
+                Modifier.padding(start = 40.dp, top = 40.dp, bottom = 40.dp).height(540.dp),
+                speedLimitKmh = content.sceneSpeedArg?.let { guidance.args.getOrNull(it) },
+            )
         } else {
             Box(Modifier.padding(start = 56.dp).align(Alignment.CenterVertically)) {
                 RmIcon(content.icon, size = 120.dp, tint = if (content.safety) c.danger else c.ink)
@@ -61,7 +65,11 @@ fun GuidanceCard(guidance: Guidance, modifier: Modifier = Modifier) {
                 Text(res.getString(content.kicker, *args), style = RoadMate.type.titleS, color = if (content.safety) c.danger else c.inkSecondary)
             }
             Text(res.getString(content.headline, *args), style = RoadMate.type.headlineM, color = c.ink)
-            Text(res.getString(content.body, *args), style = RoadMate.type.bodyL, color = c.inkSecondary)
+            Text(
+                GuidanceCards.bodyText(voiced, { res.getString(content.body, *args) }, fullText),
+                style = RoadMate.type.bodyL,
+                color = c.inkSecondary,
+            )
         }
     }
 }

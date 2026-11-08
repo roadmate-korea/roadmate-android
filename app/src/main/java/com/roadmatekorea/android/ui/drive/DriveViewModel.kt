@@ -38,6 +38,8 @@ data class DriveUiState(
     val caption: String? = null,
     /** 지금 말하는(또는 자막으로 보여 주는) 안내. 카드의 그림과 요약 문구를 고르는 데 쓴다. */
     val guidance: Guidance? = null,
+    /** false면 음성 없이 자막만 나가는 중이다. 카드는 요약 대신 전체 문장을 보여 준다. */
+    val guidanceVoiced: Boolean = true,
     val history: List<String> = emptyList(),
     val speedLimitKmh: Int? = null,
     val voiceUnavailable: Boolean = false,
@@ -109,6 +111,7 @@ class DriveViewModel(
                 vehicle = vehicle,
                 caption = caption?.text,
                 guidance = caption?.guidance,
+                guidanceVoiced = caption?.voiced ?: true,
                 history = history,
                 speedLimitKmh = limit,
                 voiceUnavailable = voiceUnavailable,

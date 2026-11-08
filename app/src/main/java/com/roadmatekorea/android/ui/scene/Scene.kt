@@ -23,14 +23,15 @@ import com.roadmatekorea.android.ui.theme.RoadMateColors
 import com.roadmatekorea.android.ui.theme.RoadMateType
 
 /** 위에서 본 상황 그림. Figma의 scene 컴포넌트와 같은 그림이다. */
-enum class SceneKind { KEEP_RIGHT, RIGHT_TURN_RED, UNPROTECTED_LEFT, SCHOOL_ZONE, LANE_CHANGE_LHD }
+enum class SceneKind { KEEP_RIGHT, RIGHT_TURN_RED, UNPROTECTED_LEFT, LEFT_TURN_ARROW, LEFT_TURN_KEEP_RIGHT, SCHOOL_ZONE, LANE_CHANGE_LHD }
 
 /**
  * 상황 그림(640×480 비율). 내 차와 내 길은 노랑, 빨강은 멈출 곳과 안 되는 것, 흰색은 차선과 다른 차.
  * 장식이라 접근성 설명은 카드 글자가 맡는다.
+ * [speedLimitKmh]: 어린이보호구역 노면 숫자. NaviHelper 값을 알 때만 그린다(고정값이나 추정 금지).
  */
 @Composable
-fun Scene(kind: SceneKind, modifier: Modifier = Modifier) {
+fun Scene(kind: SceneKind, modifier: Modifier = Modifier, speedLimitKmh: Int? = null) {
     val colors = RoadMate.colors
     val measurer = rememberTextMeasurer()
     Canvas(modifier.aspectRatio(640f / 480f)) {
@@ -39,11 +40,14 @@ fun Scene(kind: SceneKind, modifier: Modifier = Modifier) {
             SceneKind.KEEP_RIGHT -> p.keepRight()
             SceneKind.RIGHT_TURN_RED -> p.rightTurnRed()
             SceneKind.UNPROTECTED_LEFT -> p.unprotectedLeft()
+            SceneKind.LEFT_TURN_ARROW -> p.leftTurnArrow()
+            SceneKind.LEFT_TURN_KEEP_RIGHT -> p.leftTurnKeepRight()
             SceneKind.SCHOOL_ZONE -> {
                 p.schoolZone()
-                // 노면 글자 "30"은 그림 표시일 뿐이다. 실제 제한 속도는 카드와 표지판이 NaviHelper 값으로 보여 준다.
-                val text = measurer.measure("30", TextStyle(fontFamily = RoadMateType.numberL.fontFamily, fontWeight = RoadMateType.numberL.fontWeight, fontSize = (56 * p.u / density).sp, color = colors.paint))
+                if (speedLimitKmh != null && speedLimitKmh > 0) {
+                val text = measurer.measure(speedLimitKmh.toString(), TextStyle(fontFamily = RoadMateType.numberL.fontFamily, fontWeight = RoadMateType.numberL.fontWeight, fontSize = (56 * p.u / density).sp, color = colors.paint))
                 drawText(text, topLeft = Offset(372 * p.u - text.size.width / 2f, 84 * p.u))
+                }
             }
             SceneKind.LANE_CHANGE_LHD -> p.laneChangeLhd()
         }
@@ -132,6 +136,15 @@ private class ScenePainter(private val d: DrawScope, private val c: RoadMateColo
         }
     }
 
+    /** 좌회전 화살표 신호: 빨강, 노랑은 꺼지고 세 번째 칸에 녹색 왼쪽 화살표 */
+    private fun arrowSignal() {
+        round(440f, 318f, 96f, 34f, 6f, c.onCenterline)
+        d.drawCircle(c.asphalt, 10 * u, Offset(458 * u, 335 * u))
+        d.drawCircle(c.asphalt, 10 * u, Offset(488 * u, 335 * u))
+        line(528f, 335f, 512f, 335f, c.go, 4f)
+        arrowHead(516f, 327f, 506f, 335f, 516f, 343f, c.go)
+    }
+
     private fun pedestrian(x: Float, y: Float) {
         d.drawCircle(c.onCenterline, 7 * u, Offset(x * u, y * u))
         d.drawCircle(c.paint, 7 * u, Offset(x * u, y * u), style = Stroke(2 * u))
@@ -160,6 +173,24 @@ private class ScenePainter(private val d: DrawScope, private val c: RoadMateColo
         round(283f, 72f, 24f, 12f, 3f, c.paint)
         line(295f, 104f, 295f, 128f, c.paint, 4f)
         path(c.paint, 4f) { m(285f, 122f); l(295f, 136f); l(305f, 122f) }
+    }
+
+    fun leftTurnArrow() {
+        intersection()
+        arrowSignal()
+        car(329f, 378f)
+        path(c.centerline, 8f) { m(346f, 370f); l(346f, 300f); cb(346f, 228f, 318f, 180f, 250f, 180f); l(44f, 180f) }
+        arrowHead(46f, 164f, 16f, 180f, 46f, 196f)
+    }
+
+    /** 좌회전한 뒤 새 길의 오른쪽(위쪽 차로)으로. 왼쪽(좌측통행 습관) 진입은 빨간 점선과 X. 신호는 그리지 않는다. */
+    fun leftTurnKeepRight() {
+        intersection()
+        car(329f, 378f)
+        path(c.danger, 5f, dash = true) { m(346f, 300f); cb(346f, 270f, 300f, 262f, 230f, 262f); l(120f, 262f) }
+        cross(78f, 248f)
+        path(c.centerline, 8f) { m(346f, 370f); l(346f, 300f); cb(346f, 228f, 318f, 180f, 250f, 180f); l(44f, 180f) }
+        arrowHead(46f, 164f, 16f, 180f, 46f, 196f)
     }
 
     private fun straightRoad(x: Float, w: Float, dashes: List<Float>) {

@@ -285,6 +285,33 @@ class GuidanceEngineTest {
     }
 
     @Test
+    fun cameraOfAnotherZoneWithin90s_withDifferentLimit_isAnnounced() {
+        val e = engine(experienced)
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), e.send(schoolCamera("A", 30)))
+        e.send(DriveEvent.CameraAlertsUpdated(emptyList()))
+        clock.advanceSeconds(20)
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(40))), e.send(schoolCamera("B", 40)))
+    }
+
+    @Test
+    fun skippedCamera_isNotPermanentlyExcluded() {
+        val e = engine(experienced)
+        e.send(schoolCamera("A", 30))
+        clock.advanceSeconds(20)
+        assertEquals(emptyList<Guidance>(), e.send(schoolCamera("B", 30)))
+        clock.advanceSeconds(71) // A 구역 시작에서 91초
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), e.send(schoolCamera("B", 30)))
+        assertEquals(emptyList<Guidance>(), e.send(schoolCamera("B", 30)))
+    }
+
+    @Test
+    fun cameraBeforeCautionPoint_bothWarningsGiven() {
+        val e = engine(experienced)
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), e.send(schoolCamera("A", 30, remain = 250)))
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_AHEAD, listOf(200))), e.send(schoolZone("sz", 200)))
+    }
+
+    @Test
     fun secondCameraInSameZone_doesNotRepeatLimit() {
         val e = engine(experienced)
         e.send(schoolCamera("A", 30))

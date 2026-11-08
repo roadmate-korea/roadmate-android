@@ -200,8 +200,8 @@ class GuidanceEngine(
         }
         val zone = activeSchoolZone()
         // 도로 제한으로 진입이 확인된 구역에서는 그 제한이 기준이다. 앞쪽 카메라의 다른 값으로 바꾸지 않는다.
-        // (도로 제한을 모르면 확인할 수 없으므로 다른 제한의 카메라를 새 구역으로 본다.)
-        if (zone?.entered == true && currentSpeedLimit != null) return emptyList()
+        // (카메라로만 추정한 구역이면 다른 제한의 카메라를 새 구역으로 본다.)
+        if (zone?.entry == Entry.ROAD) return emptyList()
         // 카메라에는 구역 정보가 없다. 같은 구역인지 알 수 없으므로, 방금 같은 제한 속도를 말한 경우에만 건너뛴다.
         // 건너뛴 카메라는 완료 처리하지 않는다(구역이 끝난 뒤 다시 들어오면 안내한다).
         val camera = schoolCameras
@@ -214,7 +214,8 @@ class GuidanceEngine(
             zoneLimitKmh = limit,
             cameraId = camera.id,
             lastEvidenceMs = clock.nowMillis(),
-            entered = enteredBy(limit),
+            // 도로 제한을 알면 그 값이 확인해 줄 때까지 기다리고(앞쪽 카메라일 수 있다), 모르면 카메라 값으로 추정한다
+            entry = entryFor(limit),
             overSpeedWarned = false,
         )
         return listOf(schoolZoneLimit(limit))
@@ -262,22 +263,26 @@ class GuidanceEngine(
             zoneLimit == null -> {
                 val before = zone.speedLimitBefore
                 if (before != null && kmh >= before) return emptyList()
-                schoolZone = zone.copy(zoneLimitKmh = kmh, entered = true, lastEvidenceMs = now)
+                schoolZone = zone.copy(zoneLimitKmh = kmh, entry = Entry.ROAD, lastEvidenceMs = now)
                 listOf(schoolZoneLimit(kmh))
             }
             kmh == zoneLimit -> {
-                schoolZone = zone.copy(entered = true, lastEvidenceMs = now)
-                if (zone.entered) emptyList() else checkOverSpeed()
+                schoolZone = zone.copy(entry = Entry.ROAD, lastEvidenceMs = now)
+                if (zone.entry == Entry.ROAD) emptyList() else checkOverSpeed()
             }
             kmh < zoneLimit -> {
-                schoolZone = zone.copy(zoneLimitKmh = kmh, entered = true, lastEvidenceMs = now, overSpeedWarned = false)
+                schoolZone = zone.copy(zoneLimitKmh = kmh, entry = Entry.ROAD, lastEvidenceMs = now, overSpeedWarned = false)
                 listOf(schoolZoneLimit(kmh))
             }
-            zone.entered -> {
+            zone.entry == Entry.ROAD -> {
                 schoolZone = null
                 emptyList()
             }
-            else -> emptyList()
+            // 카메라로만 추정했는데 실제 도로 제한이 더 높다: 아직 앞쪽 카메라에 다가가는 중이다(이탈이 아니다)
+            else -> {
+                if (zone.entry == Entry.CAMERA_ESTIMATE) schoolZone = zone.copy(entry = Entry.NONE, overSpeedWarned = false)
+                emptyList()
+            }
         }
     }
 
@@ -288,7 +293,7 @@ class GuidanceEngine(
     private fun schoolZoneLimit(limit: Int): Guidance {
         val zone = schoolZone
         val speed = vehicleSpeed
-        if (zone != null && zone.entered && speed != null && !isParked && isOver(speed, limit) &&
+        if (zone != null && zone.entry != Entry.NONE && speed != null && !isParked && isOver(speed, limit) &&
             cooldown.tryAcquire(GuidanceId.SCHOOL_ZONE_OVER_SPEED)
         ) {
             schoolZone = zone.copy(overSpeedWarned = true, lastOverWarnMs = clock.nowMillis())
@@ -312,7 +317,7 @@ class GuidanceEngine(
         val kmh = vehicleSpeed ?: return emptyList()
         val zone = activeSchoolZone() ?: return emptyList()
         val limit = zone.zoneLimitKmh ?: return emptyList()
-        if (!zone.entered) return emptyList()
+        if (zone.entry == Entry.NONE) return emptyList()
         if (kmh <= limit) {
             if (zone.overSpeedWarned) schoolZone = zone.copy(overSpeedWarned = false)
             return emptyList()
@@ -327,14 +332,30 @@ class GuidanceEngine(
 
     private fun isOver(speed: Int, limit: Int) = speed > limit + OVER_SPEED_MARGIN_KMH
 
-    /** 지금 도로 제한을 모르거나 이미 [limit] 이하면 구역 안으로 본다. */
-    private fun enteredBy(limit: Int): Boolean = currentSpeedLimit.let { it == null || it <= limit }
+    /**
+     * 구역 제한 [limit]을 카메라로 알게 됐거나 구역을 되살릴 때의 진입 상태.
+     * 지금 도로 제한이 같으면 도로가 확인해 준 것, 모르면 카메라 값으로 추정, 다르면 도로 제한이 확인해 줄 때까지 기다린다
+     * (더 높으면 앞쪽 카메라에 다가가는 중, 더 낮으면 다음 도로 제한에서 그 값으로 바뀐다).
+     */
+    private fun entryFor(limit: Int): Entry = when (currentSpeedLimit) {
+        null -> Entry.CAMERA_ESTIMATE
+        limit -> Entry.ROAD
+        else -> Entry.NONE
+    }
+
+    /** 지금 어린이보호구역에서 제한보다 빠른가. 아니면 아직 말하지 않은 과속 경고를 버린다(DriveSession). */
+    fun overSpeedNow(): Boolean {
+        val zone = activeSchoolZone() ?: return false
+        val limit = zone.zoneLimitKmh ?: return false
+        val speed = vehicleSpeed ?: return false
+        return zone.entry != Entry.NONE && !isParked && isOver(speed, limit)
+    }
 
     /** 구역 근거를 다시 받았다. 만료됐던 구역이면 진입 여부를 지금 도로 제한으로 다시 정하고 경고 상태를 지운다. */
     private fun revive(zone: SchoolZoneContext): SchoolZoneContext {
         val now = clock.nowMillis()
         if (activeSchoolZone() != null) return zone.copy(lastEvidenceMs = now)
-        return zone.copy(lastEvidenceMs = now, entered = zone.zoneLimitKmh?.let(::enteredBy) ?: false, overSpeedWarned = false)
+        return zone.copy(lastEvidenceMs = now, entry = zone.zoneLimitKmh?.let(::entryFor) ?: Entry.NONE, overSpeedWarned = false)
     }
 
     /**
@@ -350,6 +371,9 @@ class GuidanceEngine(
         if (cooldown.tryAcquire(id)) add(Guidance(id))
     }
 
+    /** 구역 안에 있는지: 모름(접근 중), 카메라로 추정(도로 제한 정보 없음), 도로 제한으로 확인. 과속 경고는 NONE이 아닐 때만. */
+    private enum class Entry { NONE, CAMERA_ESTIMATE, ROAD }
+
     private data class SchoolZoneContext(
         /** 마지막으로 구역 근거를 받은 시각 */
         val lastEvidenceMs: Long,
@@ -360,8 +384,7 @@ class GuidanceEngine(
         val cameraId: String? = null,
         /** 지금 구역 제한 속도(항상 이미 말한 값). null이면 아직 모름 */
         val zoneLimitKmh: Int? = null,
-        /** 도로 제한이 구역 제한 이하로 들어와 구역 안에 있음이 확인됨 */
-        val entered: Boolean = false,
+        val entry: Entry = Entry.NONE,
         /** 지금 제한을 넘은 상태로 이미 경고했는지. 제한 아래로 내려오면 false로 돌아간다. */
         val overSpeedWarned: Boolean = false,
         val lastOverWarnMs: Long = 0,

@@ -5,6 +5,7 @@ import com.roadmatekorea.android.rules.Clock
 import com.roadmatekorea.android.rules.DriveEvent
 import com.roadmatekorea.android.rules.Guidance
 import com.roadmatekorea.android.rules.GuidanceEngine
+import com.roadmatekorea.android.rules.GuidanceId
 import com.roadmatekorea.android.voice.GuidanceSpeaker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -52,7 +53,10 @@ class DriveSession(
     private fun onEvent(event: DriveEvent) {
         if (event is DriveEvent.SpeedLimitChanged) _speedLimitKmh.value = event.kmh.takeIf { it > 0 }
         if (event is DriveEvent.VehicleSpeedChanged) _speedKmh.value = event.kmh
-        engine.onEvent(event).forEach { guidance ->
+        val out = engine.onEvent(event)
+        // 감속하거나 구역을 벗어났으면 아직 말하지 않은 과속 경고를 버린다(지난 속도를 "지금"이라고 말하지 않게)
+        if (!engine.overSpeedNow()) speaker.drop(GuidanceId.SCHOOL_ZONE_OVER_SPEED)
+        out.forEach { guidance ->
             val text = textOf(guidance)
             speaker.say(guidance, text, locale)
             _history.update { (listOf(text) + it).take(HISTORY_SIZE) }

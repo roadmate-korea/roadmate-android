@@ -234,6 +234,32 @@ class SchoolZoneSpeedTest {
     }
 
     @Test
+    fun firstCameraWithHigherLimitThanTheKnownRoad_usesTheRoadLimitOnceItConfirms() {
+        val e = GuidanceEngine(Personas.CARLOS, clock).also {
+            it.onEvent(DriveEvent.GearChanged(Gear.DRIVE)); it.onEvent(DriveEvent.SpeedLimitChanged(30)); it.speed(25)
+        }
+        assertEquals(
+            listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(40))),
+            e.onEvent(DriveEvent.CameraAlertsUpdated(listOf(CameraAlert("c40", CameraKind.SCHOOL_ZONE, 40, 100)))),
+        )
+        // 카메라 값(40)으로는 판정하지 않는다
+        assertTrue(e.speed(38).isEmpty())
+        // 도로 제한(30)이 다시 오면 그 값이 구역 제한이 되고 지금 속도로 판단한다
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(38, 30))), e.onEvent(DriveEvent.SpeedLimitChanged(30)))
+    }
+
+    @Test
+    fun cameraBeforeAnyRoadLimit_thenAHigherRoadLimit_isStillApproach_notExit() {
+        val e = GuidanceEngine(Personas.CARLOS, clock).also { it.onEvent(DriveEvent.GearChanged(Gear.DRIVE)); it.speed(25) }
+        val cam = { m: Int -> DriveEvent.CameraAlertsUpdated(listOf(CameraAlert("cam", CameraKind.SCHOOL_ZONE, 30, m))) }
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), e.onEvent(cam(200)))
+        assertTrue(e.onEvent(DriveEvent.SpeedLimitChanged(50)).isEmpty())
+        e.onEvent(cam(80))
+        assertTrue(e.onEvent(DriveEvent.SpeedLimitChanged(30)).isEmpty())
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(45, 30))), e.speed(45))
+    }
+
+    @Test
     fun overSpeed_isSafetyPriority() {
         assertEquals(Priority.SAFETY, SCHOOL_ZONE_OVER_SPEED.priority)
     }

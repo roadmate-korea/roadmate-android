@@ -6,22 +6,16 @@
         필요한 것만 선언하고, 새 권한을 추가하면 README의 권한 표도 함께 고친다.
     -->
 
-    <!-- Vehicle SDK: 방향지시등(TurnSignal), 기어(Gear) -->
+    <!-- Vehicle SDK: 방향지시등(TurnSignal) CAR_LIGHTS, 기어(Gear) CAR_DRIVE. SDK의 api/Gear, api/TurnSignal에 적힌 권한 -->
     <uses-permission android:name="pleos.car.permission.CAR_LIGHTS" />
-    <uses-permission android:name="pleos.car.permission.CAR_POWERTRAIN" />
+    <uses-permission android:name="pleos.car.permission.CAR_DRIVE" />
 
     <!-- NaviHelper SDK: 경로 요청, 주행 중 안내 이벤트 -->
     <uses-permission android:name="pleos.car.permission.NAVI_ROUTE" />
     <uses-permission android:name="pleos.car.permission.NAVI_ROUTE_SEARCH" />
 
-    <!-- FusedLocation SDK -->
-    <uses-permission android:name="pleos.car.permission.FUSED_LOCATION" />
-
     <!-- TextToSpeech SDK: 음성 안내. 없으면 initialize에서 SecurityException (에뮬레이터 2.1.0에서 확인, normal 권한) -->
     <uses-permission android:name="pleos.car.permission.TTS_SERVICE" />
-
-    <!-- SpeechToText SDK (정차 중 통역, 2단계) -->
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
         android:name=".RoadMateApplication"

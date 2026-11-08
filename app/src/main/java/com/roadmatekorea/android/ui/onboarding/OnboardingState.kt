@@ -18,10 +18,12 @@ data class OnboardingState(
     val saving: Boolean = false,
     /** 마지막 저장이 실패함. 고른 값은 그대로 두고 다시 시도할 수 있다. */
     val saveFailed: Boolean = false,
+    /** 저장이 끝남. 화면은 이 값을 보고 주행 화면으로 넘어간다(화면이 다시 만들어져도 유지). */
+    val saved: Boolean = false,
 ) {
     enum class Page { LANGUAGE, DRIVING }
 
-    val canStart: Boolean get() = language != null && country != null && experience != null && !saving
+    val canStart: Boolean get() = language != null && country != null && experience != null && !saving && !saved
 
     fun selectLanguage(language: AppLanguage) = copy(language = language, page = Page.DRIVING)
 

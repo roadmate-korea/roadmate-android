@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -66,6 +67,8 @@ fun RoadMateApp(store: ProfileStore) {
 private fun Onboarding(store: ProfileStore, existing: DriverProfile?, session: Int, onDone: () -> Unit) {
     val vm: OnboardingViewModel = viewModel(key = "onboarding-$session") { OnboardingViewModel(store, existing) }
     val state by vm.state.collectAsStateWithLifecycle()
+    // 저장 완료는 ViewModel 상태로 받는다. 저장 중 Activity가 다시 만들어져도 새 화면이 이 값을 본다.
+    LaunchedEffect(state.saved) { if (state.saved) onDone() }
     OnboardingScreen(
         state = state,
         languages = OnboardingOptions.languages(includeKorean = BuildConfig.DEBUG),
@@ -73,6 +76,6 @@ private fun Onboarding(store: ProfileStore, existing: DriverProfile?, session: I
         onCountry = vm::selectCountry,
         onExperience = vm::selectExperience,
         onBack = vm::back,
-        onStart = { vm.start { onDone() } },
+        onStart = vm::start,
     )
 }

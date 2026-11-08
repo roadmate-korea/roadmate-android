@@ -41,10 +41,21 @@ class SchoolZoneSpeedTest {
     }
 
     @Test
-    fun cameraLimit_alsoUsesSpeed() {
+    fun cameraAhead_saysLimitOnly_thenWarnsWhenTheRoadLimitConfirmsEntry() {
         val e = engine()
         e.speed(41)
         e.enterZone()
+        // 지금 도로는 아직 50이라 "지금 41, 제한 30"은 틀린 말이다. 앞쪽 제한만 알린다.
+        val out = e.onEvent(DriveEvent.CameraAlertsUpdated(listOf(CameraAlert("c", CameraKind.SCHOOL_ZONE, 30, 100))))
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), out)
+        // 도로 제한이 30이 되는 순간(진입) 지금 속도로 판단
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(41, 30))), e.onEvent(DriveEvent.SpeedLimitChanged(30)))
+    }
+
+    @Test
+    fun cameraOnly_withoutRoadLimit_usesTheCameraLimit() {
+        val e = GuidanceEngine(Personas.CARLOS, clock).also { it.onEvent(DriveEvent.GearChanged(Gear.DRIVE)) }
+        e.speed(41)
         val out = e.onEvent(DriveEvent.CameraAlertsUpdated(listOf(CameraAlert("c", CameraKind.SCHOOL_ZONE, 30, 100))))
         assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(41, 30))), out)
     }
@@ -65,15 +76,19 @@ class SchoolZoneSpeedTest {
     }
 
     @Test
-    fun speedingUpInsideZone_warnsOnce_untilBackUnderLimit() {
+    fun speedingUpInsideZone_warnsAtOnce_thenEvery30sWhileStillOver() {
         val e = engine().also { it.speed(25); it.enterZone(); it.onEvent(DriveEvent.SpeedLimitChanged(30)) }
         assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(38, 30))), e.speed(38))
-        // 계속 빠른 동안에는 다시 말하지 않는다
-        clock.advanceSeconds(30)
+        // 계속 빠르면 30초 동안은 다시 말하지 않고, 30초가 지나면 지금 속도로 다시 경고한다
+        clock.advanceSeconds(10)
         assertTrue(e.speed(40).isEmpty())
+        clock.advanceSeconds(19)
         assertTrue(e.speed(36).isEmpty())
-        // 제한 아래로 줄였다가 다시 넘으면 다시 경고
+        clock.advanceSeconds(1)
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(37, 30))), e.speed(37))
+        // 제한 아래로 줄였다가 다시 넘으면 최소 간격(20초) 뒤 다시 경고
         assertTrue(e.speed(29).isEmpty())
+        clock.advanceSeconds(20)
         assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(35, 30))), e.speed(35))
     }
 
@@ -175,6 +190,47 @@ class SchoolZoneSpeedTest {
         assertTrue(e.speed(38).isEmpty())
         clock.advanceSeconds(16)
         assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(38, 30))), e.speed(38))
+    }
+
+    @Test
+    fun laterCameraWithAnotherLimit_doesNotOverrideTheConfirmedRoadLimit() {
+        val e = engine().also { it.speed(25); it.enterZone(); it.onEvent(DriveEvent.SpeedLimitChanged(40)); it.onEvent(DriveEvent.SpeedLimitChanged(30)) }
+        assertTrue(e.onEvent(DriveEvent.CameraAlertsUpdated(listOf(CameraAlert("c40", CameraKind.SCHOOL_ZONE, 40, 100)))).isEmpty())
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(38, 30))), e.speed(38))
+    }
+
+    @Test
+    fun lateApproachPoint_keepsTheLimitLearnedFromCameraAndRoad() {
+        val e = engine().also { it.speed(25) }
+        val cam = { m: Int -> DriveEvent.CameraAlertsUpdated(listOf(CameraAlert("cam", CameraKind.SCHOOL_ZONE, 30, m))) }
+        e.onEvent(cam(200))
+        e.onEvent(DriveEvent.SpeedLimitChanged(30))
+        e.onEvent(DriveEvent.CautionPointsUpdated(listOf(CautionPoint("z", CautionKind.SCHOOL_ZONE, 100))))
+        e.onEvent(cam(80))
+        e.onEvent(DriveEvent.SpeedLimitChanged(30))
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(45, 30))), e.speed(45))
+    }
+
+    @Test
+    fun sameCameraBackAfterExpiry_revivesWatchingSilently() {
+        val e = engine().also { it.speed(25) }
+        val cam = { m: Int -> DriveEvent.CameraAlertsUpdated(listOf(CameraAlert("cam", CameraKind.SCHOOL_ZONE, 30, m))) }
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), e.onEvent(cam(200)))
+        clock.advanceSeconds(91)
+        assertTrue(e.onEvent(cam(80)).isEmpty())
+        e.onEvent(DriveEvent.SpeedLimitChanged(30))
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(45, 30))), e.speed(45))
+    }
+
+    @Test
+    fun overSpeedWarningLostInTheVoiceQueue_isRebuiltFromTheCurrentSpeed() {
+        // 음성 큐가 오래 기다린 경고를 버려도, 계속 빠르면 30초 안에 지금 속도로 다시 나온다
+        val e = engine().also { it.speed(25); it.enterZone(); it.onEvent(DriveEvent.SpeedLimitChanged(30)) }
+        assertEquals(1, e.speed(45).size)
+        clock.advanceSeconds(16)
+        assertTrue(e.speed(45).isEmpty())
+        clock.advanceSeconds(14)
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(45, 30))), e.speed(45))
     }
 
     @Test

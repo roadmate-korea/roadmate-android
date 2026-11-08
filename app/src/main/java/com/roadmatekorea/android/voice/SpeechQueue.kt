@@ -2,6 +2,7 @@ package com.roadmatekorea.android.voice
 
 import com.roadmatekorea.android.rules.Clock
 import com.roadmatekorea.android.rules.Guidance
+import com.roadmatekorea.android.rules.GuidanceId
 import com.roadmatekorea.android.rules.Priority
 import java.util.Locale
 
@@ -47,6 +48,11 @@ class SpeechQueue(private val clock: Clock) {
     }
 
     fun clear() = items.clear()
+
+    /** 아직 말하지 않은 [id] 안내를 버린다(상황이 풀려 더는 맞지 않을 때). */
+    fun remove(id: GuidanceId) {
+        items.removeAll { it.guidance.id == id }
+    }
 
     private fun dropExpired() {
         val now = clock.nowMillis()

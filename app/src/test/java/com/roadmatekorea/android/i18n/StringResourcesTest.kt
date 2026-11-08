@@ -109,12 +109,13 @@ class StringResourcesTest {
 
     @Test
     fun rightTurnRule_putsDedicatedRightTurnSignalFirst() {
-        // 우회전 전용 신호등이 있으면 적색에서 정지 후 진행도 안 된다(시행규칙 별표2). 전용 신호 조건이 빠지면 안 된다.
+        // 우회전 전용 신호등이 있으면 적색에서 정지 후 진행도 안 된다(시행규칙 별표2 적색 제3호).
+        // 전용 신호가 없을 때 적색 우회전은 정지 후, 신호에 따라 진행하는 차를 방해하지 않을 때만 허용된다(적색 제2호).
         val mustMention = mapOf(
-            AppLanguage.EN to listOf("right-turn signal", "green arrow", "red light", "stop line"),
-            AppLanguage.FR to listOf("feu pour tourner à droite", "flèche verte", "feu rouge", "ligne d'arrêt"),
-            AppLanguage.ES to listOf("semáforo para girar a la derecha", "flecha verde", "luz roja", "línea de detención"),
-            AppLanguage.KO to listOf("우회전 신호등", "녹색 화살표", "빨간불", "정지선"),
+            AppLanguage.EN to listOf("right-turn signal", "green arrow", "red light", "stop line", "not block traffic"),
+            AppLanguage.FR to listOf("feu pour tourner à droite", "flèche verte", "feu rouge", "ligne d'arrêt", "sans gêner les véhicules"),
+            AppLanguage.ES to listOf("semáforo para girar a la derecha", "flecha verde", "luz roja", "línea de detención", "no estorbas a los vehículos"),
+            AppLanguage.KO to listOf("우회전 신호등", "녹색 화살표", "빨간불", "정지선", "방해하지 않을 때만"),
         )
         mustMention.forEach { (language, phrases) ->
             val text = load(language).getValue(keyOf(GuidanceId.RIGHT_TURN_RULE))
@@ -143,10 +144,11 @@ class StringResourcesTest {
     }
 
     @Test
-    fun locales_matchTtsLocaleMapping() {
+    fun locales_useVariantsSupportedByPleosOnDeviceTts() {
         assertEquals(Locale.US, AppLocales.localeOf(AppLanguage.EN))
-        assertEquals(Locale.FRANCE, AppLocales.localeOf(AppLanguage.FR))
-        assertEquals(Locale("es", "ES"), AppLocales.localeOf(AppLanguage.ES))
+        // Pleos 온디바이스 TTS는 fr-FR, es-ES, en-GB에서 ON_DEVICE_ENGINE_ERROR. fr-CA, es-US는 재생됨(에뮬레이터 2.1.0, 2026-11-08)
+        assertEquals(Locale.CANADA_FRENCH, AppLocales.localeOf(AppLanguage.FR))
+        assertEquals(Locale.forLanguageTag("es-US"), AppLocales.localeOf(AppLanguage.ES))
         assertEquals(Locale.KOREA, AppLocales.localeOf(AppLanguage.KO))
     }
 }

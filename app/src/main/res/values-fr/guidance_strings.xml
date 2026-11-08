@@ -9,7 +9,7 @@
     <string name="guidance_lhd_mirror_check">Avant de tourner ou de changer de voie, vérifiez vos rétroviseurs et regardez par-dessus votre épaule. Le côté passager est maintenant à votre droite.</string>
     <string name="guidance_right_side_left_turn">Après avoir tourné à gauche, restez sur le côté droit de la route où vous entrez.</string>
 
-    <string name="guidance_right_turn_rule">Virage à droite. S\'il y a un feu pour tourner à droite, tournez uniquement avec sa flèche verte. Sinon, au feu rouge, arrêtez-vous d\'abord à la ligne d\'arrêt, même si personne ne traverse, puis tournez lentement. Arrêtez-vous toujours pour tout piéton qui traverse ou s\'apprête à traverser.</string>
+    <string name="guidance_right_turn_rule">Virage à droite. S\'il y a un feu pour tourner à droite, tournez uniquement avec sa flèche verte. Sinon, au feu rouge, arrêtez-vous d\'abord à la ligne d\'arrêt, même si personne ne traverse, puis tournez lentement seulement sans gêner les véhicules qui passent au vert. Arrêtez-vous toujours pour tout piéton qui traverse ou s\'apprête à traverser.</string>
     <string name="guidance_left_turn_rule">Virage à gauche. Aux feux en Corée, tournez à gauche uniquement avec la flèche verte. Là où un panneau de virage à gauche non protégé est installé, vous pouvez aussi tourner au feu vert, après avoir cédé le passage aux véhicules en face et aux piétons.</string>
 
     <string name="guidance_school_zone_ahead">Zone scolaire dans %1$d mètres. Ralentissez et faites attention aux enfants.</string>

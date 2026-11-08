@@ -9,7 +9,7 @@
     <string name="guidance_lhd_mirror_check">회전하거나 차로를 바꾸기 전에 거울을 보고 고개를 돌려 확인하세요. 이제 조수석은 오른쪽에 있습니다.</string>
     <string name="guidance_right_side_left_turn">좌회전한 뒤에는 들어가는 도로의 오른쪽 차로로 진입하세요.</string>
 
-    <string name="guidance_right_turn_rule">우회전합니다. 앞 신호가 빨간불이면 건너는 사람이 없어도 정지선 앞에서 먼저 멈추세요. 그다음 천천히 돌고, 건너고 있거나 건너려는 보행자가 있으면 멈추세요.</string>
+    <string name="guidance_right_turn_rule">우회전합니다. 우회전 신호등이 있으면 녹색 화살표일 때만 도세요. 없으면 빨간불에서 건너는 사람이 없어도 정지선 앞에서 먼저 멈춘 뒤 천천히 도세요. 건너고 있거나 건너려는 보행자가 있으면 항상 멈추세요.</string>
     <string name="guidance_left_turn_rule">좌회전합니다. 한국의 신호 교차로에서는 녹색 좌회전 화살표가 켜졌을 때만 좌회전합니다. 비보호 좌회전 표지가 있는 곳에서는 녹색 신호에도 좌회전할 수 있지만, 마주 오는 차와 보행자에게 먼저 양보하세요.</string>
 
     <string name="guidance_school_zone_ahead">%1$d미터 앞 어린이보호구역입니다. 속도를 줄이고 어린이를 살피세요.</string>

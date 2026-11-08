@@ -108,6 +108,22 @@ class StringResourcesTest {
     }
 
     @Test
+    fun rightTurnRule_putsDedicatedRightTurnSignalFirst() {
+        // 우회전 전용 신호등이 있으면 적색에서 정지 후 진행도 안 된다(시행규칙 별표2). 전용 신호 조건이 빠지면 안 된다.
+        val mustMention = mapOf(
+            AppLanguage.EN to listOf("right-turn signal", "green arrow", "red light", "stop line"),
+            AppLanguage.FR to listOf("feu pour tourner à droite", "flèche verte", "feu rouge", "ligne d'arrêt"),
+            AppLanguage.ES to listOf("semáforo para girar a la derecha", "flecha verde", "luz roja", "línea de detención"),
+            AppLanguage.KO to listOf("우회전 신호등", "녹색 화살표", "빨간불", "정지선"),
+        )
+        mustMention.forEach { (language, phrases) ->
+            val text = load(language).getValue(keyOf(GuidanceId.RIGHT_TURN_RULE))
+            phrases.forEach { assertTrue("$language 우회전 문장에 '$it' 없음", text.contains(it)) }
+            assertTrue("$language: 전용 신호 안내가 적색 안내보다 먼저", text.indexOf(phrases[0]) < text.indexOf(phrases[2]))
+        }
+    }
+
+    @Test
     fun english_formatsLikeAndroid() {
         val text = load(AppLanguage.EN).getValue(keyOf(GuidanceId.SCHOOL_ZONE_SPEED_LIMIT))
         assertEquals("School zone. The speed limit is 30 kilometers per hour.", String.format(Locale.US, text, 30))

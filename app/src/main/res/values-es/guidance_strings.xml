@@ -12,7 +12,7 @@
     <string name="guidance_lhd_mirror_check">Antes de girar o cambiar de carril, revisa los espejos y mira por encima del hombro. El lado del pasajero ahora está a tu derecha.</string>
     <string name="guidance_right_side_left_turn">Después de girar a la izquierda, mantente en el lado derecho de la vía a la que entras.</string>
 
-    <string name="guidance_right_turn_rule">Giro a la derecha. Si el semáforo de enfrente está en rojo, detente primero en la línea de detención, aunque nadie esté cruzando. Luego gira despacio y detente ante cualquier peatón que cruce o vaya a cruzar.</string>
+    <string name="guidance_right_turn_rule">Giro a la derecha. Si hay un semáforo para girar a la derecha, gira solo con su flecha verde. Si no lo hay, con luz roja, detente primero en la línea de detención, aunque nadie esté cruzando, y luego gira despacio. Detente siempre ante cualquier peatón que cruce o vaya a cruzar.</string>
     <string name="guidance_left_turn_rule">Giro a la izquierda. En los semáforos de Corea, gira a la izquierda solo con la flecha verde. Donde haya una señal de giro a la izquierda no protegido, también puedes girar con luz verde, después de ceder el paso a los vehículos que vienen de frente y a los peatones.</string>
 
     <string name="guidance_school_zone_ahead">Zona escolar a %1$d metros. Reduce la velocidad y presta atención a los niños.</string>

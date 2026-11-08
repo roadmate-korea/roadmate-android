@@ -13,7 +13,7 @@
     <string name="guidance_lhd_mirror_check">Before turning or changing lanes, check your mirrors and look over your shoulder. The passenger side is now on your right.</string>
     <string name="guidance_right_side_left_turn">After turning left, keep to the right side of the road you enter.</string>
 
-    <string name="guidance_right_turn_rule">Turning right. If the light ahead is red, stop at the stop line first, even if no one is crossing. Then turn slowly, and stop for anyone crossing or about to cross.</string>
+    <string name="guidance_right_turn_rule">Turning right. If there is a right-turn signal, turn only on its green arrow. Otherwise, on a red light, stop at the stop line first, even if no one is crossing, then turn slowly. Always stop for anyone crossing or about to cross.</string>
     <string name="guidance_left_turn_rule">Turning left. At traffic lights in Korea, turn left only on a green left arrow. Where an unprotected left turn sign is posted, you may also turn on a green light, after giving way to oncoming traffic and pedestrians.</string>
 
     <string name="guidance_school_zone_ahead">School zone in %1$d meters. Slow down and watch for children.</string>

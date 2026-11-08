@@ -277,6 +277,40 @@ class SchoolZoneSpeedTest {
     }
 
     @Test
+    fun reentry_roadLimitFirst_thenSamePointAndCamera_restartsWatching() {
+        val e = engine().also { it.speed(25) }
+        val point = DriveEvent.CautionPointsUpdated(listOf(CautionPoint("zoneA", CautionKind.SCHOOL_ZONE, 100)))
+        val cam = DriveEvent.CameraAlertsUpdated(listOf(CameraAlert("camA", CameraKind.SCHOOL_ZONE, 30, 80)))
+        e.onEvent(point); e.onEvent(cam); e.onEvent(DriveEvent.SpeedLimitChanged(30))
+        assertEquals(1, e.speed(45).size)
+        e.speed(25); e.onEvent(DriveEvent.SpeedLimitChanged(50)); clock.advanceSeconds(60)
+        // 재진입: 도로 제한이 먼저, 그다음 같은 지점과 같은 카메라
+        e.onEvent(DriveEvent.SpeedLimitChanged(30))
+        assertTrue(e.onEvent(point).isEmpty())
+        assertTrue(e.onEvent(cam).isEmpty())
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(45, 30))), e.speed(45))
+    }
+
+    /** 도로 제한, 접근 지점, 카메라가 어떤 순서로 와도(첫 방문, 재진입) 구역 안 과속을 놓치지 않는다. */
+    @Test
+    fun anyOrderOfRoadLimitPointAndCamera_firstVisitAndReentry_warns() {
+        val point = DriveEvent.CautionPointsUpdated(listOf(CautionPoint("zoneA", CautionKind.SCHOOL_ZONE, 100)))
+        val cam = DriveEvent.CameraAlertsUpdated(listOf(CameraAlert("camA", CameraKind.SCHOOL_ZONE, 30, 80)))
+        val road = DriveEvent.SpeedLimitChanged(30)
+        val signals = listOf(road, point, cam)
+        val orders = listOf(listOf(0, 1, 2), listOf(0, 2, 1), listOf(1, 0, 2), listOf(1, 2, 0), listOf(2, 0, 1), listOf(2, 1, 0))
+        for (first in orders) for (again in orders) {
+            val e = engine().also { it.speed(25) }
+            first.forEach { e.onEvent(signals[it]) }
+            assertEquals("first $first", listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(45, 30))), e.speed(45))
+            e.speed(25); e.onEvent(DriveEvent.SpeedLimitChanged(50)); clock.advanceSeconds(60)
+            again.forEach { e.onEvent(signals[it]) }
+            assertEquals("first $first, again $again", listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(45, 30))), e.speed(45))
+            clock.advanceSeconds(120)
+        }
+    }
+
+    @Test
     fun nextZonePointArrivesBeforeLeavingThePreviousZone_nextZoneIsStillWatched() {
         val e = engine().also { it.speed(25); it.enterZone(); it.onEvent(DriveEvent.SpeedLimitChanged(30)) }
         val pointB = { m: Int -> DriveEvent.CautionPointsUpdated(listOf(CautionPoint("zoneB", CautionKind.SCHOOL_ZONE, m))) }

@@ -207,16 +207,19 @@ class GuidanceEngine(
             else zone.cameraId != null && schoolCameras.any { it.id == zone.cameraId }
             if (evidence) schoolZone = revive(zone)
         }
-        if (activeSchoolZone() == null && schoolCameras.none { it.id !in announcedCameraIds }) {
-            // 이미 안내한 카메라가 다시 왔는데 지금 감시 중인 구역이 없다: 다시 말하지 않고 감시만 시작한다
-            schoolCameras.minByOrNull { it.remainMeters }?.let { camera ->
-                schoolZone = SchoolZoneContext(clock.nowMillis(), currentSpeedLimit).copy(
-                    zoneLimitKmh = camera.speedLimitKmh,
-                    cameraId = camera.id,
-                    entry = entryFor(camera.speedLimitKmh),
-                )
-            }
-            return emptyList()
+        val known = schoolCameras.filter { it.id in announcedCameraIds }.minByOrNull { it.remainMeters }
+        val current = activeSchoolZone()
+        if (known != null && schoolCameras.none { it.id !in announcedCameraIds } && current?.zoneLimitKmh == null) {
+            // 이미 안내한 카메라가 다시 왔는데 감시 중인 구역이 없거나, 접근 지점만 알고 제한을 아직 모른다
+            // (같은 구역 재진입 등): 다시 말하지 않고 그 카메라 제한으로 감시를 시작하고 지금 속도로 판단한다
+            schoolZone = (current ?: SchoolZoneContext(clock.nowMillis(), currentSpeedLimit)).copy(
+                zoneLimitKmh = known.speedLimitKmh,
+                cameraId = known.id,
+                lastEvidenceMs = clock.nowMillis(),
+                entry = entryFor(known.speedLimitKmh),
+                overSpeedWarned = false,
+            )
+            return checkOverSpeed()
         }
         val zone = activeSchoolZone()
         // 도로 제한으로 진입이 확인된 구역에서는 그 제한이 기준이다. 앞쪽 카메라의 다른 값으로 바꾸지 않는다.

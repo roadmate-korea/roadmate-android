@@ -91,6 +91,26 @@ class OnboardingViewModelTest {
     }
 
     @Test
+    fun choicesCannotChangeWhileSaving_soSavedValueMatchesScreen() = runTest(dispatcher) {
+        val store = FakeStore()
+        val vm = OnboardingViewModel(store, existing = null)
+        vm.selectLanguage(AppLanguage.EN)
+        vm.selectCountry(DrivingCountry.JP)
+        vm.selectExperience(KoreaExperience.FIRST_TIME_LEFT_HAND_DRIVE)
+        vm.start()
+        // 저장 중 선택 변경 시도
+        vm.selectExperience(KoreaExperience.DROVE_IN_KOREA)
+        vm.selectCountry(DrivingCountry.US)
+        vm.back()
+        vm.selectLanguage(AppLanguage.FR)
+        assertEquals(Personas.NAKAMURA, vm.state.value.toProfile())
+        assertEquals(OnboardingState.Page.DRIVING, vm.state.value.page)
+        advanceUntilIdle()
+        assertEquals(listOf(Personas.NAKAMURA), store.saved)
+        assertEquals(Personas.NAKAMURA, vm.state.value.toProfile())
+    }
+
+    @Test
     fun start_ignoredWhileSaving_orIncomplete() = runTest(dispatcher) {
         val store = FakeStore()
         val vm = OnboardingViewModel(store, existing = null)

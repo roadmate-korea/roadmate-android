@@ -29,6 +29,7 @@ import com.roadmatekorea.android.ui.components.GuidanceCaptionBar
 import com.roadmatekorea.android.ui.components.ReadOnlyOverlay
 import com.roadmatekorea.android.ui.drive.DriveScreen
 import com.roadmatekorea.android.ui.drive.DriveViewModel
+import com.roadmatekorea.android.ui.drive.createDriveViewModel
 import com.roadmatekorea.android.ui.onboarding.OnboardingOptions
 import com.roadmatekorea.android.ui.onboarding.OnboardingScreen
 import com.roadmatekorea.android.ui.onboarding.OnboardingState
@@ -44,7 +45,7 @@ import com.roadmatekorea.android.ui.onboarding.OnboardingViewModel
 @Composable
 fun RoadMateApp(store: ProfileStore) {
     val app = LocalContext.current.applicationContext as RoadMateApplication
-    val driveVm: DriveViewModel = viewModel { DriveViewModel(app, app.signalHub) }
+    val driveVm: DriveViewModel = viewModel { createDriveViewModel(app) }
     val vehicle by driveVm.vehicle.collectAsStateWithLifecycle()
 
     val read by remember(store) { store.profile }.collectAsStateWithLifecycle(initialValue = null)
@@ -89,9 +90,10 @@ fun RoadMateApp(store: ProfileStore) {
                     driveVm.enterDrive(profile, announceNow = announceOnEnter)
                     announceOnEnter = false
                 }
-                ProvideLanguage(profile.language) {
+                // 시연 중에는 시연 페르소나의 언어로 화면을 보여 준다
+                ProvideLanguage(driveState.profile?.language ?: profile.language) {
                     DriveScreen(
-                        profile = profile,
+                        savedProfile = profile,
                         state = driveState,
                         onChangeSettings = {
                             // 설정 화면에 가도 주행 세션은 유지한다(편집 중 출발해도 안전 경고가 계속 나가야 함)
@@ -100,6 +102,8 @@ fun RoadMateApp(store: ProfileStore) {
                                 editing = true
                             }
                         },
+                        onPlayDemo = driveVm::startDemo,
+                        onStopDemo = { driveVm.stopDemo(profile) },
                     )
                 }
             }

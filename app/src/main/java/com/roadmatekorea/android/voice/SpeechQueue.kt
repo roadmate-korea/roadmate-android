@@ -65,7 +65,8 @@ class SpeechQueue(private val clock: Clock) {
         fun ttlMs(priority: Priority): Long? = when (priority) {
             Priority.SAFETY -> 15_000
             Priority.RULE -> 10_000
-            Priority.ADAPTATION -> 20_000
+            // 긴 교통 규칙 안내(프랑스어 좌회전 약 19초) 뒤에 와도 버려지지 않게 넉넉히 둔다
+            Priority.ADAPTATION -> 40_000
             Priority.INFO -> null
         }
     }

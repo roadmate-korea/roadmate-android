@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -28,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.roadmatekorea.android.R
+import com.roadmatekorea.android.demo.DemoPersona
 import com.roadmatekorea.android.i18n.ProfileLabels
 import com.roadmatekorea.android.profile.model.DriverProfile
 import com.roadmatekorea.android.ui.components.ReadOnlyOverlay
@@ -38,13 +40,18 @@ import com.roadmatekorea.android.ui.components.ReadOnlyOverlay
  */
 @Composable
 fun DriveScreen(
-    profile: DriverProfile,
+    savedProfile: DriverProfile,
     state: DriveUiState,
     onChangeSettings: () -> Unit,
+    onPlayDemo: (DemoPersona) -> Unit,
+    onStopDemo: () -> Unit,
 ) {
     val locked = state.vehicle.locked
+    // 시연 중이면 시연 페르소나의 프로필을 보여 준다
+    val profile = state.profile ?: savedProfile
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().padding(horizontal = 48.dp, vertical = 32.dp)) {
+            state.demo?.let { DemoBadge(it) }
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = listOf(
@@ -62,16 +69,19 @@ fun DriveScreen(
             Spacer(Modifier.height(24.dp))
             Banners(state)
 
+            // 말하는 중이면 지금 안내를, 아니면 마지막 안내를 흐리게 남겨 둔다
+            val speaking = state.caption != null
+            val cardText = state.caption ?: state.history.firstOrNull()
             Surface(
                 shape = RoundedCornerShape(28.dp),
-                color = if (state.caption != null) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                color = if (speaking) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 280.dp),
             ) {
                 Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.padding(40.dp)) {
                     Text(
-                        text = state.caption ?: stringResource(R.string.drive_waiting),
-                        style = if (state.caption != null) MaterialTheme.typography.headlineLarge else MaterialTheme.typography.headlineSmall,
-                        color = if (state.caption != null) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = cardText ?: stringResource(R.string.drive_waiting),
+                        style = if (cardText != null) MaterialTheme.typography.headlineLarge else MaterialTheme.typography.headlineSmall,
+                        color = if (speaking) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -80,8 +90,8 @@ fun DriveScreen(
             if (state.history.isNotEmpty()) {
                 Text(stringResource(R.string.drive_recent_title), style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(12.dp))
-                // 지금 말하는 문장은 위 카드에 있으므로 목록에서는 뺀다
-                state.history.filter { it != state.caption }.take(3).forEach {
+                // 위 카드에 보이는 문장은 목록에서 뺀다
+                state.history.filter { it != cardText }.take(3).forEach {
                     Text(
                         text = it,
                         style = MaterialTheme.typography.titleLarge,
@@ -93,13 +103,24 @@ fun DriveScreen(
             }
 
             Spacer(Modifier.weight(1f))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedButton(
-                    onClick = onChangeSettings,
-                    enabled = !locked,
-                    modifier = Modifier.height(88.dp),
-                ) {
-                    Text(stringResource(R.string.drive_change_settings), style = MaterialTheme.typography.titleLarge)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                if (state.demo == null) {
+                    OutlinedButton(onClick = onChangeSettings, enabled = !locked, modifier = Modifier.height(88.dp)) {
+                        Text(stringResource(R.string.drive_change_settings), style = MaterialTheme.typography.titleLarge)
+                    }
+                    // 시연: 같은 경로를 페르소나별로 재생(정차 중에만)
+                    DemoPersona.entries.forEach { persona ->
+                        OutlinedButton(onClick = { onPlayDemo(persona) }, enabled = !locked, modifier = Modifier.height(88.dp)) {
+                            Text(
+                                stringResource(R.string.drive_demo_play, stringResource(personaName(persona))),
+                                style = MaterialTheme.typography.titleLarge,
+                            )
+                        }
+                    }
+                } else {
+                    Button(onClick = onStopDemo, enabled = !locked, modifier = Modifier.height(88.dp)) {
+                        Text(stringResource(R.string.drive_demo_stop), style = MaterialTheme.typography.titleLarge)
+                    }
                 }
                 if (locked) {
                     Text(
@@ -113,6 +134,29 @@ fun DriveScreen(
         }
         if (locked) ReadOnlyOverlay()
     }
+}
+
+@Composable
+private fun DemoBadge(demo: DemoStatus) {
+    val label = stringResource(R.string.drive_demo_running, stringResource(personaName(demo.persona))) +
+        if (demo.finished) "  ·  " + stringResource(R.string.drive_demo_finished) else ""
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.inverseSurface,
+        modifier = Modifier.padding(bottom = 16.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.inverseOnSurface,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+        )
+    }
+}
+
+private fun personaName(persona: DemoPersona): Int = when (persona) {
+    DemoPersona.NAKAMURA -> R.string.persona_nakamura
+    DemoPersona.CARLOS -> R.string.persona_carlos
 }
 
 @Composable

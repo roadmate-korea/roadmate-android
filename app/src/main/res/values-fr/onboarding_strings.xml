@@ -34,4 +34,9 @@
     <string name="drive_voice_unavailable">Le guidage vocal n\'est pas disponible dans cette langue. Affichage du texte uniquement.</string>
     <string name="drive_recent_title">Conseils récents</string>
     <string name="drive_waiting">Les conseils s\'afficheront ici.</string>
+
+    <string name="drive_demo_play">Lancer la démo · %1$s</string>
+    <string name="drive_demo_running">DÉMO · %1$s</string>
+    <string name="drive_demo_finished">Démo terminée</string>
+    <string name="drive_demo_stop">Quitter la démo</string>
 </resources>

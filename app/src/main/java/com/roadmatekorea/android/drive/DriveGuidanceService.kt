@@ -51,7 +51,7 @@ class DriveGuidanceService : Service() {
 
     /** 최근 앱에서 지우면 안내도 끝낸다(알림만 사라지고 음성이 남지 않게). */
     override fun onTaskRemoved(rootIntent: Intent?) {
-        (application as RoadMateApplication).driveController.endSession()
+        (application as RoadMateApplication).endGuidance()
         stopSelf()
     }
 

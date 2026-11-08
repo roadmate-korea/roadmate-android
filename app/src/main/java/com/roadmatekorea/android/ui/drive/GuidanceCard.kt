@@ -48,7 +48,7 @@ fun GuidanceCard(guidance: Guidance, fullText: String?, voiced: Boolean, modifie
         if (content.scene != null) {
             Scene(
                 content.scene,
-                Modifier.padding(start = 40.dp, top = 40.dp, bottom = 40.dp).height(540.dp),
+                Modifier.padding(start = 40.dp, top = 40.dp, bottom = 40.dp).height(480.dp),
                 speedLimitKmh = content.sceneSpeedArg?.let { guidance.args.getOrNull(it) },
             )
         } else {

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 주행 화면 안내 카드: 머리글(kicker), 한 줄 지시(headline), 한 줄 설명(body). 음성은 guidance_strings.xml의 전체 문장을 읽는다. -->
+<resources>
+    <string name="card_welcome_right_side_kicker">Bienvenido a Corea</string>
+    <string name="card_welcome_right_side_headline">Mantén la línea amarilla central a tu izquierda.</string>
+    <string name="card_welcome_right_side_body">Se circula por la derecha. Ten mucho cuidado en los cruces.</string>
+    <string name="card_welcome_first_time_kicker">Bienvenido a Corea</string>
+    <string name="card_welcome_first_time_headline">Te guiaremos por las normas de tráfico coreanas.</string>
+    <string name="card_welcome_first_time_body">Las indicaciones llegan en cada situación.</string>
+    <string name="card_welcome_experienced_kicker">Bienvenido de nuevo</string>
+    <string name="card_welcome_experienced_headline">Te avisaremos de los puntos de seguridad esenciales.</string>
+    <string name="card_welcome_experienced_body">Zonas escolares y otros avisos importantes.</string>
+    <string name="card_lhd_intro_kicker">Volante a la izquierda</string>
+    <string name="card_lhd_intro_headline">El lado derecho está más lejos de lo que parece.</string>
+    <string name="card_lhd_intro_body">Vas sentado a la izquierda. La palanca de los intermitentes está a la izquierda del volante.</string>
+    <string name="card_lhd_mirror_check_kicker">Al girar o cambiar de carril</string>
+    <string name="card_lhd_mirror_check_headline">Mira los espejos y por encima del hombro.</string>
+    <string name="card_lhd_mirror_check_body">El lado del pasajero ahora está a tu derecha.</string>
+    <string name="card_right_side_left_turn_kicker">Después de girar a la izquierda</string>
+    <string name="card_right_side_left_turn_headline">Mantente en el lado derecho de la nueva calle.</string>
+    <string name="card_right_side_left_turn_body">La línea amarilla central queda a tu izquierda.</string>
+    <string name="card_right_turn_rule_kicker">Giro a la derecha</string>
+    <string name="card_right_turn_rule_headline">Con luz roja, detente primero en la línea.</string>
+    <string name="card_right_turn_rule_body">Si hay semáforo para girar a la derecha, gira solo con su flecha verde. Detente siempre ante los peatones.</string>
+    <string name="card_left_turn_rule_kicker">Giro a la izquierda</string>
+    <string name="card_left_turn_rule_headline">Gira con la flecha verde a la izquierda.</string>
+    <string name="card_left_turn_rule_body">Con la señal de giro a la izquierda no protegido, puedes girar en verde después de ceder el paso.</string>
+    <string name="card_school_zone_ahead_kicker">Zona escolar a %1$d m</string>
+    <string name="card_school_zone_ahead_headline">Reduce la velocidad. Atento a los niños.</string>
+    <string name="card_school_zone_ahead_body">Respeta el límite de velocidad de esta zona.</string>
+    <string name="card_school_zone_speed_limit_kicker">Zona escolar</string>
+    <string name="card_school_zone_speed_limit_headline">Límite de velocidad: %1$d km/h.</string>
+    <string name="card_school_zone_speed_limit_body">Atento a los niños cerca de la calle.</string>
+    <string name="card_school_zone_crosswalk_kicker">Zona escolar</string>
+    <string name="card_school_zone_crosswalk_headline">Detente antes de los pasos peatonales sin semáforo.</string>
+    <string name="card_school_zone_crosswalk_body">Aunque nadie esté cruzando.</string>
+    <string name="card_arrived_kicker">Llegada</string>
+    <string name="card_arrived_headline">Has llegado.</string>
+    <string name="card_arrived_body">Gracias por conducir con prudencia en Corea.</string>
+</resources>

@@ -36,6 +36,8 @@ data class DriveUiState(
     val demo: DemoStatus? = null,
     val vehicle: VehicleStatus = VehicleStatus(),
     val caption: String? = null,
+    /** 지금 말하는(또는 자막으로 보여 주는) 안내. 카드의 그림과 요약 문구를 고르는 데 쓴다. */
+    val guidance: Guidance? = null,
     val history: List<String> = emptyList(),
     val speedLimitKmh: Int? = null,
     val voiceUnavailable: Boolean = false,
@@ -106,6 +108,7 @@ class DriveViewModel(
                 demo = demo,
                 vehicle = vehicle,
                 caption = caption?.text,
+                guidance = caption?.guidance,
                 history = history,
                 speedLimitKmh = limit,
                 voiceUnavailable = voiceUnavailable,

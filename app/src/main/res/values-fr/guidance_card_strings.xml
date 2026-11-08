@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 주행 화면 안내 카드: 머리글(kicker), 한 줄 지시(headline), 한 줄 설명(body). 음성은 guidance_strings.xml의 전체 문장을 읽는다. -->
+<resources>
+    <string name="card_welcome_right_side_kicker">Bienvenue en Corée</string>
+    <string name="card_welcome_right_side_headline">Gardez la ligne jaune centrale à votre gauche.</string>
+    <string name="card_welcome_right_side_body">On roule à droite. Soyez très prudent aux intersections.</string>
+    <string name="card_welcome_first_time_kicker">Bienvenue en Corée</string>
+    <string name="card_welcome_first_time_headline">Nous vous guidons dans le code de la route coréen.</string>
+    <string name="card_welcome_first_time_body">Les consignes arrivent à chaque situation.</string>
+    <string name="card_welcome_experienced_kicker">Bon retour</string>
+    <string name="card_welcome_experienced_headline">Nous signalons les points de sécurité essentiels.</string>
+    <string name="card_welcome_experienced_body">Zones scolaires et autres alertes importantes.</string>
+    <string name="card_lhd_intro_kicker">Volant à gauche</string>
+    <string name="card_lhd_intro_headline">Le côté droit est plus loin qu\'il n\'y paraît.</string>
+    <string name="card_lhd_intro_body">Vous êtes assis à gauche. Le levier des clignotants est à gauche du volant.</string>
+    <string name="card_lhd_mirror_check_kicker">Virage ou changement de voie</string>
+    <string name="card_lhd_mirror_check_headline">Regardez vos rétroviseurs et par-dessus l\'épaule.</string>
+    <string name="card_lhd_mirror_check_body">Le côté passager est maintenant à votre droite.</string>
+    <string name="card_right_side_left_turn_kicker">Après le virage à gauche</string>
+    <string name="card_right_side_left_turn_headline">Restez du côté droit de la nouvelle route.</string>
+    <string name="card_right_side_left_turn_body">La ligne jaune centrale reste à votre gauche.</string>
+    <string name="card_right_turn_rule_kicker">Virage à droite</string>
+    <string name="card_right_turn_rule_headline">Au feu rouge, arrêtez-vous d\'abord à la ligne.</string>
+    <string name="card_right_turn_rule_body">S\'il y a un feu pour tourner à droite, tournez seulement à sa flèche verte. Arrêtez-vous toujours pour les piétons.</string>
+    <string name="card_left_turn_rule_kicker">Virage à gauche</string>
+    <string name="card_left_turn_rule_headline">Tournez à la flèche verte vers la gauche.</string>
+    <string name="card_left_turn_rule_body">Avec un panneau de virage à gauche non protégé, vous pouvez tourner au vert après avoir cédé le passage.</string>
+    <string name="card_school_zone_ahead_kicker">Zone scolaire dans %1$d m</string>
+    <string name="card_school_zone_ahead_headline">Ralentissez. Attention aux enfants.</string>
+    <string name="card_school_zone_ahead_body">Respectez la limite de vitesse indiquée.</string>
+    <string name="card_school_zone_speed_limit_kicker">Zone scolaire</string>
+    <string name="card_school_zone_speed_limit_headline">Vitesse limitée à %1$d km/h.</string>
+    <string name="card_school_zone_speed_limit_body">Attention aux enfants près de la route.</string>
+    <string name="card_school_zone_crosswalk_kicker">Zone scolaire</string>
+    <string name="card_school_zone_crosswalk_headline">Arrêtez-vous avant les passages piétons sans feux.</string>
+    <string name="card_school_zone_crosswalk_body">Même si personne ne traverse.</string>
+    <string name="card_arrived_kicker">Arrivée</string>
+    <string name="card_arrived_headline">Vous êtes arrivé.</string>
+    <string name="card_arrived_body">Merci d\'avoir conduit prudemment en Corée.</string>
+</resources>

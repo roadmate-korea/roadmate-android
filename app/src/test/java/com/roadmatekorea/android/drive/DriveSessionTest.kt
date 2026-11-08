@@ -101,10 +101,10 @@ class DriveSessionTest {
         assertEquals("LHD_MIRROR_CHECK", s.history.value.first())
     }
 
-    // ---- 잠금 상태 ----
+    // ---- 잠금 상태: 정상적으로 확인된 P에서만 조작 허용 ----
 
     @Test
-    fun vehicleStatus_locksUnlessParked_andBeforeFirstGear() {
+    fun vehicleStatus_unlockedOnlyOnConfirmedPark() {
         var v = VehicleStatus()
         assertTrue("첫 기어 전에는 잠금", v.locked)
         v = v.on(RawSignal.Vehicle.Gear(VehicleGear.GEAR_PARK))
@@ -113,19 +113,28 @@ class DriveSessionTest {
         assertTrue(v.locked)
         v = v.on(RawSignal.Vehicle.Gear(VehicleGear.GEAR_REVERSE))
         assertTrue(v.locked)
-        // 기어를 받은 뒤 SDK 오류가 나도 마지막 기어를 따른다(주행 중 잠금이 풀리지 않음)
-        v = v.on(RawSignal.Vehicle.Unavailable("gear: x"))
-        assertTrue(v.locked)
-        assertFalse(v.showUnavailableBanner)
         // 시연 신호나 내비 신호는 잠금에 영향 없음
         assertEquals(Gear.REVERSE, v.on(RawSignal.Navi.SpeedLimit(30)).gear)
     }
 
     @Test
-    fun vehicleStatus_sdkUnavailableFromStart_unlocksWithBanner() {
+    fun vehicleStatus_errorBeforeAnyGear_locksWithBanner() {
         val v = VehicleStatus().on(RawSignal.Vehicle.Unavailable("init"))
-        assertFalse(v.locked)
+        assertTrue(v.locked)
         assertTrue(v.showUnavailableBanner)
+    }
+
+    @Test
+    fun vehicleStatus_errorAfterPark_locks_untilValidGearArrives() {
+        var v = VehicleStatus().on(RawSignal.Vehicle.Gear(VehicleGear.GEAR_PARK))
+        v = v.on(RawSignal.Vehicle.Unavailable("gear: x"))
+        assertTrue("P 뒤 기어 오류면 잠금", v.locked)
+        assertTrue(v.showUnavailableBanner)
+        v = v.on(RawSignal.Vehicle.Gear(VehicleGear.GEAR_DRIVE))
+        assertTrue(v.locked)
+        assertFalse("정상 기어를 받으면 오류 해제", v.showUnavailableBanner)
+        v = v.on(RawSignal.Vehicle.Gear(VehicleGear.GEAR_PARK))
+        assertFalse(v.locked)
     }
 
     @Test

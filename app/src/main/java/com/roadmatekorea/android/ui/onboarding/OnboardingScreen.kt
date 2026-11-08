@@ -33,6 +33,7 @@ import com.roadmatekorea.android.ui.components.SelectableOption
 fun OnboardingScreen(
     state: OnboardingState,
     languages: List<AppLanguage>,
+    locked: Boolean = false,
     onLanguage: (AppLanguage) -> Unit,
     onCountry: (DrivingCountry) -> Unit,
     onExperience: (KoreaExperience) -> Unit,
@@ -40,15 +41,15 @@ fun OnboardingScreen(
     onStart: () -> Unit,
 ) {
     when (state.page) {
-        OnboardingState.Page.LANGUAGE -> LanguagePage(languages, state.language, onLanguage)
+        OnboardingState.Page.LANGUAGE -> LanguagePage(languages, state.language, enabled = !locked, onLanguage)
         OnboardingState.Page.DRIVING -> ProvideLanguage(state.language ?: AppLanguage.EN) {
-            DrivingPage(state, onCountry, onExperience, onBack, onStart)
+            DrivingPage(state, locked, onCountry, onExperience, onBack, onStart)
         }
     }
 }
 
 @Composable
-private fun LanguagePage(languages: List<AppLanguage>, selected: AppLanguage?, onLanguage: (AppLanguage) -> Unit) {
+private fun LanguagePage(languages: List<AppLanguage>, selected: AppLanguage?, enabled: Boolean, onLanguage: (AppLanguage) -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize().padding(64.dp),
         verticalArrangement = Arrangement.Center,
@@ -62,6 +63,7 @@ private fun LanguagePage(languages: List<AppLanguage>, selected: AppLanguage?, o
                     text = stringResource(ProfileLabels.language(language)),
                     selected = language == selected,
                     onClick = { onLanguage(language) },
+                    enabled = enabled,
                     modifier = Modifier.width(360.dp),
                     minHeight = 200.dp,
                 )
@@ -73,13 +75,15 @@ private fun LanguagePage(languages: List<AppLanguage>, selected: AppLanguage?, o
 @Composable
 private fun DrivingPage(
     state: OnboardingState,
+    locked: Boolean,
     onCountry: (DrivingCountry) -> Unit,
     onExperience: (KoreaExperience) -> Unit,
     onBack: () -> Unit,
     onStart: () -> Unit,
 ) {
+    val editable = state.editable && !locked
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 64.dp, vertical = 40.dp)) {
-        TextButton(onClick = onBack, enabled = state.editable, modifier = Modifier.heightIn(min = 72.dp)) {
+        TextButton(onClick = onBack, enabled = editable, modifier = Modifier.heightIn(min = 72.dp)) {
             Text(stringResource(R.string.onboarding_back), style = MaterialTheme.typography.headlineSmall)
         }
         Spacer(Modifier.height(16.dp))
@@ -93,7 +97,7 @@ private fun DrivingPage(
                         text = stringResource(ProfileLabels.country(country)),
                         selected = country == state.country,
                         onClick = { onCountry(country) },
-                        enabled = state.editable,
+                        enabled = editable,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -112,7 +116,7 @@ private fun DrivingPage(
                     text = stringResource(ProfileLabels.experience(experience)),
                     selected = experience == state.experience,
                     onClick = { onExperience(experience) },
-                    enabled = state.editable,
+                    enabled = editable,
                     modifier = Modifier.weight(1f),
                     minHeight = 140.dp,
                 )
@@ -129,7 +133,7 @@ private fun DrivingPage(
             )
         }
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-            Button(onClick = onStart, enabled = state.canStart, modifier = Modifier.width(400.dp).height(112.dp)) {
+            Button(onClick = onStart, enabled = state.canStart && !locked, modifier = Modifier.width(400.dp).height(112.dp)) {
                 Text(stringResource(R.string.onboarding_start), style = MaterialTheme.typography.headlineMedium)
             }
         }

@@ -43,6 +43,11 @@ class DriveSignalHub(
     /** Vehicle SDK를 쓸 수 없다는 신호를 받은 적이 있음. */
     val vehicleUnavailable: StateFlow<Boolean> = _vehicleUnavailable.asStateFlow()
 
+    private var unavailableSinceLastGear = false
+
+    /** 마지막 기어 신호 뒤에 Vehicle 사용 불가 신호가 왔는지. 늦게 구독한 쪽의 잠금 판단에 쓴다. */
+    fun vehicleUnavailableSinceLastGear(): Boolean = unavailableSinceLastGear
+
     private var job: Job? = null
 
     /** 여러 번 불러도 한 번만 시작한다. */
@@ -51,8 +56,14 @@ class DriveSignalHub(
         job = scope.launch {
             source.signals().collect { signal ->
                 when (signal) {
-                    is RawSignal.Vehicle.Gear -> _lastGear.value = signal
-                    is RawSignal.Vehicle.Unavailable -> _vehicleUnavailable.value = true
+                    is RawSignal.Vehicle.Gear -> {
+                        _lastGear.value = signal
+                        unavailableSinceLastGear = false
+                    }
+                    is RawSignal.Vehicle.Unavailable -> {
+                        _vehicleUnavailable.value = true
+                        unavailableSinceLastGear = true
+                    }
                     else -> Unit
                 }
                 _signals.emit(signal)

@@ -51,7 +51,9 @@ class DriveViewModel(
 
     // 허브가 보관한 마지막 기어와 사용 불가 여부로 시작한다(이 화면보다 먼저 들어온 신호)
     private val _vehicle = MutableStateFlow(
-        VehicleStatus(unavailable = hub.vehicleUnavailable.value).let { s -> hub.lastGear.value?.let(s::on) ?: s },
+        // 마지막 기어가 있으면 그 값으로 시작한다. 그 뒤에 오류가 있었다면 잠근다(정상 기어를 다시 받을 때까지).
+        (hub.lastGear.value?.let(VehicleStatus()::on) ?: VehicleStatus())
+            .let { if (hub.vehicleUnavailableSinceLastGear()) it.copy(error = true) else it },
     )
 
     /** 실제 차량 상태(잠금 판단용). 시연 신호는 여기에 들어오지 않는다. */
@@ -84,11 +86,13 @@ class DriveViewModel(
 
     /**
      * 주행 화면에 들어올 때 부른다. 프로필이 바뀌었으면 새 세션을 연다.
-     * [announceNow]: 온보딩 START 직후처럼 바로 시작 안내를 낼지. 아니면 기어 D가 될 때 엔진이 낸다.
+     * [announceNow]: 온보딩 START 직후처럼 바로 시작 안내를 낼지(같은 프로필이어도 새 세션). 아니면 기어 D가 될 때 엔진이 낸다.
+     *
+     * 설정 화면에 가도 세션은 닫지 않는다. 설정을 고치는 중에 출발해도 저장된 프로필로 안전 경고가 계속 나가야 한다.
      */
     fun enterDrive(profile: DriverProfile, announceNow: Boolean) {
         val current = session.value
-        if (current != null && current.profile == profile) return
+        if (!announceNow && current != null && current.profile == profile) return
         speaker.stopAll()
         val resources = app.withLanguage(profile.language).resources
         val next = DriveSession(
@@ -101,12 +105,6 @@ class DriveViewModel(
         // 엔진이 지금 기어를 알게 한다. 이미 D라면 이것이 주행 시작이 되어 시작 안내가 나간다.
         hub.lastGear.value?.let(next::onSignal)
         if (announceNow) next.announceStart()
-    }
-
-    /** 설정 화면으로 갈 때 부른다(정차 중에만 가능). 말하던 안내를 멈추고 세션을 닫는다. */
-    fun leaveDrive() {
-        speaker.stopAll()
-        session.value = null
     }
 
     override fun onCleared() {

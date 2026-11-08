@@ -23,6 +23,7 @@ import com.roadmatekorea.android.R
 import com.roadmatekorea.android.RoadMateApplication
 import com.roadmatekorea.android.profile.ProfileRead
 import com.roadmatekorea.android.profile.ProfileStore
+import com.roadmatekorea.android.profile.model.AppLanguage
 import com.roadmatekorea.android.profile.model.DriverProfile
 import com.roadmatekorea.android.ui.components.ReadOnlyOverlay
 import com.roadmatekorea.android.ui.drive.DriveScreen
@@ -64,11 +65,19 @@ fun RoadMateApp(store: ProfileStore) {
                         store = store,
                         existing = profile,
                         session = onboardingSession,
+                        locked = vehicle.locked,
+                        // 입력이 실제로 실행되는 순간의 기어로 다시 확인한다(누른 채 D로 바꾸거나 키보드·접근성 입력)
+                        isLockedNow = { driveVm.vehicle.value.locked },
                         // 저장이 끝나는 순간 프로필이 먼저 바뀌어 주행 화면으로 넘어갈 수 있으므로 START를 누를 때 표시한다
                         onStartPressed = { announceOnEnter = true },
                         onDone = { editing = false },
                     )
-                    if (vehicle.locked) ReadOnlyOverlay(stringResource(R.string.drive_parked_only))
+                    if (vehicle.locked) {
+                        // 온보딩 PAGE 1은 언어를 고르기 전이라 저장된 언어(없으면 영어)로 안내한다
+                        ProvideLanguage(profile?.language ?: AppLanguage.EN) {
+                            ReadOnlyOverlay(stringResource(R.string.drive_parked_only))
+                        }
+                    }
                 }
             } else {
                 LaunchedEffect(profile) {
@@ -81,8 +90,8 @@ fun RoadMateApp(store: ProfileStore) {
                         profile = profile,
                         state = state,
                         onChangeSettings = {
-                            if (!vehicle.locked) {
-                                driveVm.leaveDrive()
+                            // 설정 화면에 가도 주행 세션은 유지한다(편집 중 출발해도 안전 경고가 계속 나가야 함)
+                            if (!driveVm.vehicle.value.locked) {
                                 onboardingSession++
                                 editing = true
                             }
@@ -99,6 +108,8 @@ private fun Onboarding(
     store: ProfileStore,
     existing: DriverProfile?,
     session: Int,
+    locked: Boolean,
+    isLockedNow: () -> Boolean,
     onStartPressed: () -> Unit,
     onDone: () -> Unit,
 ) {
@@ -108,16 +119,23 @@ private fun Onboarding(
     val state by vm.state.collectAsStateWithLifecycle()
     // 저장 완료는 ViewModel 상태로 받는다. 저장 중 Activity가 다시 만들어져도 새 화면이 이 값을 본다.
     LaunchedEffect(state.saved) { if (state.saved) onDone() }
+    // 주행 중이면 화면을 비활성화하고, 동작마다 실행 직전에 다시 확인한다
+    fun guarded(action: () -> Unit) {
+        if (!isLockedNow()) action()
+    }
     OnboardingScreen(
         state = state,
+        locked = locked,
         languages = OnboardingOptions.languages(includeKorean = BuildConfig.DEBUG),
-        onLanguage = vm::selectLanguage,
-        onCountry = vm::selectCountry,
-        onExperience = vm::selectExperience,
-        onBack = vm::back,
+        onLanguage = { guarded { vm.selectLanguage(it) } },
+        onCountry = { guarded { vm.selectCountry(it) } },
+        onExperience = { guarded { vm.selectExperience(it) } },
+        onBack = { guarded { vm.back() } },
         onStart = {
-            onStartPressed()
-            vm.start()
+            guarded {
+                onStartPressed()
+                vm.start()
+            }
         },
     )
 }

@@ -72,9 +72,12 @@ object DemoRoute {
         // 구간 단속 시작(제한 80). 평균 속도는 아직 없음
         DemoStep(
             2_000,
-            listOf(RawSignal.Navi.CameraAlerts(listOf(CameraAlert("demo-sec-1", CameraType.SPEED_CAMERA_SECTION_START, true, 80, 300, 0, false, false)))),
+            listOf(
+                RawSignal.Navi.SpeedLimit(80),
+                RawSignal.Navi.CameraAlerts(listOf(CameraAlert("demo-sec-1", CameraType.SPEED_CAMERA_SECTION_START, true, 80, 300, 0, false, false))),
+            ),
         ),
-        DemoStep(3_000, listOf(RawSignal.Navi.CameraAlerts(emptyList()))),
+        DemoStep(3_000, listOf(RawSignal.Navi.CameraAlerts(emptyList()), RawSignal.Navi.SpeedLimit(50))),
         // 도착, 정차
         DemoStep(2_000, listOf(RawSignal.Navi.Arrived)),
         DemoStep(1_000, listOf(gear(VehicleGear.GEAR_PARK))),

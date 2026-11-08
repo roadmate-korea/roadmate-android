@@ -37,4 +37,13 @@
     <string name="card_arrived_kicker">Arrivée</string>
     <string name="card_arrived_headline">Vous êtes arrivé.</string>
     <string name="card_arrived_body">Merci d\'avoir conduit prudemment en Corée.</string>
+    <string name="card_bus_lane_ahead_kicker">Voie de bus dans %1$d m</string>
+    <string name="card_bus_lane_ahead_headline">Restez hors de la voie bleue.</string>
+    <string name="card_bus_lane_ahead_body">Vérifiez les horaires sur le panneau.</string>
+    <string name="card_section_start_kicker">Contrôle de vitesse moyenne</string>
+    <string name="card_section_start_headline">Moyenne de %1$d km/h au maximum.</string>
+    <string name="card_section_start_body">Des caméras au début et à la fin mesurent votre vitesse.</string>
+    <string name="card_section_over_average_kicker">Contrôle de vitesse moyenne</string>
+    <string name="card_section_over_average_headline">Moyenne de %1$d km/h. Ralentissez.</string>
+    <string name="card_section_over_average_body">La limite est de %2$d km/h.</string>
 </resources>

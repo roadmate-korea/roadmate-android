@@ -21,4 +21,7 @@
     <string name="guidance_school_zone_crosswalk">In school zones, always stop before a crosswalk without traffic lights, even if no one is crossing.</string>
 
     <string name="guidance_arrived">You have arrived. Thank you for driving safely in Korea.</string>
+    <string name="guidance_bus_lane_ahead">Bus lane in %1$d meters. Do not drive in the blue bus lane during the hours shown on the sign.</string>
+    <string name="guidance_section_start">Average speed check starts. Keep your average speed at or below %1$d kilometers per hour until the section ends.</string>
+    <string name="guidance_section_over_average">Your average speed is %1$d, above the limit of %2$d. Slow down.</string>
 </resources>

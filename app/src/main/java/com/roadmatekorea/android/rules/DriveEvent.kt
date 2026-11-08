@@ -44,13 +44,40 @@ enum class TurnSignal { OFF, LEFT, RIGHT }
 
 enum class TurnDirection { LEFT, RIGHT, OTHER }
 
-enum class CautionKind { SCHOOL_ZONE, OTHER }
+enum class CautionKind {
+    SCHOOL_ZONE,
 
-enum class CameraKind { SCHOOL_ZONE, OTHER }
+    /** 버스전용차로 단속 지점, 또는 버스전용차로 운영 중 알림 */
+    BUS_LANE,
+    OTHER,
+}
+
+enum class CameraKind {
+    SCHOOL_ZONE,
+
+    /** 구간 단속 시작 카메라 */
+    SECTION_START,
+
+    /** 구간 단속 중 평균 속도 알림([CameraAlert.sectionAverageKmh]) */
+    SECTION_AVERAGE,
+
+    /** 구간 단속 끝 카메라 */
+    SECTION_END,
+    OTHER,
+}
 
 data class CautionPoint(val id: String, val kind: CautionKind, val remainMeters: Int)
 
-/** [speedLimitKmh]가 0 이하면 값이 없는 것으로 본다. */
-data class CameraAlert(val id: String, val kind: CameraKind, val speedLimitKmh: Int, val remainMeters: Int)
+/**
+ * [speedLimitKmh]가 0 이하면 값이 없는 것으로 본다.
+ * [sectionAverageKmh]: 구간 단속 중 지금까지의 평균 속도(NaviHelper `sectionAvrSpeed`). 0 이하면 값 없음.
+ */
+data class CameraAlert(
+    val id: String,
+    val kind: CameraKind,
+    val speedLimitKmh: Int,
+    val remainMeters: Int,
+    val sectionAverageKmh: Int = 0,
+)
 
 data class TurnInstruction(val direction: TurnDirection, val distanceMeters: Int)

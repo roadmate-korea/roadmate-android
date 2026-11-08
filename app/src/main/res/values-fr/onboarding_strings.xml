@@ -35,8 +35,8 @@
     <string name="drive_recent_title">Conseils récents</string>
     <string name="drive_waiting">Les conseils s\'afficheront ici.</string>
 
-    <string name="drive_demo_play">Lancer la démo : %1$s</string>
-    <string name="drive_demo_running">Démo : %1$s</string>
+    <string name="drive_demo_play">Lancer la démo : %1$s</string>
+    <string name="drive_demo_running">Démo : %1$s</string>
     <string name="drive_demo_finished">Démo terminée</string>
     <string name="drive_demo_stop">Quitter la démo</string>
     <!-- 앱 머리, 주행 상태 -->

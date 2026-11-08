@@ -89,9 +89,11 @@ class DemoRouteTest {
         "WELCOME_RIGHT_SIDE", "LHD_INTRO",
         "SCHOOL_ZONE_AHEAD:300", "SCHOOL_ZONE_CROSSWALK",
         "SCHOOL_ZONE_SPEED_LIMIT:30",
+        "BUS_LANE_AHEAD:250",
         "LHD_MIRROR_CHECK",
         "RIGHT_TURN_RULE",
         "LEFT_TURN_RULE", "RIGHT_SIDE_LEFT_TURN",
+        "SECTION_START:80",
         "ARRIVED",
     )
 
@@ -99,8 +101,10 @@ class DemoRouteTest {
         "WELCOME_FIRST_TIME",
         "SCHOOL_ZONE_AHEAD:300", "SCHOOL_ZONE_CROSSWALK",
         "SCHOOL_ZONE_SPEED_LIMIT:30",
+        "BUS_LANE_AHEAD:250",
         "RIGHT_TURN_RULE",
         "LEFT_TURN_RULE",
+        "SECTION_START:80",
         "ARRIVED",
     )
 

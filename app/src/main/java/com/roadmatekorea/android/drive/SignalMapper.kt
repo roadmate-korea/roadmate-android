@@ -32,7 +32,7 @@ object SignalMapper {
             signal.points.map { CautionPoint(it.id, cautionKind(it.type), it.remainDistance) },
         )
         is RawSignal.Navi.CameraAlerts -> DriveEvent.CameraAlertsUpdated(
-            signal.cameras.map { CameraAlert(it.id, cameraKind(it.type), it.speedLimit, it.remainDistance) },
+            signal.cameras.map { CameraAlert(it.id, cameraKind(it.type), it.speedLimit, it.remainDistance, it.sectionAvrSpeed) },
         )
         is RawSignal.Navi.Tbt -> DriveEvent.TurnInstructionsUpdated(
             // SDK 목록은 가까운 순이 아닐 수 있어 거리순으로 정렬한다
@@ -61,12 +61,20 @@ object SignalMapper {
         TurnSignalValue.RIGHT -> TurnSignal.RIGHT
     }
 
-    fun cautionKind(type: CautionPointType): CautionKind =
-        if (type == CautionPointType.SCHOOL_ZONE) CautionKind.SCHOOL_ZONE else CautionKind.OTHER
+    fun cautionKind(type: CautionPointType): CautionKind = when (type) {
+        CautionPointType.SCHOOL_ZONE -> CautionKind.SCHOOL_ZONE
+        // 단속 지점과 "버스전용차로 이용 불가(운영 중)" 알림. "이용 가능" 알림은 안내하지 않는다.
+        CautionPointType.BUS_LANE_VIOLATION_ENFORCEMENT,
+        CautionPointType.BUS_LANE_UNAVAILABLE_NOTICE -> CautionKind.BUS_LANE
+        else -> CautionKind.OTHER
+    }
 
     fun cameraKind(type: CameraType): CameraKind = when (type) {
         CameraType.SPEED_CAMERA_SCHOOL_ZONE,
         CameraType.SPEED_CAMERA_SCHOOL_ZONE_TRAFFIC_LIGHT -> CameraKind.SCHOOL_ZONE
+        CameraType.SPEED_CAMERA_SECTION_START -> CameraKind.SECTION_START
+        CameraType.SECTION_SPEED_ALERT -> CameraKind.SECTION_AVERAGE
+        CameraType.SPEED_CAMERA_SECTION_END -> CameraKind.SECTION_END
         else -> CameraKind.OTHER
     }
 

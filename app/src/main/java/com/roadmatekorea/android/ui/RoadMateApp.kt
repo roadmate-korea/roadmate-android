@@ -36,7 +36,7 @@ import com.roadmatekorea.android.ui.onboarding.OnboardingViewModel
 fun RoadMateApp(store: ProfileStore) {
     val read by remember(store) { store.profile }.collectAsStateWithLifecycle(initialValue = null)
     var editing by rememberSaveable { mutableStateOf(false) }
-    // 온보딩을 열 때마다 새 ViewModel을 쓰도록 키를 바꾼다
+    // 설정을 다시 할 때마다 늘려서 온보딩 편집 세션을 구분한다
     var onboardingSession by rememberSaveable { mutableIntStateOf(0) }
 
     when (val current = read) {
@@ -65,7 +65,9 @@ fun RoadMateApp(store: ProfileStore) {
 
 @Composable
 private fun Onboarding(store: ProfileStore, existing: DriverProfile?, session: Int, onDone: () -> Unit) {
-    val vm: OnboardingViewModel = viewModel(key = "onboarding-$session") { OnboardingViewModel(store, existing) }
+    // ViewModel은 하나만 두고 세션이 바뀔 때만 새 편집을 시작한다(구성 변경 때는 상태 유지)
+    val vm: OnboardingViewModel = viewModel { OnboardingViewModel(store) }
+    remember(session) { vm.beginSession(session, existing) }
     val state by vm.state.collectAsStateWithLifecycle()
     // 저장 완료는 ViewModel 상태로 받는다. 저장 중 Activity가 다시 만들어져도 새 화면이 이 값을 본다.
     LaunchedEffect(state.saved) { if (state.saved) onDone() }

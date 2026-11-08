@@ -26,6 +26,8 @@ import kotlinx.coroutines.launch
 
 /** 주행 화면 상태. */
 data class DriveUiState(
+    /** 지금 안내 세션의 프로필(저장된 프로필). 세션이 없으면 null. */
+    val profile: DriverProfile? = null,
     val vehicle: VehicleStatus = VehicleStatus(),
     val caption: String? = null,
     val history: List<String> = emptyList(),
@@ -80,7 +82,14 @@ class DriveViewModel(
                 failed || (s != null && AppLocales.localeOf(s.profile.language) in locales)
             },
         ) { vehicle, caption, history, limit, voiceUnavailable ->
-            DriveUiState(vehicle, caption?.text, history, limit, voiceUnavailable)
+            DriveUiState(
+                profile = s?.profile,
+                vehicle = vehicle,
+                caption = caption?.text,
+                history = history,
+                speedLimitKmh = limit,
+                voiceUnavailable = voiceUnavailable,
+            )
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, DriveUiState())
 
@@ -105,6 +114,14 @@ class DriveViewModel(
         // 엔진이 지금 기어를 알게 한다. 이미 D라면 이것이 주행 시작이 되어 시작 안내가 나간다.
         hub.lastGear.value?.let(next::onSignal)
         if (announceNow) next.announceStart()
+    }
+
+    /**
+     * 저장된 프로필의 세션이 없으면 연다(시작 안내 없이). 설정 화면에 있거나 프로세스가 설정 화면으로
+     * 복원된 경우에도 저장된 프로필로 안전 경고가 나가게 하려는 것이다. 편집 중인 값은 쓰지 않는다.
+     */
+    fun ensureSession(saved: DriverProfile) {
+        if (session.value == null) enterDrive(saved, announceNow = false)
     }
 
     override fun onCleared() {

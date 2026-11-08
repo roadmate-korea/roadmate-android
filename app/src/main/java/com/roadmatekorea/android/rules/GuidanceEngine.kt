@@ -20,6 +20,7 @@ class GuidanceEngine(
     private var gear = Gear.UNKNOWN
     private var turnSignal = TurnSignal.OFF
     private var greeted = false
+    private var arrived = false
     private var currentSpeedLimit: Int? = null
 
     /** 비어 있으면 경로 안내 정보가 없는 것으로 본다. */
@@ -41,7 +42,13 @@ class GuidanceEngine(
         is DriveEvent.CautionPointsUpdated -> onCautionPoints(event.points)
         is DriveEvent.CameraAlertsUpdated -> onCameras(event.cameras)
         is DriveEvent.TurnInstructionsUpdated -> onTurns(event.turns)
-        DriveEvent.DestinationArrived -> emit(GuidanceId.ARRIVED)
+        DriveEvent.DestinationArrived -> arrive()
+    }
+
+    private fun arrive(): List<Guidance> {
+        if (arrived) return emptyList()
+        arrived = true
+        return listOf(Guidance(GuidanceId.ARRIVED))
     }
 
     // ---- 시작 안내 ----
@@ -82,6 +89,12 @@ class GuidanceEngine(
 
     private fun onTurns(newTurns: List<TurnInstruction>): List<Guidance> {
         turns = newTurns
+        if (isParked) {
+            // 정차 중에 받은 근접 회전은 안내하지 않은 것으로 두어, 출발 뒤 다음 갱신에서 다시 판단한다.
+            rightTurnNear = false
+            leftTurnNear = false
+            return emptyList()
+        }
         val rightNear = hasNearTurn(TurnDirection.RIGHT)
         val leftNear = hasNearTurn(TurnDirection.LEFT)
         // 같은 회전이 다가오며 계속 갱신되므로, 가까워지는 순간에만 낸다.
@@ -89,7 +102,6 @@ class GuidanceEngine(
         val enteredLeft = leftNear && !leftTurnNear
         rightTurnNear = rightNear
         leftTurnNear = leftNear
-        if (isParked) return emptyList()
         return buildList {
             if (enteredRight) addAll(turn(TurnDirection.RIGHT))
             if (enteredLeft) addAll(turn(TurnDirection.LEFT))
@@ -125,8 +137,9 @@ class GuidanceEngine(
         val fresh = inRange.filter { it.id !in announcedCautionIds }
         if (fresh.isEmpty()) return emptyList()
         // 한꺼번에 여러 곳이 들어오면 가장 가까운 곳 하나만 말한다.
-        announcedCautionIds += fresh.map { it.id }
+        // 나머지는 완료 처리하지 않으므로 다음 갱신에서 가장 가까운 곳이 되면 안내한다.
         val nearest = fresh.minBy { it.remainMeters }
+        announcedCautionIds += nearest.id
         schoolZone = SchoolZoneContext(startedAtMs = clock.nowMillis(), speedLimitBefore = currentSpeedLimit)
         return buildList {
             add(Guidance(GuidanceId.SCHOOL_ZONE_AHEAD, listOf(roundDistance(nearest.remainMeters))))
@@ -139,19 +152,22 @@ class GuidanceEngine(
             it.kind == CameraKind.SCHOOL_ZONE && it.speedLimitKmh > 0 && it.id !in announcedCameraIds
         }
         if (fresh.isEmpty()) return emptyList()
-        announcedCameraIds += fresh.map { it.id }
-        val zone = schoolZone
-        if (zone != null && zone.limitAnnounced) return emptyList()
-        val limit = fresh.minBy { it.remainMeters }.speedLimitKmh
+        val zone = activeSchoolZone()
+        // 지금 구역의 제한 속도를 이미 말했으면 이 카메라들도 그 구역 것으로 보고 넘어간다.
+        if (zone != null && zone.limitAnnounced) {
+            announcedCameraIds += fresh.map { it.id }
+            return emptyList()
+        }
+        val camera = fresh.minBy { it.remainMeters }
+        announcedCameraIds += camera.id
         schoolZone = (zone ?: SchoolZoneContext(clock.nowMillis(), currentSpeedLimit)).copy(limitAnnounced = true)
-        return listOf(Guidance(GuidanceId.SCHOOL_ZONE_SPEED_LIMIT, listOf(limit)))
+        return listOf(Guidance(GuidanceId.SCHOOL_ZONE_SPEED_LIMIT, listOf(camera.speedLimitKmh)))
     }
 
     private fun onSpeedLimit(kmh: Int): List<Guidance> {
         currentSpeedLimit = kmh.takeIf { it > 0 }
-        val zone = schoolZone ?: return emptyList()
+        val zone = activeSchoolZone() ?: return emptyList()
         if (zone.limitAnnounced || kmh <= 0) return emptyList()
-        if (clock.nowMillis() - zone.startedAtMs > SCHOOL_ZONE_LIMIT_WINDOW_MS) return emptyList()
         // 접근 경고 뒤 제한 속도가 내려가면 그 값을 어린이보호구역 제한 속도로 본다.
         val before = zone.speedLimitBefore
         if (before != null && kmh >= before) return emptyList()
@@ -159,10 +175,11 @@ class GuidanceEngine(
         return listOf(Guidance(GuidanceId.SCHOOL_ZONE_SPEED_LIMIT, listOf(kmh)))
     }
 
-    // ---- 공통 ----
+    /** 마지막 구역 시작(접근 경고나 첫 카메라)에서 [SCHOOL_ZONE_LIMIT_WINDOW_MS]가 지나면 구역이 끝난 것으로 본다. */
+    private fun activeSchoolZone(): SchoolZoneContext? =
+        schoolZone?.takeIf { clock.nowMillis() - it.startedAtMs <= SCHOOL_ZONE_LIMIT_WINDOW_MS }
 
-    private fun emit(id: GuidanceId): List<Guidance> =
-        if (cooldown.tryAcquire(id)) listOf(Guidance(id)) else emptyList()
+    // ---- 공통 ----
 
     private fun MutableList<Guidance>.addIfAllowed(id: GuidanceId) {
         if (cooldown.tryAcquire(id)) add(Guidance(id))

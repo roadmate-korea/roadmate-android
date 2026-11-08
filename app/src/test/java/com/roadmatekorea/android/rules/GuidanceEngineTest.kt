@@ -247,6 +247,60 @@ class GuidanceEngineTest {
         assertEquals(listOf(ARRIVED), engine(experienced).send(DriveEvent.DestinationArrived).ids())
     }
 
+    @Test
+    fun arrival_oncePerSession_andAgainInNewSession() {
+        val e = engine(experienced)
+        assertEquals(listOf(ARRIVED), e.send(DriveEvent.DestinationArrived).ids())
+        assertEquals(emptyList<Guidance>(), e.send(DriveEvent.DestinationArrived))
+        clock.advanceSeconds(3600)
+        assertEquals(emptyList<Guidance>(), e.send(DriveEvent.DestinationArrived))
+        assertEquals(listOf(ARRIVED), engine(experienced).send(DriveEvent.DestinationArrived).ids())
+    }
+
+    // ---- 리뷰 회귀 테스트 ----
+
+    @Test
+    fun severalSchoolZonesAtOnce_remainingOnesAnnouncedLater() {
+        val e = engine(experienced)
+        val both = DriveEvent.CautionPointsUpdated(
+            listOf(
+                CautionPoint("A", CautionKind.SCHOOL_ZONE, 100),
+                CautionPoint("B", CautionKind.SCHOOL_ZONE, 250),
+            ),
+        )
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_AHEAD, listOf(100))), e.send(both))
+        clock.advanceSeconds(20)
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_AHEAD, listOf(100))), e.send(schoolZone("B", 100)))
+        assertEquals(emptyList<Guidance>(), e.send(schoolZone("B", 50)))
+    }
+
+    @Test
+    fun camerasOfTwoDifferentZones_eachAnnounceTheirLimit() {
+        val e = engine(experienced)
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), e.send(schoolCamera("A", 30)))
+        e.send(DriveEvent.CameraAlertsUpdated(emptyList()))
+        clock.advanceSeconds(91)
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(40))), e.send(schoolCamera("B", 40)))
+        assertEquals(emptyList<Guidance>(), e.send(schoolCamera("B", 40)))
+    }
+
+    @Test
+    fun secondCameraInSameZone_doesNotRepeatLimit() {
+        val e = engine(experienced)
+        e.send(schoolCamera("A", 30))
+        clock.advanceSeconds(20)
+        assertEquals(emptyList<Guidance>(), e.send(schoolCamera("A2", 30)))
+    }
+
+    @Test
+    fun nearTurnReceivedWhileParked_isAnnouncedAfterDriving() {
+        val e = engine(Personas.CARLOS)
+        e.send(DriveEvent.GearChanged(Gear.PARK))
+        assertEquals(emptyList<Guidance>(), e.send(tbt(TurnDirection.RIGHT to 100)))
+        e.send(DriveEvent.GearChanged(Gear.DRIVE))
+        assertEquals(listOf(RIGHT_TURN_RULE), e.send(tbt(TurnDirection.RIGHT to 90)).ids())
+    }
+
     // ---- Same Road, Different Guidance ----
 
     @Test

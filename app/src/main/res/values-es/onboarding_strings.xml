@@ -34,4 +34,9 @@
     <string name="drive_voice_unavailable">La guía por voz no está disponible en este idioma. Solo se muestra el texto.</string>
     <string name="drive_recent_title">Indicaciones recientes</string>
     <string name="drive_waiting">Las indicaciones aparecerán aquí.</string>
+
+    <string name="drive_demo_play">Reproducir demo · %1$s</string>
+    <string name="drive_demo_running">DEMO · %1$s</string>
+    <string name="drive_demo_finished">Demo terminada</string>
+    <string name="drive_demo_stop">Salir de la demo</string>
 </resources>

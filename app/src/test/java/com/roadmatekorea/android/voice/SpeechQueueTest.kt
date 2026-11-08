@@ -62,7 +62,7 @@ class SpeechQueueTest {
         add(GuidanceId.LHD_INTRO)
         clock.advanceSeconds(16) // 회전 규칙(10초)과 안전 경고(15초)는 만료
         assertEquals(GuidanceId.WELCOME_RIGHT_SIDE, queue.poll()?.guidance?.id)
-        clock.advanceSeconds(5) // 적응 안내(20초)도 만료
+        clock.advanceSeconds(25) // 적응 안내(40초)도 만료
         assertNull(queue.poll())
         add(GuidanceId.WELCOME_FIRST_TIME)
         clock.advanceSeconds(3600) // 시작 안내는 버리지 않음

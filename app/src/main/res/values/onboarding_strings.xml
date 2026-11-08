@@ -42,4 +42,11 @@
     <string name="drive_voice_unavailable">Voice guidance isn\'t available in this language. Showing text only.</string>
     <string name="drive_recent_title">Recent guidance</string>
     <string name="drive_waiting">Guidance will appear here.</string>
+
+    <string name="persona_nakamura" translatable="false">Nakamura</string>
+    <string name="persona_carlos" translatable="false">Carlos</string>
+    <string name="drive_demo_play">Play demo · %1$s</string>
+    <string name="drive_demo_running">DEMO · %1$s</string>
+    <string name="drive_demo_finished">Demo finished</string>
+    <string name="drive_demo_stop">End demo</string>
 </resources>

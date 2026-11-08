@@ -1,11 +1,15 @@
 package com.roadmatekorea.android.ui.drive
 
 import android.app.Application
+import android.util.Log
+import com.roadmatekorea.android.BuildConfig
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.roadmatekorea.android.drive.DriveSession
 import com.roadmatekorea.android.drive.DriveSignalHub
 import com.roadmatekorea.android.drive.VehicleStatus
+import com.roadmatekorea.android.demo.DemoPersona
+import com.roadmatekorea.android.demo.DemoSignalSource
 import com.roadmatekorea.android.i18n.AppLocales
 import com.roadmatekorea.android.i18n.GuidanceStrings
 import com.roadmatekorea.android.i18n.withLanguage
@@ -14,18 +18,27 @@ import com.roadmatekorea.android.voice.GuidanceSpeaker
 import com.roadmatekorea.android.voice.PleosTtsEngine
 import com.roadmatekorea.android.voice.TtsEngine
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+/** 시연 진행 상태. */
+data class DemoStatus(val persona: DemoPersona, val finished: Boolean = false)
+
 /** 주행 화면 상태. */
 data class DriveUiState(
+    /** 지금 세션의 프로필. 시연 중이면 시연 페르소나의 프로필. */
+    val profile: DriverProfile? = null,
+    val demo: DemoStatus? = null,
     val vehicle: VehicleStatus = VehicleStatus(),
     val caption: String? = null,
     val history: List<String> = emptyList(),
@@ -61,16 +74,21 @@ class DriveViewModel(
 
     private val session = MutableStateFlow<DriveSession?>(null)
 
+    private val _demo = MutableStateFlow<DemoStatus?>(null)
+    private var demoJob: Job? = null
+
     init {
         viewModelScope.launch {
             hub.signals.collect { signal ->
+                // 잠금은 시연 중에도 항상 실제 차량을 따른다
                 _vehicle.value = _vehicle.value.on(signal)
-                session.value?.onSignal(signal)
+                // 시연 중에는 실제 신호를 세션에 넣지 않는다(입력원은 한 번에 하나)
+                if (_demo.value == null) session.value?.onSignal(signal)
             }
         }
     }
 
-    val uiState: StateFlow<DriveUiState> = session.flatMapLatest { s ->
+    val uiState: StateFlow<DriveUiState> = combine(session, _demo) { s, d -> s to d }.flatMapLatest { (s, demo) ->
         combine(
             _vehicle,
             speaker.current,
@@ -80,7 +98,7 @@ class DriveViewModel(
                 failed || (s != null && AppLocales.localeOf(s.profile.language) in locales)
             },
         ) { vehicle, caption, history, limit, voiceUnavailable ->
-            DriveUiState(vehicle, caption?.text, history, limit, voiceUnavailable)
+            DriveUiState(s?.profile, demo, vehicle, caption?.text, history, limit, voiceUnavailable)
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, DriveUiState())
 
@@ -91,20 +109,66 @@ class DriveViewModel(
      * 설정 화면에 가도 세션은 닫지 않는다. 설정을 고치는 중에 출발해도 저장된 프로필로 안전 경고가 계속 나가야 한다.
      */
     fun enterDrive(profile: DriverProfile, announceNow: Boolean) {
+        if (_demo.value != null) return // 시연 중에는 시연 세션을 유지한다
         val current = session.value
         if (!announceNow && current != null && current.profile == profile) return
         speaker.stopAll()
-        val resources = app.withLanguage(profile.language).resources
-        val next = DriveSession(
-            profile = profile,
-            speaker = speaker,
-            textOf = { GuidanceStrings.text(resources, it) },
-            locale = AppLocales.localeOf(profile.language),
-        )
+        val next = newSession(profile)
         session.value = next
         // 엔진이 지금 기어를 알게 한다. 이미 D라면 이것이 주행 시작이 되어 시작 안내가 나간다.
         hub.lastGear.value?.let(next::onSignal)
         if (announceNow) next.announceStart()
+    }
+
+    /**
+     * 시연 시작(실제 기어가 P일 때만). [persona] 프로필로 새 세션을 열고 [DemoRoute]를 재생한다.
+     * 시연 세션에는 실제 신호를 넣지 않으며, 판단 로직은 실제 주행과 같다.
+     */
+    fun startDemo(persona: DemoPersona) {
+        if (_vehicle.value.locked) return
+        cancelDemo()
+        speaker.stopAll()
+        val demoSession = newSession(persona.profile)
+        _demo.value = DemoStatus(persona)
+        session.value = demoSession
+        demoJob = viewModelScope.launch {
+            DemoSignalSource(awaitIdle = { speaker.idle.first { it } }).signals().collect(demoSession::onSignal)
+            speaker.idle.first { it }
+            _demo.update { it?.copy(finished = true) }
+        }
+    }
+
+    /** 시연을 끝내고 저장된 프로필의 실제 주행 세션으로 돌아간다(실제 기어가 P일 때만). */
+    fun stopDemo(saved: DriverProfile) {
+        if (_vehicle.value.locked || _demo.value == null) return
+        cancelDemo()
+        speaker.stopAll()
+        session.value = null
+        enterDrive(saved, announceNow = false)
+    }
+
+    private fun cancelDemo() {
+        demoJob?.cancel()
+        demoJob = null
+        _demo.value = null
+    }
+
+    private fun newSession(profile: DriverProfile): DriveSession {
+        val resources = app.withLanguage(profile.language).resources
+        return DriveSession(
+            profile = profile,
+            speaker = speaker,
+            textOf = { guidance ->
+                // 디버그 빌드에서만 어떤 안내를 냈는지 남긴다(위치·경로 정보는 없음)
+                if (BuildConfig.DEBUG) Log.d(TAG, "${profile.language} ${guidance.id} ${guidance.args}")
+                GuidanceStrings.text(resources, guidance)
+            },
+            locale = AppLocales.localeOf(profile.language),
+        )
+    }
+
+    private companion object {
+        const val TAG = "RoadMateGuidance"
     }
 
     override fun onCleared() {

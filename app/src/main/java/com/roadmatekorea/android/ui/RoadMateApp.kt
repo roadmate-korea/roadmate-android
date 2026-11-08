@@ -85,9 +85,10 @@ fun RoadMateApp(store: ProfileStore) {
                     announceOnEnter = false
                 }
                 val state by driveVm.uiState.collectAsStateWithLifecycle()
-                ProvideLanguage(profile.language) {
+                // 시연 중에는 시연 페르소나의 언어로 화면을 보여 준다
+                ProvideLanguage(state.profile?.language ?: profile.language) {
                     DriveScreen(
-                        profile = profile,
+                        savedProfile = profile,
                         state = state,
                         onChangeSettings = {
                             // 설정 화면에 가도 주행 세션은 유지한다(편집 중 출발해도 안전 경고가 계속 나가야 함)
@@ -96,6 +97,8 @@ fun RoadMateApp(store: ProfileStore) {
                                 editing = true
                             }
                         },
+                        onPlayDemo = driveVm::startDemo,
+                        onStopDemo = { driveVm.stopDemo(profile) },
                     )
                 }
             }

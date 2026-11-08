@@ -295,18 +295,46 @@ class SchoolZoneSpeedTest {
     @Test
     fun anyOrderOfRoadLimitPointAndCamera_firstVisitAndReentry_warns() {
         val point = DriveEvent.CautionPointsUpdated(listOf(CautionPoint("zoneA", CautionKind.SCHOOL_ZONE, 100)))
-        val cam = DriveEvent.CameraAlertsUpdated(listOf(CameraAlert("camA", CameraKind.SCHOOL_ZONE, 30, 80)))
+        val single = DriveEvent.CameraAlertsUpdated(listOf(CameraAlert("camA", CameraKind.SCHOOL_ZONE, 30, 80)))
+        // 더 먼 다음 구역 카메라가 함께 오는 목록
+        val withFar = DriveEvent.CameraAlertsUpdated(
+            listOf(CameraAlert("camA", CameraKind.SCHOOL_ZONE, 30, 80), CameraAlert("camB", CameraKind.SCHOOL_ZONE, 20, 200)),
+        )
         val road = DriveEvent.SpeedLimitChanged(30)
-        val signals = listOf(road, point, cam)
         val orders = listOf(listOf(0, 1, 2), listOf(0, 2, 1), listOf(1, 0, 2), listOf(1, 2, 0), listOf(2, 0, 1), listOf(2, 1, 0))
-        for (first in orders) for (again in orders) {
+        for (cam in listOf(single, withFar)) for (first in orders) for (again in orders) {
+            val signals = listOf(road, point, cam)
             val e = engine().also { it.speed(25) }
             first.forEach { e.onEvent(signals[it]) }
-            assertEquals("first $first", listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(45, 30))), e.speed(45))
+            assertEquals("${cam.cameras.size} cams, first $first", listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(45, 30))), e.speed(45))
             e.speed(25); e.onEvent(DriveEvent.SpeedLimitChanged(50)); clock.advanceSeconds(60)
             again.forEach { e.onEvent(signals[it]) }
-            assertEquals("first $first, again $again", listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(45, 30))), e.speed(45))
+            assertEquals("${cam.cameras.size} cams, first $first, again $again", listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(45, 30))), e.speed(45))
             clock.advanceSeconds(120)
+        }
+    }
+
+    @Test
+    fun severalCameras_watchTheNearest_evenIfItWasAlreadyAnnounced() {
+        val near = CameraAlert("camA", CameraKind.SCHOOL_ZONE, 30, 80)
+        val far = CameraAlert("camB", CameraKind.SCHOOL_ZONE, 20, 200)
+        val both = DriveEvent.CameraAlertsUpdated(listOf(near, far))
+        // 첫 방문: 같은 목록이 반복돼도 가까운 30으로 감시
+        val e = engine().also { it.speed(25) }
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), e.onEvent(both))
+        assertTrue(e.onEvent(both).isEmpty())
+        e.onEvent(DriveEvent.SpeedLimitChanged(30))
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(45, 30))), e.speed(45))
+        // 이탈 뒤 재진입: 이미 안내한 가까운 A와 새 먼 B가 함께 와도 A(30)로 감시
+        e.speed(25); e.onEvent(DriveEvent.SpeedLimitChanged(50)); clock.advanceSeconds(60)
+        e.onEvent(DriveEvent.SpeedLimitChanged(30))
+        e.onEvent(DriveEvent.CautionPointsUpdated(listOf(CautionPoint("zoneA", CautionKind.SCHOOL_ZONE, 100))))
+        e.onEvent(both)
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(45, 30))), e.speed(45))
+        repeat(3) {
+            clock.advanceSeconds(31)
+            e.onEvent(DriveEvent.SpeedLimitChanged(30)); e.onEvent(both)
+            assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(45, 30))), e.speed(45))
         }
     }
 

@@ -198,8 +198,13 @@ class GuidanceEngine(
 
     private fun onCameras(cameras: List<CameraAlert>): List<Guidance> = schoolZoneCamera(cameras) + sectionCheck(cameras)
 
+    /**
+     * 어린이보호구역 카메라. 감시 기준은 이미 안내했든 아니든 항상 가장 가까운 카메라로 하고,
+     * 그 카메라를 아직 안내하지 않았을 때만 말한다(무엇을 감시할지와 무엇을 말할지를 나눈다).
+     */
     private fun schoolZoneCamera(cameras: List<CameraAlert>): List<Guidance> {
         val schoolCameras = cameras.filter { it.kind == CameraKind.SCHOOL_ZONE && it.speedLimitKmh > 0 }
+        val nearest = schoolCameras.minByOrNull { it.remainMeters } ?: return emptyList()
         schoolZone?.let { zone ->
             val active = activeSchoolZone() != null
             // 지금 구역과 같은 제한의 카메라는 구역 근거다. 만료된 구역은 같은 카메라가 다시 올 때만 말없이 되살린다.
@@ -207,40 +212,27 @@ class GuidanceEngine(
             else zone.cameraId != null && schoolCameras.any { it.id == zone.cameraId }
             if (evidence) schoolZone = revive(zone)
         }
-        val known = schoolCameras.filter { it.id in announcedCameraIds }.minByOrNull { it.remainMeters }
-        val current = activeSchoolZone()
-        if (known != null && schoolCameras.none { it.id !in announcedCameraIds } && current?.zoneLimitKmh == null) {
-            // 이미 안내한 카메라가 다시 왔는데 감시 중인 구역이 없거나, 접근 지점만 알고 제한을 아직 모른다
-            // (같은 구역 재진입 등): 다시 말하지 않고 그 카메라 제한으로 감시를 시작하고 지금 속도로 판단한다
-            schoolZone = (current ?: SchoolZoneContext(clock.nowMillis(), currentSpeedLimit)).copy(
-                zoneLimitKmh = known.speedLimitKmh,
-                cameraId = known.id,
-                lastEvidenceMs = clock.nowMillis(),
-                entry = entryFor(known.speedLimitKmh),
-                overSpeedWarned = false,
-            )
-            return checkOverSpeed()
-        }
         val zone = activeSchoolZone()
         // 도로 제한으로 진입이 확인된 구역에서는 그 제한이 기준이다. 앞쪽 카메라의 다른 값으로 바꾸지 않는다.
-        // (카메라로만 추정한 구역이면 다른 제한의 카메라를 새 구역으로 본다.)
+        // (카메라로만 추정했거나 접근 중인 구역이면 가장 가까운 카메라의 제한을 따른다.)
         if (zone?.entry == Entry.ROAD) return emptyList()
-        // 카메라에는 구역 정보가 없다. 같은 구역인지 알 수 없으므로, 방금 같은 제한 속도를 말한 경우에만 건너뛴다.
-        // 건너뛴 카메라는 완료 처리하지 않는다(구역이 끝난 뒤 다시 들어오면 안내한다).
-        val camera = schoolCameras
-            .filter { it.id !in announcedCameraIds && zone?.zoneLimitKmh != it.speedLimitKmh }
-            .minByOrNull { it.remainMeters }
-            ?: return emptyList()
-        announcedCameraIds += camera.id
-        val limit = camera.speedLimitKmh
+        // 이미 같은 제한으로 감시 중이다. 다른 카메라라도 같은 구역으로 보고 다시 말하지 않는다
+        // (그 카메라는 완료 처리하지 않아, 구역이 끝난 뒤 다시 오면 새 구역으로 안내한다).
+        if (zone?.zoneLimitKmh == nearest.speedLimitKmh) return emptyList()
+        val limit = nearest.speedLimitKmh
         schoolZone = (zone ?: SchoolZoneContext(clock.nowMillis(), currentSpeedLimit)).copy(
             zoneLimitKmh = limit,
-            cameraId = camera.id,
+            cameraId = nearest.id,
             lastEvidenceMs = clock.nowMillis(),
             // 도로 제한을 알면 그 값이 확인해 줄 때까지 기다리고(앞쪽 카메라일 수 있다), 모르면 카메라 값으로 추정한다
             entry = entryFor(limit),
             overSpeedWarned = false,
         )
+        if (nearest.id in announcedCameraIds) {
+            // 이미 안내한 카메라(같은 구역 재진입 등): 다시 말하지 않고 그 제한으로 감시하며 지금 속도로 판단한다
+            return checkOverSpeed()
+        }
+        announcedCameraIds += nearest.id
         return listOf(schoolZoneLimit(limit))
     }
 

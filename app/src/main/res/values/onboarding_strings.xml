@@ -34,4 +34,12 @@
 
     <string name="onboarding_save_failed">Couldn\'t save your settings. Please press START again.</string>
     <string name="settings_read_error">Couldn\'t read your settings. Trying again…</string>
+
+    <string name="drive_speed_limit_value" translatable="false">%1$d</string>
+    <string name="drive_locked_hint">Controls are locked while driving.</string>
+    <string name="drive_parked_only">Settings can be changed only when parked (P).</string>
+    <string name="drive_vehicle_unavailable">Can\'t read vehicle signals.</string>
+    <string name="drive_voice_unavailable">Voice guidance isn\'t available in this language. Showing text only.</string>
+    <string name="drive_recent_title">Recent guidance</string>
+    <string name="drive_waiting">Guidance will appear here.</string>
 </resources>

@@ -29,6 +29,7 @@ import com.roadmatekorea.android.ui.components.GuidanceCaptionBar
 import com.roadmatekorea.android.ui.components.ReadOnlyOverlay
 import com.roadmatekorea.android.ui.drive.DriveScreen
 import com.roadmatekorea.android.ui.drive.DriveViewModel
+import com.roadmatekorea.android.ui.drive.createDriveViewModel
 import com.roadmatekorea.android.ui.onboarding.OnboardingOptions
 import com.roadmatekorea.android.ui.onboarding.OnboardingScreen
 import com.roadmatekorea.android.ui.onboarding.OnboardingState
@@ -44,7 +45,7 @@ import com.roadmatekorea.android.ui.onboarding.OnboardingViewModel
 @Composable
 fun RoadMateApp(store: ProfileStore) {
     val app = LocalContext.current.applicationContext as RoadMateApplication
-    val driveVm: DriveViewModel = viewModel { DriveViewModel(app, app.signalHub) }
+    val driveVm: DriveViewModel = viewModel { createDriveViewModel(app) }
     val vehicle by driveVm.vehicle.collectAsStateWithLifecycle()
 
     val read by remember(store) { store.profile }.collectAsStateWithLifecycle(initialValue = null)

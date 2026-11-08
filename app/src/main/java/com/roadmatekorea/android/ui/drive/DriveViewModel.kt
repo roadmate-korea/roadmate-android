@@ -1,21 +1,16 @@
 package com.roadmatekorea.android.ui.drive
 
-import android.app.Application
-import android.util.Log
-import com.roadmatekorea.android.BuildConfig
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.roadmatekorea.android.demo.DemoPersona
+import com.roadmatekorea.android.demo.DemoSignalSource
 import com.roadmatekorea.android.drive.DriveSession
 import com.roadmatekorea.android.drive.DriveSignalHub
 import com.roadmatekorea.android.drive.VehicleStatus
-import com.roadmatekorea.android.demo.DemoPersona
-import com.roadmatekorea.android.demo.DemoSignalSource
 import com.roadmatekorea.android.i18n.AppLocales
-import com.roadmatekorea.android.i18n.GuidanceStrings
-import com.roadmatekorea.android.i18n.withLanguage
 import com.roadmatekorea.android.profile.model.DriverProfile
+import com.roadmatekorea.android.rules.Guidance
 import com.roadmatekorea.android.voice.GuidanceSpeaker
-import com.roadmatekorea.android.voice.PleosTtsEngine
 import com.roadmatekorea.android.voice.TtsEngine
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -25,10 +20,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** 시연 진행 상태. */
@@ -48,23 +43,25 @@ data class DriveUiState(
 
 /**
  * 앱 화면(Activity) 하나에 하나. [DriveSignalHub]의 실제 차량·내비 신호를 받아
- * ① 화면 잠금용 실제 기어 상태를 갱신하고 ② 주행 화면이 열려 있으면 세션에 넣는다.
+ * ① 화면 잠금용 실제 기어 상태를 갱신하고 ② 안내 세션에 넣는다.
  * 앱이 뒤로 가도(다른 앱이 앞에 있어도) 화면이 살아 있는 동안 안내는 계속된다.
  *
- * TTS 엔진은 여기서 한 번 만들고 [onCleared]에서 한 번 해제한다.
+ * TTS 엔진은 여기서 한 번 쓰고 [onCleared]에서 한 번 해제한다.
+ * Android 의존성(TTS 엔진, 언어별 문장)은 주입받아 JVM에서 테스트할 수 있다.
+ *
+ * @param textFor 프로필 언어로 안내 문장을 만드는 함수를 돌려준다.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class DriveViewModel(
-    private val app: Application,
     private val hub: DriveSignalHub,
-    ttsEngine: TtsEngine = PleosTtsEngine(app),
-) : AndroidViewModel(app) {
+    ttsEngine: TtsEngine,
+    private val textFor: (DriverProfile) -> (Guidance) -> String,
+) : ViewModel() {
 
     private val speaker = GuidanceSpeaker(ttsEngine, viewModelScope).also { it.start() }
 
-    // 허브가 보관한 마지막 기어와 사용 불가 여부로 시작한다(이 화면보다 먼저 들어온 신호)
+    // 허브가 보관한 마지막 기어로 시작한다(이 화면보다 먼저 들어온 신호). 그 뒤 오류가 있었다면 잠근다.
     private val _vehicle = MutableStateFlow(
-        // 마지막 기어가 있으면 그 값으로 시작한다. 그 뒤에 오류가 있었다면 잠근다(정상 기어를 다시 받을 때까지).
         (hub.lastGear.value?.let(VehicleStatus()::on) ?: VehicleStatus())
             .let { if (hub.vehicleUnavailableSinceLastGear()) it.copy(error = true) else it },
     )
@@ -77,12 +74,18 @@ class DriveViewModel(
     private val _demo = MutableStateFlow<DemoStatus?>(null)
     private var demoJob: Job? = null
 
+    /** 마지막으로 받은 저장된 프로필. 시연이 끝나면 이 프로필의 실제 세션으로 돌아간다. */
+    private var savedProfile: DriverProfile? = null
+
     init {
         viewModelScope.launch {
             hub.signals.collect { signal ->
                 // 잠금은 시연 중에도 항상 실제 차량을 따른다
                 _vehicle.value = _vehicle.value.on(signal)
-                // 시연 중에는 실제 신호를 세션에 넣지 않는다(입력원은 한 번에 하나)
+                // 시연 중에 실제로 출발하면(P를 벗어남) 시연을 바로 끝내고 실제 세션으로 돌아간다.
+                // 실제 안전 경고가 시연 때문에 막히면 안 된다.
+                if (_demo.value != null && _vehicle.value.locked) exitDemoToRealSession()
+                // 시연 중(정차)에는 실제 신호를 세션에 넣지 않는다(입력원은 한 번에 하나)
                 if (_demo.value == null) session.value?.onSignal(signal)
             }
         }
@@ -117,7 +120,8 @@ class DriveViewModel(
      * 설정 화면에 가도 세션은 닫지 않는다. 설정을 고치는 중에 출발해도 저장된 프로필로 안전 경고가 계속 나가야 한다.
      */
     fun enterDrive(profile: DriverProfile, announceNow: Boolean) {
-        if (_demo.value != null) return // 시연 중에는 시연 세션을 유지한다
+        savedProfile = profile
+        if (_demo.value != null) return // 시연 중(정차)에는 시연 세션을 유지한다
         val current = session.value
         if (!announceNow && current != null && current.profile == profile) return
         speaker.stopAll()
@@ -129,7 +133,16 @@ class DriveViewModel(
     }
 
     /**
-     * 시연 시작(실제 기어가 P일 때만). [persona] 프로필로 새 세션을 열고 [DemoRoute]를 재생한다.
+     * 저장된 프로필의 세션이 없으면 연다(시작 안내 없이). 설정 화면에 있거나 프로세스가 설정 화면으로
+     * 복원된 경우에도 저장된 프로필로 안전 경고가 나가게 하려는 것이다. 편집 중인 값은 쓰지 않는다.
+     */
+    fun ensureSession(saved: DriverProfile) {
+        savedProfile = saved
+        if (session.value == null) enterDrive(saved, announceNow = false)
+    }
+
+    /**
+     * 시연 시작(실제 기어가 P일 때만). [persona] 프로필로 새 세션을 열고 DemoRoute를 재생한다.
      * 시연 세션에는 실제 신호를 넣지 않으며, 판단 로직은 실제 주행과 같다.
      */
     fun startDemo(persona: DemoPersona) {
@@ -146,13 +159,18 @@ class DriveViewModel(
         }
     }
 
-    /** 시연을 끝내고 저장된 프로필의 실제 주행 세션으로 돌아간다(실제 기어가 P일 때만). */
+    /** 시연을 끝내고 저장된 프로필의 실제 주행 세션으로 돌아간다(실제 기어가 P일 때만, 화면 버튼). */
     fun stopDemo(saved: DriverProfile) {
         if (_vehicle.value.locked || _demo.value == null) return
+        savedProfile = saved
+        exitDemoToRealSession()
+    }
+
+    private fun exitDemoToRealSession() {
         cancelDemo()
         speaker.stopAll()
         session.value = null
-        enterDrive(saved, announceNow = false)
+        savedProfile?.let { enterDrive(it, announceNow = false) }
     }
 
     private fun cancelDemo() {
@@ -161,31 +179,12 @@ class DriveViewModel(
         _demo.value = null
     }
 
-    private fun newSession(profile: DriverProfile): DriveSession {
-        val resources = app.withLanguage(profile.language).resources
-        return DriveSession(
-            profile = profile,
-            speaker = speaker,
-            textOf = { guidance ->
-                // 디버그 빌드에서만 어떤 안내를 냈는지 남긴다(위치·경로 정보는 없음)
-                if (BuildConfig.DEBUG) Log.d(TAG, "${profile.language} ${guidance.id} ${guidance.args}")
-                GuidanceStrings.text(resources, guidance)
-            },
-            locale = AppLocales.localeOf(profile.language),
-        )
-    }
-
-    private companion object {
-        const val TAG = "RoadMateGuidance"
-    }
-
-    /**
-     * 저장된 프로필의 세션이 없으면 연다(시작 안내 없이). 설정 화면에 있거나 프로세스가 설정 화면으로
-     * 복원된 경우에도 저장된 프로필로 안전 경고가 나가게 하려는 것이다. 편집 중인 값은 쓰지 않는다.
-     */
-    fun ensureSession(saved: DriverProfile) {
-        if (session.value == null) enterDrive(saved, announceNow = false)
-    }
+    private fun newSession(profile: DriverProfile) = DriveSession(
+        profile = profile,
+        speaker = speaker,
+        textOf = textFor(profile),
+        locale = AppLocales.localeOf(profile.language),
+    )
 
     override fun onCleared() {
         speaker.release()

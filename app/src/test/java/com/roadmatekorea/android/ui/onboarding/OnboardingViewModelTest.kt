@@ -56,7 +56,7 @@ class OnboardingViewModelTest {
     @Test
     fun start_saves_andMarksSavedInState() = runTest(dispatcher) {
         val store = FakeStore()
-        val vm = OnboardingViewModel(store, existing = null)
+        val vm = OnboardingViewModel(store).apply { beginSession(1, null) }
         vm.chooseCarlos()
         vm.start()
         assertFalse(vm.state.value.saved)
@@ -74,7 +74,7 @@ class OnboardingViewModelTest {
     @Test
     fun saveFailure_keepsChoices_showsError_andRetryWorks() = runTest(dispatcher) {
         val store = FakeStore(failNext = 1)
-        val vm = OnboardingViewModel(store, existing = null)
+        val vm = OnboardingViewModel(store).apply { beginSession(1, null) }
         vm.chooseCarlos()
         vm.start()
         advanceUntilIdle()
@@ -93,7 +93,7 @@ class OnboardingViewModelTest {
     @Test
     fun choicesCannotChangeWhileSaving_soSavedValueMatchesScreen() = runTest(dispatcher) {
         val store = FakeStore()
-        val vm = OnboardingViewModel(store, existing = null)
+        val vm = OnboardingViewModel(store).apply { beginSession(1, null) }
         vm.selectLanguage(AppLanguage.EN)
         vm.selectCountry(DrivingCountry.JP)
         vm.selectExperience(KoreaExperience.FIRST_TIME_LEFT_HAND_DRIVE)
@@ -111,9 +111,29 @@ class OnboardingViewModelTest {
     }
 
     @Test
+    fun beginSession_resetsOnlyForNewSession() = runTest(dispatcher) {
+        val store = FakeStore()
+        val vm = OnboardingViewModel(store)
+        vm.beginSession(1, null)
+        vm.chooseCarlos()
+        vm.start()
+        advanceUntilIdle()
+        assertTrue(vm.state.value.saved)
+        // 같은 세션으로 다시 부르면(화면 재생성) 그대로
+        vm.beginSession(1, null)
+        assertTrue(vm.state.value.saved)
+        // 설정 다시 하기: 새 세션은 저장된 값을 미리 고른 새 편집
+        vm.beginSession(2, Personas.CARLOS)
+        assertFalse(vm.state.value.saved)
+        assertEquals(OnboardingState.Page.LANGUAGE, vm.state.value.page)
+        assertEquals(Personas.CARLOS, vm.state.value.toProfile())
+        assertTrue(vm.state.value.canStart)
+    }
+
+    @Test
     fun start_ignoredWhileSaving_orIncomplete() = runTest(dispatcher) {
         val store = FakeStore()
-        val vm = OnboardingViewModel(store, existing = null)
+        val vm = OnboardingViewModel(store).apply { beginSession(1, null) }
         vm.selectLanguage(AppLanguage.EN)
         vm.start()
         advanceUntilIdle()

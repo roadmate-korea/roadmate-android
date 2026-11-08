@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 온보딩과 주행 화면 문구(프랑스어). ! ? : 앞에는 줄바꿈 없는 공백(&#160;)을 둔다. -->
+<resources>
+    <string name="onboarding_country_question">Dans quel pays conduisez-vous habituellement&#160;?</string>
+    <string name="onboarding_experience_question">Avez-vous déjà conduit en Corée&#160;?</string>
+    <string name="onboarding_start">COMMENCER</string>
+    <string name="onboarding_back">Retour</string>
+
+    <string name="country_cn">Chine</string>
+    <string name="country_jp">Japon</string>
+    <string name="country_tw">Taïwan</string>
+    <string name="country_us">États-Unis</string>
+    <string name="country_hk">Hong Kong</string>
+    <string name="country_ph">Philippines</string>
+    <string name="country_vn">Viêt Nam</string>
+    <string name="country_th">Thaïlande</string>
+    <string name="country_sg">Singapour</string>
+    <string name="country_my">Malaisie</string>
+    <string name="country_other">Autre pays</string>
+
+    <string name="experience_drove_in_korea">J\'ai déjà conduit en Corée</string>
+    <string name="experience_first_time_in_korea">C\'est la première fois que je conduis en Corée</string>
+    <string name="experience_first_time_left_hand_drive">C\'est la première fois que je conduis une voiture avec le volant à gauche</string>
+
+    <string name="drive_ready">RoadMate est prêt. Les conseils commenceront quand vous roulerez.</string>
+    <string name="drive_change_settings">Modifier les réglages</string>
+
+    <string name="onboarding_save_failed">Impossible d\'enregistrer vos réglages. Appuyez de nouveau sur COMMENCER.</string>
+    <string name="settings_read_error">Impossible de lire vos réglages. Nouvel essai…</string>
+</resources>

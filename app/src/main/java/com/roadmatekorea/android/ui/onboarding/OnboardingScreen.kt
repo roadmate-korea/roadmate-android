@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +30,7 @@ import com.roadmatekorea.android.i18n.ProfileLabels
 import com.roadmatekorea.android.profile.model.AppLanguage
 import com.roadmatekorea.android.profile.model.DrivingCountry
 import com.roadmatekorea.android.profile.model.KoreaExperience
+import com.roadmatekorea.android.ui.LocalCompact
 import com.roadmatekorea.android.ui.ProvideLanguage
 import com.roadmatekorea.android.ui.components.LogoMark
 import com.roadmatekorea.android.ui.components.OptionRow
@@ -62,6 +65,7 @@ fun OnboardingScreen(
 
 @Composable
 private fun LanguagePage(languages: List<AppLanguage>, selected: AppLanguage?, enabled: Boolean, onLanguage: (AppLanguage) -> Unit) {
+    if (LocalCompact.current) return CompactLanguagePage(languages, selected, enabled, onLanguage)
     val c = RoadMate.colors
     Row(
         horizontalArrangement = Arrangement.spacedBy(120.dp),
@@ -95,6 +99,39 @@ private fun LanguagePage(languages: List<AppLanguage>, selected: AppLanguage?, e
     }
 }
 
+/** 좁은 창(내비와 나란히): 로고, 제목, 언어 목록을 위에서 아래로. */
+@Composable
+private fun CompactLanguagePage(languages: List<AppLanguage>, selected: AppLanguage?, enabled: Boolean, onLanguage: (AppLanguage) -> Unit) {
+    val c = RoadMate.colors
+    Column(
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState(), enabled = enabled).padding(horizontal = 40.dp, vertical = 48.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            LogoMark()
+            Text(
+                stringResource(R.string.app_name_short),
+                style = RoadMate.type.titleL.copy(fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.02).em),
+                color = c.ink,
+            )
+        }
+        Spacer(Modifier.height(24.dp))
+        Text(stringResource(R.string.onboarding_language_title), style = RoadMate.type.headlineS, color = c.ink)
+        Text(stringResource(R.string.onboarding_language_body), style = RoadMate.type.bodyM, color = c.inkSecondary)
+        Spacer(Modifier.height(8.dp))
+        languages.forEach { language ->
+            OptionRow(
+                title = stringResource(ProfileLabels.language(language)),
+                selected = language == selected,
+                onClick = { onLanguage(language) },
+                enabled = enabled,
+                minHeight = 104.dp,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
 @Composable
 private fun DrivingPage(
     state: OnboardingState,
@@ -106,6 +143,7 @@ private fun DrivingPage(
 ) {
     val c = RoadMate.colors
     val editable = state.editable && !locked
+    if (LocalCompact.current) return CompactDrivingPage(state, editable, locked, onCountry, onExperience, onBack, onStart)
     Column(Modifier.fillMaxSize().padding(start = 96.dp, end = 96.dp, top = 40.dp, bottom = 72.dp)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -165,6 +203,80 @@ private fun DrivingPage(
                 )
             }
         }
+    }
+}
+
+/**
+ * 좁은 창(내비와 나란히): 뒤로, 국가(2열), 경험, 시작 버튼을 한 열로 쌓고 스크롤한다.
+ * 정차 중에만 조작할 수 있으므로 스크롤도 정차 중에만 받는다. 시작 버튼은 아래에 고정한다.
+ */
+@Composable
+private fun CompactDrivingPage(
+    state: OnboardingState,
+    editable: Boolean,
+    locked: Boolean,
+    onCountry: (DrivingCountry) -> Unit,
+    onExperience: (KoreaExperience) -> Unit,
+    onBack: () -> Unit,
+    onStart: () -> Unit,
+) {
+    val c = RoadMate.colors
+    Column(Modifier.fillMaxSize().padding(start = 40.dp, end = 40.dp, top = 24.dp, bottom = 32.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier
+                .heightIn(min = 72.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(enabled = editable, role = Role.Button, onClick = onBack)
+                .padding(end = 16.dp),
+        ) {
+            RmIcon(R.drawable.ic_rm_arrow_left, size = 44.dp, tint = if (editable) c.ink else c.inkTertiary)
+            Text(stringResource(R.string.onboarding_back), style = RoadMate.type.labelM, color = c.inkTertiary)
+        }
+        Column(
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState(), enabled = !locked).padding(top = 16.dp, bottom = 24.dp),
+        ) {
+            Text(stringResource(R.string.onboarding_country_question), style = RoadMate.type.titleM, color = c.ink)
+            OnboardingOptions.countries.chunked(COUNTRIES_PER_ROW).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.fillMaxWidth()) {
+                    row.forEach { country ->
+                        OptionRow(
+                            title = stringResource(ProfileLabels.country(country)),
+                            selected = country == state.country,
+                            onClick = { onCountry(country) },
+                            enabled = editable,
+                            minHeight = 88.dp,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    repeat(COUNTRIES_PER_ROW - row.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            Text(stringResource(R.string.onboarding_experience_question), style = RoadMate.type.titleM, color = c.ink)
+            OnboardingOptions.experiences.forEach { experience ->
+                OptionRow(
+                    title = stringResource(ProfileLabels.experience(experience)),
+                    description = stringResource(ProfileLabels.experienceDescription(experience)),
+                    selected = experience == state.experience,
+                    onClick = { onExperience(experience) },
+                    enabled = editable,
+                    minHeight = 120.dp,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+        if (state.saveFailed) {
+            Text(stringResource(R.string.onboarding_save_failed), style = RoadMate.type.bodyM, color = c.danger)
+        }
+        RmButton(
+            text = stringResource(R.string.onboarding_start),
+            onClick = onStart,
+            enabled = state.canStart && !locked,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 

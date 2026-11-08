@@ -25,11 +25,13 @@ import com.roadmatekorea.android.profile.ProfileRead
 import com.roadmatekorea.android.profile.ProfileStore
 import com.roadmatekorea.android.profile.model.AppLanguage
 import com.roadmatekorea.android.profile.model.DriverProfile
+import com.roadmatekorea.android.ui.components.GuidanceCaptionBar
 import com.roadmatekorea.android.ui.components.ReadOnlyOverlay
 import com.roadmatekorea.android.ui.drive.DriveScreen
 import com.roadmatekorea.android.ui.drive.DriveViewModel
 import com.roadmatekorea.android.ui.onboarding.OnboardingOptions
 import com.roadmatekorea.android.ui.onboarding.OnboardingScreen
+import com.roadmatekorea.android.ui.onboarding.OnboardingState
 import com.roadmatekorea.android.ui.onboarding.OnboardingViewModel
 
 /**
@@ -59,6 +61,9 @@ fun RoadMateApp(store: ProfileStore) {
         }
         is ProfileRead.Loaded -> {
             val profile = current.profile
+            // 저장된 프로필이 있으면 화면(설정 중이든, 프로세스가 설정 화면으로 복원됐든)과 상관없이 안내 세션을 둔다
+            if (profile != null) LaunchedEffect(profile) { driveVm.ensureSession(profile) }
+            val driveState by driveVm.uiState.collectAsStateWithLifecycle()
             if (profile == null || editing) {
                 Box(Modifier.fillMaxSize()) {
                     Onboarding(
@@ -72,11 +77,11 @@ fun RoadMateApp(store: ProfileStore) {
                         onStartPressed = { announceOnEnter = true },
                         onDone = { editing = false },
                     )
-                    if (vehicle.locked) {
-                        // 온보딩 PAGE 1은 언어를 고르기 전이라 저장된 언어(없으면 영어)로 안내한다
-                        ProvideLanguage(profile?.language ?: AppLanguage.EN) {
-                            ReadOnlyOverlay(stringResource(R.string.drive_parked_only))
-                        }
+                    // 설정 화면에서도 지금 안내 자막을 보여 준다(음성을 쓸 수 없을 때 유일한 출력). 저장된 프로필 언어로.
+                    val caption = driveState.caption
+                    val sessionProfile = driveState.profile
+                    if (caption != null && sessionProfile != null) {
+                        ProvideLanguage(sessionProfile.language) { GuidanceCaptionBar(caption) }
                     }
                 }
             } else {
@@ -84,12 +89,11 @@ fun RoadMateApp(store: ProfileStore) {
                     driveVm.enterDrive(profile, announceNow = announceOnEnter)
                     announceOnEnter = false
                 }
-                val state by driveVm.uiState.collectAsStateWithLifecycle()
                 // 시연 중에는 시연 페르소나의 언어로 화면을 보여 준다
-                ProvideLanguage(state.profile?.language ?: profile.language) {
+                ProvideLanguage(driveState.profile?.language ?: profile.language) {
                     DriveScreen(
                         savedProfile = profile,
-                        state = state,
+                        state = driveState,
                         onChangeSettings = {
                             // 설정 화면에 가도 주행 세션은 유지한다(편집 중 출발해도 안전 경고가 계속 나가야 함)
                             if (!driveVm.vehicle.value.locked) {
@@ -126,6 +130,7 @@ private fun Onboarding(
     fun guarded(action: () -> Unit) {
         if (!isLockedNow()) action()
     }
+    Box(Modifier.fillMaxSize()) {
     OnboardingScreen(
         state = state,
         locked = locked,
@@ -141,4 +146,12 @@ private fun Onboarding(
             }
         },
     )
+    if (locked) {
+        // 잠금 안내는 지금 화면과 같은 언어로: PAGE 2는 고른 언어, PAGE 1은 저장된 언어(없으면 영어)
+        val language = if (state.page == OnboardingState.Page.DRIVING) state.language else existing?.language
+        ProvideLanguage(language ?: AppLanguage.EN) {
+            ReadOnlyOverlay(stringResource(R.string.drive_parked_only))
+        }
+    }
+    }
 }

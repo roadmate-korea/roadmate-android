@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 온보딩과 주행 화면 문구(영어, 기본값). OnboardingStringsTest가 4개 언어를 함께 검사한다. -->
+<resources>
+    <!-- PAGE 1은 언어를 고르기 전이라 영어로 고정하고, 언어 이름은 각자 자기 언어로 쓴다. -->
+    <string name="onboarding_language_title" translatable="false">Choose your language</string>
+    <string name="language_name_en" translatable="false">English</string>
+    <string name="language_name_fr" translatable="false">Français</string>
+    <string name="language_name_es" translatable="false">Español</string>
+    <string name="language_name_ko" translatable="false">한국어</string>
+
+    <string name="onboarding_country_question">Which country do you usually drive in?</string>
+    <string name="onboarding_experience_question">Have you driven in Korea before?</string>
+    <string name="onboarding_start">START</string>
+    <string name="onboarding_back">Back</string>
+
+    <string name="country_cn">China</string>
+    <string name="country_jp">Japan</string>
+    <string name="country_tw">Taiwan</string>
+    <string name="country_us">United States</string>
+    <string name="country_hk">Hong Kong</string>
+    <string name="country_ph">Philippines</string>
+    <string name="country_vn">Vietnam</string>
+    <string name="country_th">Thailand</string>
+    <string name="country_sg">Singapore</string>
+    <string name="country_my">Malaysia</string>
+    <string name="country_other">Other country</string>
+
+    <string name="experience_drove_in_korea">I have driven in Korea before</string>
+    <string name="experience_first_time_in_korea">This is my first time driving in Korea</string>
+    <string name="experience_first_time_left_hand_drive">This is my first time driving a left-hand drive car</string>
+
+    <string name="drive_ready">RoadMate is ready. Guidance will start when you drive.</string>
+    <string name="drive_change_settings">Change settings</string>
+</resources>

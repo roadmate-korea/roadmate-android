@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 온보딩과 주행 화면 문구(스페인어). 기획서의 "Otro país"를 그대로 쓴다. -->
+<resources>
+    <string name="onboarding_country_question">¿En qué país conduces habitualmente?</string>
+    <string name="onboarding_experience_question">¿Has conducido antes en Corea?</string>
+    <string name="onboarding_start">EMPEZAR</string>
+    <string name="onboarding_back">Volver</string>
+
+    <string name="country_cn">China</string>
+    <string name="country_jp">Japón</string>
+    <string name="country_tw">Taiwán</string>
+    <string name="country_us">Estados Unidos</string>
+    <string name="country_hk">Hong Kong</string>
+    <string name="country_ph">Filipinas</string>
+    <string name="country_vn">Vietnam</string>
+    <string name="country_th">Tailandia</string>
+    <string name="country_sg">Singapur</string>
+    <string name="country_my">Malasia</string>
+    <string name="country_other">Otro país</string>
+
+    <string name="experience_drove_in_korea">Ya he conducido en Corea</string>
+    <string name="experience_first_time_in_korea">Es mi primera vez conduciendo en Corea</string>
+    <string name="experience_first_time_left_hand_drive">Es mi primera vez conduciendo un vehículo con el volante a la izquierda</string>
+
+    <string name="drive_ready">RoadMate está listo. Las indicaciones comenzarán cuando conduzcas.</string>
+    <string name="drive_change_settings">Cambiar ajustes</string>
+</resources>

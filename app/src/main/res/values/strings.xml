@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name" translatable="false">RoadMate Korea</string>
-    <string name="placeholder_message">Project setup complete. MVP implementation starts here.</string>
 </resources>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    주행 안내 문장(영어, 기본값). 화면 자막과 음성이 같은 문장을 쓴다.
+    키 이름은 "guidance_" + GuidanceId 소문자. StringResourcesTest가 4개 언어를 함께 검사한다.
+    guidance_welcome_right_side는 docs/mvp-scenario.md의 Nakamura 문장과 글자 하나까지 같아야 한다.
+-->
+<resources>
+    <string name="guidance_welcome_right_side">Welcome to Korea. In Korea, vehicles drive on the right side of the road. Please take extra care at intersections.</string>
+    <string name="guidance_welcome_first_time">Welcome to Korea! Since this is your first time driving here, we\'ll help you get to know the local traffic rules.</string>
+    <string name="guidance_welcome_experienced">Welcome back to Korea. We\'ll alert you to essential safety points, such as school zones.</string>
+
+    <string name="guidance_lhd_intro">This car is left-hand drive. You sit on the left, so the right side of the car is farther away than it feels. The turn signal lever is on the left of the steering wheel.</string>
+    <string name="guidance_lhd_mirror_check">Before turning or changing lanes, check your mirrors and look over your shoulder. The passenger side is now on your right.</string>
+    <string name="guidance_right_side_left_turn">After turning left, keep to the right side of the road you enter.</string>
+
+    <string name="guidance_right_turn_rule">Turning right. If there is a right-turn signal, turn only on its green arrow. Otherwise, on a red light, stop at the stop line first, even if no one is crossing, then turn slowly only if you will not block traffic moving on a green light. Always stop for anyone crossing or about to cross.</string>
+    <string name="guidance_left_turn_rule">Turning left. At traffic lights in Korea, turn left only on a green left arrow. Where an unprotected left turn sign is posted, you may also turn on a green light, after giving way to oncoming traffic and pedestrians.</string>
+
+    <string name="guidance_school_zone_ahead">School zone in %1$d meters. Slow down and watch for children.</string>
+    <string name="guidance_school_zone_speed_limit">School zone. The speed limit is %1$d kilometers per hour.</string>
+    <string name="guidance_school_zone_crosswalk">In school zones, always stop before a crosswalk without traffic lights, even if no one is crossing.</string>
+
+    <string name="guidance_arrived">You have arrived. Thank you for driving safely in Korea.</string>
+</resources>

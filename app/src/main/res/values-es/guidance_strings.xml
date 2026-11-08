@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    주행 안내 문장(스페인어). 기획서 문장에 맞춰 tú로 말한다.
+    guidance_welcome_first_time은 docs/mvp-scenario.md의 Carlos 문장과 글자 하나까지 같아야 한다.
+-->
+<resources>
+    <string name="guidance_welcome_right_side">¡Bienvenido a Corea! En Corea, los vehículos circulan por el lado derecho de la vía. Ten especial cuidado en las intersecciones.</string>
+    <string name="guidance_welcome_first_time">¡Bienvenido a Corea! Como es tu primera vez conduciendo aquí, te ayudaremos a conocer las normas de tráfico locales.</string>
+    <string name="guidance_welcome_experienced">¡Bienvenido de nuevo a Corea! Te avisaremos de los puntos de seguridad esenciales, como las zonas escolares.</string>
+
+    <string name="guidance_lhd_intro">Este vehículo tiene el volante a la izquierda. Vas sentado a la izquierda, así que el lado derecho del vehículo está más lejos de lo que parece. La palanca de las luces direccionales está a la izquierda del volante.</string>
+    <string name="guidance_lhd_mirror_check">Antes de girar o cambiar de carril, revisa los espejos y mira por encima del hombro. El lado del pasajero ahora está a tu derecha.</string>
+    <string name="guidance_right_side_left_turn">Después de girar a la izquierda, mantente en el lado derecho de la vía a la que entras.</string>
+
+    <string name="guidance_right_turn_rule">Giro a la derecha. Si hay un semáforo para girar a la derecha, gira solo con su flecha verde. Si no lo hay, con luz roja, detente primero en la línea de detención, aunque nadie esté cruzando, y luego gira despacio solo si no estorbas a los vehículos que avanzan con luz verde. Detente siempre ante cualquier peatón que cruce o vaya a cruzar.</string>
+    <string name="guidance_left_turn_rule">Giro a la izquierda. En los semáforos de Corea, gira a la izquierda solo con la flecha verde. Donde haya una señal de giro a la izquierda no protegido, también puedes girar con luz verde, después de ceder el paso a los vehículos que vienen de frente y a los peatones.</string>
+
+    <string name="guidance_school_zone_ahead">Zona escolar a %1$d metros. Reduce la velocidad y presta atención a los niños.</string>
+    <string name="guidance_school_zone_speed_limit">Zona escolar. El límite de velocidad es de %1$d kilómetros por hora.</string>
+    <string name="guidance_school_zone_crosswalk">En las zonas escolares, detente siempre antes de un paso peatonal sin semáforo, aunque nadie esté cruzando.</string>
+
+    <string name="guidance_arrived">Has llegado a tu destino. Gracias por conducir con precaución en Corea.</string>
+</resources>

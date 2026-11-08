@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 주행 안내 문장(프랑스어). ! ? : 앞에는 줄바꿈 없는 공백(&#160;)을 둔다. -->
+<resources>
+    <string name="guidance_welcome_right_side">Bienvenue en Corée. En Corée, les véhicules circulent à droite. Soyez particulièrement prudent aux intersections.</string>
+    <string name="guidance_welcome_first_time">Bienvenue en Corée&#160;! Comme c\'est la première fois que vous conduisez ici, nous allons vous aider à découvrir le code de la route local.</string>
+    <string name="guidance_welcome_experienced">Bon retour en Corée. Nous vous signalerons les points de sécurité essentiels, comme les zones scolaires.</string>
+
+    <string name="guidance_lhd_intro">Cette voiture a le volant à gauche. Vous êtes assis à gauche&#160;: le côté droit du véhicule est donc plus loin qu\'il n\'y paraît. Le levier des clignotants se trouve à gauche du volant.</string>
+    <string name="guidance_lhd_mirror_check">Avant de tourner ou de changer de voie, vérifiez vos rétroviseurs et regardez par-dessus votre épaule. Le côté passager est maintenant à votre droite.</string>
+    <string name="guidance_right_side_left_turn">Après avoir tourné à gauche, restez sur le côté droit de la route où vous entrez.</string>
+
+    <string name="guidance_right_turn_rule">Virage à droite. S\'il y a un feu pour tourner à droite, tournez uniquement avec sa flèche verte. Sinon, au feu rouge, arrêtez-vous d\'abord à la ligne d\'arrêt, même si personne ne traverse, puis tournez lentement seulement sans gêner les véhicules qui passent au vert. Arrêtez-vous toujours pour tout piéton qui traverse ou s\'apprête à traverser.</string>
+    <string name="guidance_left_turn_rule">Virage à gauche. Aux feux en Corée, tournez à gauche uniquement avec la flèche verte. Là où un panneau de virage à gauche non protégé est installé, vous pouvez aussi tourner au feu vert, après avoir cédé le passage aux véhicules en face et aux piétons.</string>
+
+    <string name="guidance_school_zone_ahead">Zone scolaire dans %1$d mètres. Ralentissez et faites attention aux enfants.</string>
+    <string name="guidance_school_zone_speed_limit">Zone scolaire. La vitesse est limitée à %1$d kilomètres par heure.</string>
+    <string name="guidance_school_zone_crosswalk">Dans les zones scolaires, arrêtez-vous toujours avant un passage piéton sans feu, même si personne ne traverse.</string>
+
+    <string name="guidance_arrived">Vous êtes arrivé à destination. Merci d\'avoir conduit prudemment en Corée.</string>
+</resources>

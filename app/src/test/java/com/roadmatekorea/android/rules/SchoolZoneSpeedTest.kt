@@ -115,6 +115,69 @@ class SchoolZoneSpeedTest {
     }
 
     @Test
+    fun limitDropsInsideZone_40then30_judgesAndSaysTheNewLimit() {
+        val e = engine().also { it.speed(25); it.enterZone() }
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(40))), e.onEvent(DriveEvent.SpeedLimitChanged(40)))
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), e.onEvent(DriveEvent.SpeedLimitChanged(30)))
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(38, 30))), e.speed(38))
+    }
+
+    @Test
+    fun cameraAnnouncesFutureLimit_repeatedCurrentRoadLimitBeforeEntry_doesNotEndZone() {
+        val e = engine().also { it.speed(25); it.enterZone() }
+        val cam = DriveEvent.CameraAlertsUpdated(listOf(CameraAlert("c", CameraKind.SCHOOL_ZONE, 30, 200)))
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), e.onEvent(cam))
+        // 아직 지금 도로의 제한(50)이 반복해서 온다
+        assertTrue(e.onEvent(DriveEvent.SpeedLimitChanged(50)).isEmpty())
+        e.onEvent(DriveEvent.CautionPointsUpdated(listOf(CautionPoint("sz", CautionKind.SCHOOL_ZONE, 100))))
+        // 구역에 들어옴: 이미 말한 30이라 다시 말하지 않는다
+        assertTrue(e.onEvent(DriveEvent.SpeedLimitChanged(30)).isEmpty())
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(45, 30))), e.speed(45))
+        // 들어온 뒤 제한이 다시 오르면 구역을 벗어난 것
+        e.speed(25)
+        e.onEvent(DriveEvent.SpeedLimitChanged(50))
+        assertTrue(e.speed(45).isEmpty())
+    }
+
+    @Test
+    fun longStayInZone_keepsWatching_whileZoneEvidenceKeepsComing() {
+        val e = engine().also { it.speed(20); it.enterZone(); it.onEvent(DriveEvent.SpeedLimitChanged(30)) }
+        repeat(4) {
+            clock.advanceSeconds(60)
+            // NaviHelper는 같은 도로 제한을 계속 보낸다
+            e.onEvent(DriveEvent.SpeedLimitChanged(30))
+        }
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(45, 30))), e.speed(45))
+    }
+
+    @Test
+    fun longWaitBeforeZone_sameApproachPointKeepsZone() {
+        val e = engine().also { it.speed(0); it.enterZone(); it.onEvent(DriveEvent.SpeedLimitChanged(30)) }
+        clock.advanceSeconds(91)
+        e.onEvent(DriveEvent.CautionPointsUpdated(listOf(CautionPoint("sz", CautionKind.SCHOOL_ZONE, 80))))
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(45, 30))), e.speed(45))
+    }
+
+    @Test
+    fun unknownSpeed_clearsTheOldValue() {
+        val e = engine().also { it.speed(45); it.enterZone() }
+        assertTrue(e.onEvent(DriveEvent.VehicleSpeedChanged(null)).isEmpty())
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), e.onEvent(DriveEvent.SpeedLimitChanged(30)))
+    }
+
+    @Test
+    fun repeatedSameSpeed_afterCooldown_warnsAgain() {
+        // 실제 어댑터는 같은 속도도 1초마다 다시 보낸다
+        val e = engine().also { it.speed(25); it.enterZone(); it.onEvent(DriveEvent.SpeedLimitChanged(30)) }
+        assertEquals(1, e.speed(38).size)
+        e.speed(29)
+        clock.advanceSeconds(5)
+        assertTrue(e.speed(38).isEmpty())
+        clock.advanceSeconds(16)
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(38, 30))), e.speed(38))
+    }
+
+    @Test
     fun overSpeed_isSafetyPriority() {
         assertEquals(Priority.SAFETY, SCHOOL_ZONE_OVER_SPEED.priority)
     }

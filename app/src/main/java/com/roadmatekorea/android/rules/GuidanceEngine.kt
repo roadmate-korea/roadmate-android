@@ -143,7 +143,13 @@ class GuidanceEngine(
 
     // ---- 어린이보호구역 (모든 사용자) ----
 
-    private fun onCautionPoints(points: List<CautionPoint>): List<Guidance> = schoolZoneAhead(points) + busLaneAhead(points)
+    private fun onCautionPoints(points: List<CautionPoint>): List<Guidance> {
+        // 같은 구역 지점이 계속 들어오면 아직 그 구역 근처다(신호 대기 등으로 오래 걸려도 구역을 유지)
+        schoolZone?.let { zone ->
+            if (zone.cautionId != null && points.any { it.id == zone.cautionId }) schoolZone = zone.copy(lastEvidenceMs = clock.nowMillis())
+        }
+        return schoolZoneAhead(points) + busLaneAhead(points)
+    }
 
     private fun schoolZoneAhead(points: List<CautionPoint>): List<Guidance> {
         val inRange = points.filter {
@@ -155,7 +161,7 @@ class GuidanceEngine(
         // 나머지는 완료 처리하지 않으므로 다음 갱신에서 가장 가까운 곳이 되면 안내한다.
         val nearest = fresh.minBy { it.remainMeters }
         announcedCautionIds += nearest.id
-        schoolZone = SchoolZoneContext(startedAtMs = clock.nowMillis(), speedLimitBefore = currentSpeedLimit)
+        schoolZone = SchoolZoneContext(lastEvidenceMs = clock.nowMillis(), speedLimitBefore = currentSpeedLimit, cautionId = nearest.id)
         return buildList {
             add(Guidance(GuidanceId.SCHOOL_ZONE_AHEAD, listOf(roundDistance(nearest.remainMeters))))
             if (scope.detail == DetailLevel.DETAILED) addIfAllowed(GuidanceId.SCHOOL_ZONE_CROSSWALK)
@@ -178,6 +184,11 @@ class GuidanceEngine(
     private fun onCameras(cameras: List<CameraAlert>): List<Guidance> = schoolZoneCamera(cameras) + sectionCheck(cameras)
 
     private fun schoolZoneCamera(cameras: List<CameraAlert>): List<Guidance> {
+        activeSchoolZone()?.let { zone ->
+            if (cameras.any { it.kind == CameraKind.SCHOOL_ZONE && it.speedLimitKmh == zone.zoneLimitKmh }) {
+                schoolZone = zone.copy(lastEvidenceMs = clock.nowMillis())
+            }
+        }
         val fresh = cameras.filter {
             it.kind == CameraKind.SCHOOL_ZONE && it.speedLimitKmh > 0 && it.id !in announcedCameraIds
         }
@@ -186,12 +197,12 @@ class GuidanceEngine(
         // 카메라에는 구역 정보가 없다. 같은 구역인지 알 수 없으므로, 방금 같은 제한 속도를 말한 경우에만 건너뛴다.
         // 건너뛴 카메라는 완료 처리하지 않는다(구역이 끝난 뒤 다시 들어오면 안내한다).
         val camera = fresh
-            .filter { zone?.announcedLimitKmh != it.speedLimitKmh }
+            .filter { zone?.zoneLimitKmh != it.speedLimitKmh }
             .minByOrNull { it.remainMeters }
             ?: return emptyList()
         announcedCameraIds += camera.id
         schoolZone = (zone ?: SchoolZoneContext(clock.nowMillis(), currentSpeedLimit))
-            .copy(announcedLimitKmh = camera.speedLimitKmh)
+            .copy(zoneLimitKmh = camera.speedLimitKmh, lastEvidenceMs = clock.nowMillis(), overSpeedWarned = false)
         return listOf(schoolZoneLimit(camera.speedLimitKmh))
     }
 
@@ -219,21 +230,41 @@ class GuidanceEngine(
         }
     }
 
+    /**
+     * 도로 제한 속도(NaviHelper, 같은 값이 반복해서 온다)로 구역 진입, 구역 안 제한 변경, 구역 이탈을 판단한다.
+     * - 아직 구역 제한을 모르면: 접근 경고 전 도로 제한보다 내려간 값을 구역 제한으로 본다.
+     * - 구역 제한과 같으면: 구역 안에 들어왔다(진입 확인, 구역 유지).
+     * - 구역 제한보다 낮으면: 구역 안에서 제한이 더 내려갔다. 새 값으로 바꾸고 다시 안내한다.
+     * - 구역 제한보다 높으면: 진입한 뒤라면 구역을 벗어난 것이다. 진입 전(카메라가 앞으로의 제한을 먼저 알려 준 경우)이면
+     *   아직 지금 도로의 제한이 오는 것이므로 무시한다.
+     */
     private fun onSpeedLimit(kmh: Int): List<Guidance> {
         currentSpeedLimit = kmh.takeIf { it > 0 }
         val zone = activeSchoolZone() ?: return emptyList()
-        val zoneLimit = zone.announcedLimitKmh
-        // 도로 제한 속도가 구역 제한보다 다시 올라가면 구역을 벗어난 것으로 본다(과속 경고도 멈춘다).
-        if (zoneLimit != null && kmh > zoneLimit) {
-            schoolZone = null
-            return emptyList()
+        if (kmh <= 0) return emptyList()
+        val now = clock.nowMillis()
+        val zoneLimit = zone.zoneLimitKmh
+        return when {
+            zoneLimit == null -> {
+                val before = zone.speedLimitBefore
+                if (before != null && kmh >= before) return emptyList()
+                schoolZone = zone.copy(zoneLimitKmh = kmh, entered = true, lastEvidenceMs = now)
+                listOf(schoolZoneLimit(kmh))
+            }
+            kmh == zoneLimit -> {
+                schoolZone = zone.copy(entered = true, lastEvidenceMs = now)
+                emptyList()
+            }
+            kmh < zoneLimit -> {
+                schoolZone = zone.copy(zoneLimitKmh = kmh, entered = true, lastEvidenceMs = now, overSpeedWarned = false)
+                listOf(schoolZoneLimit(kmh))
+            }
+            zone.entered -> {
+                schoolZone = null
+                emptyList()
+            }
+            else -> emptyList()
         }
-        if (zoneLimit != null || kmh <= 0) return emptyList()
-        // 접근 경고 뒤 제한 속도가 내려가면 그 값을 어린이보호구역 제한 속도로 본다.
-        val before = zone.speedLimitBefore
-        if (before != null && kmh >= before) return emptyList()
-        schoolZone = zone.copy(announcedLimitKmh = kmh)
-        return listOf(schoolZoneLimit(kmh))
     }
 
     /**
@@ -253,10 +284,13 @@ class GuidanceEngine(
      * 구역 안에서 제한을 넘는 순간 한 번 경고한다. 계속 빠른 동안에는 다시 말하지 않고(잔소리 금지),
      * 제한 아래로 줄였다가 다시 넘으면 다시 경고한다. 제한보다 느리면 아무 말도 하지 않는다.
      */
-    private fun onVehicleSpeed(kmh: Int): List<Guidance> {
-        vehicleSpeed = kmh.coerceAtLeast(0)
+    private fun onVehicleSpeed(speed: Int?): List<Guidance> {
+        // 읽을 수 없게 되면 지난 값을 쓰지 않는다
+        val kmh = speed?.coerceAtLeast(0)
+        vehicleSpeed = kmh
+        if (kmh == null) return emptyList()
         val zone = activeSchoolZone() ?: return emptyList()
-        val limit = zone.announcedLimitKmh ?: return emptyList()
+        val limit = zone.zoneLimitKmh ?: return emptyList()
         if (kmh <= limit) {
             if (zone.overSpeedWarned) schoolZone = zone.copy(overSpeedWarned = false)
             return emptyList()
@@ -269,9 +303,12 @@ class GuidanceEngine(
 
     private fun isOver(speed: Int, limit: Int) = speed > limit + OVER_SPEED_MARGIN_KMH
 
-    /** 마지막 구역 시작(접근 경고나 첫 카메라)에서 [SCHOOL_ZONE_LIMIT_WINDOW_MS]가 지나면 구역이 끝난 것으로 본다. */
+    /**
+     * 마지막 구역 근거(접근 지점, 같은 제한의 카메라, 구역 제한과 같은 도로 제한)를 받은 뒤
+     * [SCHOOL_ZONE_LIMIT_WINDOW_MS]가 지나면 구역이 끝난 것으로 본다.
+     */
     private fun activeSchoolZone(): SchoolZoneContext? =
-        schoolZone?.takeIf { clock.nowMillis() - it.startedAtMs <= SCHOOL_ZONE_LIMIT_WINDOW_MS }
+        schoolZone?.takeIf { clock.nowMillis() - it.lastEvidenceMs <= SCHOOL_ZONE_LIMIT_WINDOW_MS }
 
     // ---- 공통 ----
 
@@ -280,10 +317,15 @@ class GuidanceEngine(
     }
 
     private data class SchoolZoneContext(
-        val startedAtMs: Long,
+        /** 마지막으로 구역 근거를 받은 시각 */
+        val lastEvidenceMs: Long,
         val speedLimitBefore: Int?,
-        /** 이 구역에서 이미 말한 제한 속도. null이면 아직 말하지 않음. */
-        val announcedLimitKmh: Int? = null,
+        /** 접근 경고를 낸 주의 지점 ID. 카메라로 시작한 구역이면 null */
+        val cautionId: String? = null,
+        /** 지금 구역 제한 속도(항상 이미 말한 값). null이면 아직 모름 */
+        val zoneLimitKmh: Int? = null,
+        /** 도로 제한이 구역 제한 이하로 들어와 구역 안에 있음이 확인됨 */
+        val entered: Boolean = false,
         /** 지금 제한을 넘은 상태로 이미 경고했는지. 제한 아래로 내려오면 false로 돌아간다. */
         val overSpeedWarned: Boolean = false,
     )
@@ -298,7 +340,7 @@ class GuidanceEngine(
         /** 버스전용차로 안내 거리. */
         const val BUS_LANE_AHEAD_METERS = 300
 
-        /** 접근 경고 뒤 이 시간 안에 들어온 제한 속도를 어린이보호구역 제한 속도로 본다. */
+        /** 구역 근거가 이 시간 동안 없으면 구역이 끝난 것으로 본다(접근 경고 뒤 제한 속도를 기다리는 시간이기도 하다). */
         const val SCHOOL_ZONE_LIMIT_WINDOW_MS = 90_000L
 
         /** 속도계 오차를 생각해 제한보다 이만큼 넘게 빠를 때만 과속으로 본다. */

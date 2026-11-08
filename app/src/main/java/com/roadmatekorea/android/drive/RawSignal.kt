@@ -30,6 +30,9 @@ sealed interface RawSignal {
             val kmh: Int get() = kotlin.math.abs(metersPerSecond * 3.6f).roundToInt()
         }
 
+        /** 속도를 지금 읽을 수 없음(센서 상태 이상, 차량 서비스 끊김). 마지막 속도를 지운다. 화면은 잠그지 않는다. */
+        data object SpeedUnavailable : Vehicle
+
         /** Vehicle SDK를 쓸 수 없음(초기화 실패, 권한 없음 등). 판단 로직에는 들어가지 않는다. */
         data class Unavailable(val reason: String) : Vehicle
     }

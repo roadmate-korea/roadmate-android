@@ -31,6 +31,8 @@ class RoadMateColors(p: RoadMatePalette, val isDark: Boolean) {
     val danger = Color(p.danger)
     val onDanger = Color(p.onDanger)
     val dangerSurface = Color(p.dangerSurface)
+    val signRed = Color(p.signRed)
+    val signWhite = Color(p.signWhite)
     val bus = Color(p.bus)
     val go = Color(p.go)
 }

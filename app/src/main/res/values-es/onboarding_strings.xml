@@ -27,4 +27,11 @@
 
     <string name="onboarding_save_failed">No se pudieron guardar tus ajustes. Pulsa EMPEZAR de nuevo.</string>
     <string name="settings_read_error">No se pudieron leer tus ajustes. Reintentando…</string>
+
+    <string name="drive_locked_hint">Los controles están bloqueados mientras conduces.</string>
+    <string name="drive_parked_only">Los ajustes solo se pueden cambiar con el vehículo estacionado (P).</string>
+    <string name="drive_vehicle_unavailable">No se pueden leer las señales del vehículo.</string>
+    <string name="drive_voice_unavailable">La guía por voz no está disponible en este idioma. Solo se muestra el texto.</string>
+    <string name="drive_recent_title">Indicaciones recientes</string>
+    <string name="drive_waiting">Las indicaciones aparecerán aquí.</string>
 </resources>

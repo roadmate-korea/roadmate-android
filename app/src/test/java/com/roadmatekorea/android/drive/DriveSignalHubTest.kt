@@ -32,7 +32,10 @@ class DriveSignalHubTest {
 
         upstream.emit(RawSignal.Vehicle.Unavailable("gear: x"))
         assertTrue(hub.vehicleUnavailable.value)
+        assertTrue(hub.vehicleUnavailableSinceLastGear())
         // 마지막 기어는 그대로
         assertEquals(RawSignal.Vehicle.Gear(VehicleGear.GEAR_DRIVE), hub.lastGear.value)
+        upstream.emit(RawSignal.Vehicle.Gear(VehicleGear.GEAR_PARK))
+        assertEquals(false, hub.vehicleUnavailableSinceLastGear())
     }
 }

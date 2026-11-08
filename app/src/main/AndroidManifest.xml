@@ -31,6 +31,13 @@
             android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.RoadMateKorea">
+            <!--
+                주행 중(기어가 P가 아님)에도 화면을 보여 주기 위한 Android Automotive 선언.
+                앱이 직접 주행 중 조작을 막는다(읽기 전용 덮개, 설정은 정차 중에만). 영상 재생과 텍스트 입력은 없다.
+            -->
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

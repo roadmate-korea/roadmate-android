@@ -41,6 +41,11 @@ class GuidanceSpeaker(
     /** 음성을 쓸 수 없어 자막만 보여 주는 언어. */
     val unavailableLocales: StateFlow<Set<Locale>> = _unavailableLocales.asStateFlow()
 
+    private val _engineFailed = MutableStateFlow(false)
+
+    /** TTS 엔진을 쓸 수 없음(초기화 실패). 모든 안내를 자막으로만 보여 준다. */
+    val engineFailed: StateFlow<Boolean> = _engineFailed.asStateFlow()
+
     private val _idle = MutableStateFlow(true)
 
     /** 말하는 것도, 기다리는 것도 없음. */
@@ -55,6 +60,7 @@ class GuidanceSpeaker(
         engine.setListener(this)
         engine.initialize { ready ->
             engineState = if (ready) EngineState.READY else EngineState.FAILED
+            _engineFailed.value = !ready
             if (playing == null) playNext()
         }
     }

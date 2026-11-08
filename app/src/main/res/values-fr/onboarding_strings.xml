@@ -27,4 +27,11 @@
 
     <string name="onboarding_save_failed">Impossible d\'enregistrer vos réglages. Appuyez de nouveau sur COMMENCER.</string>
     <string name="settings_read_error">Impossible de lire vos réglages. Nouvel essai…</string>
+
+    <string name="drive_locked_hint">Les commandes sont verrouillées pendant la conduite.</string>
+    <string name="drive_parked_only">Les réglages ne peuvent être modifiés qu\'à l\'arrêt (P).</string>
+    <string name="drive_vehicle_unavailable">Impossible de lire les signaux du véhicule.</string>
+    <string name="drive_voice_unavailable">Le guidage vocal n\'est pas disponible dans cette langue. Affichage du texte uniquement.</string>
+    <string name="drive_recent_title">Conseils récents</string>
+    <string name="drive_waiting">Les conseils s\'afficheront ici.</string>
 </resources>

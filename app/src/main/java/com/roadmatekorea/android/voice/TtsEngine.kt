@@ -18,13 +18,20 @@ interface TtsEngine {
 
     fun stop()
 
+    /**
+     * 엔진을 해제한다. 해제 뒤의 호출은 모두 무시한다.
+     * SDK의 stop은 비동기라 해제 직전에 부르면 해제 뒤 서비스에 다시 붙을 수 있으므로, 해제 전에 stop을 부르지 않는다.
+     */
     fun release()
 
     interface Listener {
         fun onStart()
 
-        /** 끝까지 말했거나 [stop]으로 멈춤. */
+        /** 끝까지 말함. */
         fun onDone()
+
+        /** [stop] 등으로 중간에 멈춤. 기본은 [onDone]과 같이 다음으로 넘어간다. */
+        fun onStopped() = onDone()
 
         fun onError(error: TtsError)
     }

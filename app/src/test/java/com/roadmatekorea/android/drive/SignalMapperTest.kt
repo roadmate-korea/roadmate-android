@@ -151,5 +151,6 @@ class SignalMapperTest {
         assertEquals(DriveEvent.VehicleSpeedChanged(45), SignalMapper.map(RawSignal.Vehicle.Speed(12.5f)))
         assertEquals(DriveEvent.VehicleSpeedChanged(0), SignalMapper.map(RawSignal.Vehicle.Speed(0f)))
         assertEquals(DriveEvent.VehicleSpeedChanged(18), SignalMapper.map(RawSignal.Vehicle.Speed(-5f)))
+        assertEquals(DriveEvent.VehicleSpeedChanged(null), SignalMapper.map(RawSignal.Vehicle.SpeedUnavailable))
     }
 }

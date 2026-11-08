@@ -26,6 +26,9 @@ class RoadMateApplication : Application() {
     /** 차량 속도 권한(`CAR_SPEED`)이 허용되었는지. 화면에서 허용을 받으면 true로 바꾼다. */
     val speedPermissionGranted: MutableStateFlow<Boolean> by lazy { MutableStateFlow(hasSpeedPermission()) }
 
+    /** 이 프로세스에서 속도 권한 창을 이미 띄웠는지. 화면이 다시 만들어져도 유지된다(한 번만 묻는다). */
+    var speedPermissionAsked = false
+
     fun hasSpeedPermission(): Boolean = checkSelfPermission(CAR_SPEED) == PackageManager.PERMISSION_GRANTED
 
     /** 실제 Vehicle·NaviHelper 신호. 처음 쓸 때 한 번 시작하고 프로세스가 끝날 때까지 수집한다. */

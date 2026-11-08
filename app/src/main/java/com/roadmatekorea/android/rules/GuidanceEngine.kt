@@ -34,7 +34,16 @@ class GuidanceEngine(
 
     private val isParked get() = gear == Gear.PARK
 
-    fun onEvent(event: DriveEvent): List<Guidance> = when (event) {
+    /**
+     * 한 이벤트에서 나온 안내는 안전 경고를 먼저 둔다(나머지는 원래 순서). 음성 큐는 비어 있으면 첫 항목을 바로
+     * 재생하므로, 같은 묶음 안의 순서가 곧 재생 순서다.
+     */
+    fun onEvent(event: DriveEvent): List<Guidance> = route(event).let { list ->
+        val (safety, rest) = list.partition { it.priority == Priority.SAFETY }
+        safety + rest
+    }
+
+    private fun route(event: DriveEvent): List<Guidance> = when (event) {
         DriveEvent.SessionStarted -> greet()
         is DriveEvent.GearChanged -> onGear(event.gear)
         is DriveEvent.TurnSignalChanged -> onTurnSignal(event.signal)
@@ -156,13 +165,10 @@ class GuidanceEngine(
         val nearest = points
             .filter { it.kind == CautionKind.BUS_LANE && it.remainMeters in 1..BUS_LANE_AHEAD_METERS && it.id !in announcedCautionIds }
             .minByOrNull { it.remainMeters } ?: return emptyList()
-        // 하루 상한에 걸려도 이 지점은 완료로 둔다(같은 지점을 다시 말하지 않음)
+        // 실제로 말한 지점만 완료로 둔다. 간격 제한에 걸린 지점은 범위 안에 남아 있으면 다음 갱신에서 다시 판단한다.
+        if (!cooldown.tryAcquire(GuidanceId.BUS_LANE_AHEAD)) return emptyList()
         announcedCautionIds += nearest.id
-        return if (cooldown.tryAcquire(GuidanceId.BUS_LANE_AHEAD)) {
-            listOf(Guidance(GuidanceId.BUS_LANE_AHEAD, listOf(roundDistance(nearest.remainMeters))))
-        } else {
-            emptyList()
-        }
+        return listOf(Guidance(GuidanceId.BUS_LANE_AHEAD, listOf(roundDistance(nearest.remainMeters))))
     }
 
     private fun onCameras(cameras: List<CameraAlert>): List<Guidance> = schoolZoneCamera(cameras) + sectionCheck(cameras)
@@ -194,8 +200,10 @@ class GuidanceEngine(
                 cameras.filter { it.kind == CameraKind.SECTION_START && it.speedLimitKmh > 0 && it.id !in announcedCameraIds }
                     .minByOrNull { it.remainMeters }
                     ?.let { start ->
-                        announcedCameraIds += start.id
-                        if (cooldown.tryAcquire(GuidanceId.SECTION_START)) add(Guidance(GuidanceId.SECTION_START, listOf(start.speedLimitKmh)))
+                        if (cooldown.tryAcquire(GuidanceId.SECTION_START)) {
+                            announcedCameraIds += start.id
+                            add(Guidance(GuidanceId.SECTION_START, listOf(start.speedLimitKmh)))
+                        }
                     }
             }
             cameras.firstOrNull { it.kind == CameraKind.SECTION_AVERAGE && it.speedLimitKmh > 0 && it.sectionAverageKmh > it.speedLimitKmh }

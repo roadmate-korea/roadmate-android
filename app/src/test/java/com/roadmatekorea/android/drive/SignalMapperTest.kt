@@ -121,4 +121,28 @@ class SignalMapperTest {
         assertNull(SignalMapper.map(RawSignal.Vehicle.Unavailable("x")))
         assertNull(SignalMapper.map(RawSignal.Navi.Unavailable("x")))
     }
+
+    @Test
+    fun inactiveCameraAlerts_areDropped_andSectionFieldsAreKept() {
+        val event = SignalMapper.map(
+            RawSignal.Navi.CameraAlerts(
+                listOf(
+                    SdkCameraAlert("off", CameraType.SECTION_SPEED_ALERT, false, 80, 300, 95, false, false),
+                    SdkCameraAlert("on", CameraType.SECTION_SPEED_ALERT, true, 80, 300, 95, false, false),
+                    SdkCameraAlert("start", CameraType.SPEED_CAMERA_SECTION_START, true, 80, 500, 0, false, false),
+                ),
+            ),
+        ) as com.roadmatekorea.android.rules.DriveEvent.CameraAlertsUpdated
+        assertEquals(listOf("on", "start"), event.cameras.map { it.id })
+        assertEquals(com.roadmatekorea.android.rules.CameraKind.SECTION_AVERAGE, event.cameras[0].kind)
+        assertEquals(95, event.cameras[0].sectionAverageKmh)
+        assertEquals(com.roadmatekorea.android.rules.CameraKind.SECTION_START, event.cameras[1].kind)
+    }
+
+    @Test
+    fun busLaneCautionTypes_mapToBusLane() {
+        assertEquals(com.roadmatekorea.android.rules.CautionKind.BUS_LANE, SignalMapper.cautionKind(CautionPointType.BUS_LANE_VIOLATION_ENFORCEMENT))
+        assertEquals(com.roadmatekorea.android.rules.CautionKind.BUS_LANE, SignalMapper.cautionKind(CautionPointType.BUS_LANE_UNAVAILABLE_NOTICE))
+        assertEquals(com.roadmatekorea.android.rules.CautionKind.OTHER, SignalMapper.cautionKind(CautionPointType.BUS_LANE_AVAILABLE_NOTICE))
+    }
 }

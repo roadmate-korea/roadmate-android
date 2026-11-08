@@ -119,4 +119,45 @@ class BusLaneSectionTest {
         assertTrue(e.onEvent(busLane("bl" to 200)).isEmpty())
         assertTrue(e.onEvent(camera("s1", CameraKind.SECTION_START, 100)).isEmpty())
     }
+
+    @Test
+    fun overAverageWarning_comesBeforeTheSectionExplanation_inTheSameUpdate() {
+        val e = engine(Personas.NAKAMURA)
+        val out = e.onEvent(
+            DriveEvent.CameraAlertsUpdated(
+                listOf(
+                    CameraAlert("s1", CameraKind.SECTION_START, 100, 300),
+                    CameraAlert("a1", CameraKind.SECTION_AVERAGE, 100, 300, sectionAverageKmh = 120),
+                ),
+            ),
+        ).map { it.id }
+        assertEquals(listOf(SECTION_OVER_AVERAGE, SECTION_START), out)
+    }
+
+    @Test
+    fun busLaneHeldBackByInterval_isSpokenLater_ifStillAhead() {
+        val e = engine(Personas.CARLOS)
+        assertEquals(1, e.onEvent(busLane("A" to 200)).size)
+        clock.advanceSeconds(30)
+        assertTrue("간격 제한 중", e.onEvent(busLane("B" to 280)).isEmpty())
+        clock.advanceSeconds(35)
+        assertEquals(listOf(Guidance(BUS_LANE_AHEAD, listOf(150))), e.onEvent(busLane("B" to 160)))
+    }
+
+    @Test
+    fun sectionStartHeldBackByInterval_isSpokenLater_ifStillReported() {
+        val e = engine(Personas.CARLOS)
+        assertEquals(1, e.onEvent(camera("A", CameraKind.SECTION_START, 100)).size)
+        clock.advanceSeconds(30)
+        assertTrue(e.onEvent(camera("B", CameraKind.SECTION_START, 80)).isEmpty())
+        clock.advanceSeconds(35)
+        assertEquals(listOf(Guidance(SECTION_START, listOf(80))), e.onEvent(camera("B", CameraKind.SECTION_START, 80)))
+    }
+
+    @Test
+    fun greetingOrder_isUnchanged_byTheSafetyFirstRule() {
+        // 안전 경고만 앞으로 옮긴다. 시작 안내(환영 → 좌핸들)는 그대로.
+        val e = GuidanceEngine(Personas.NAKAMURA, clock)
+        assertEquals(listOf(GuidanceId.WELCOME_RIGHT_SIDE, GuidanceId.LHD_INTRO), e.onEvent(DriveEvent.SessionStarted).map { it.id })
+    }
 }

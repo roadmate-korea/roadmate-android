@@ -32,7 +32,9 @@ object SignalMapper {
             signal.points.map { CautionPoint(it.id, cautionKind(it.type), it.remainDistance) },
         )
         is RawSignal.Navi.CameraAlerts -> DriveEvent.CameraAlertsUpdated(
-            signal.cameras.map { CameraAlert(it.id, cameraKind(it.type), it.speedLimit, it.remainDistance, it.sectionAvrSpeed) },
+            // status=false는 SDK가 비활성으로 표시한 알림이다(Pleos CameraAlert 명세). 안내하지 않는다.
+            signal.cameras.filter { it.status }
+                .map { CameraAlert(it.id, cameraKind(it.type), it.speedLimit, it.remainDistance, it.sectionAvrSpeed) },
         )
         is RawSignal.Navi.Tbt -> DriveEvent.TurnInstructionsUpdated(
             // SDK 목록은 가까운 순이 아닐 수 있어 거리순으로 정렬한다

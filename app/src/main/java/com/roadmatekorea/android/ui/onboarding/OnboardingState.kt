@@ -14,10 +14,14 @@ data class OnboardingState(
     val language: AppLanguage? = null,
     val country: DrivingCountry? = null,
     val experience: KoreaExperience? = null,
+    /** 저장 중. START를 두 번 누르지 않게 막는다. */
+    val saving: Boolean = false,
+    /** 마지막 저장이 실패함. 고른 값은 그대로 두고 다시 시도할 수 있다. */
+    val saveFailed: Boolean = false,
 ) {
     enum class Page { LANGUAGE, DRIVING }
 
-    val canStart: Boolean get() = language != null && country != null && experience != null
+    val canStart: Boolean get() = language != null && country != null && experience != null && !saving
 
     fun selectLanguage(language: AppLanguage) = copy(language = language, page = Page.DRIVING)
 

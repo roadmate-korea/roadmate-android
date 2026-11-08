@@ -24,4 +24,7 @@
 
     <string name="drive_ready">RoadMate está listo. Las indicaciones comenzarán cuando conduzcas.</string>
     <string name="drive_change_settings">Cambiar ajustes</string>
+
+    <string name="onboarding_save_failed">No se pudieron guardar tus ajustes. Pulsa EMPEZAR de nuevo.</string>
+    <string name="settings_read_error">No se pudieron leer tus ajustes. Reintentando…</string>
 </resources>

@@ -24,4 +24,7 @@
 
     <string name="drive_ready">RoadMate est prêt. Les conseils commenceront quand vous roulerez.</string>
     <string name="drive_change_settings">Modifier les réglages</string>
+
+    <string name="onboarding_save_failed">Impossible d\'enregistrer vos réglages. Appuyez de nouveau sur COMMENCER.</string>
+    <string name="settings_read_error">Impossible de lire vos réglages. Nouvel essai…</string>
 </resources>

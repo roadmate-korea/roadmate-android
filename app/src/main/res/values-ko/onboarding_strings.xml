@@ -24,4 +24,7 @@
 
     <string name="drive_ready">RoadMate가 준비됐어요. 주행을 시작하면 안내합니다.</string>
     <string name="drive_change_settings">설정 다시 하기</string>
+
+    <string name="onboarding_save_failed">설정을 저장하지 못했어요. 시작을 다시 눌러 주세요.</string>
+    <string name="settings_read_error">설정을 읽지 못했어요. 다시 시도하는 중이에요…</string>
 </resources>

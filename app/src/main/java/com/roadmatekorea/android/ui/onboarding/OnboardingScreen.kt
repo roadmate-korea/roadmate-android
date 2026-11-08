@@ -118,6 +118,14 @@ private fun DrivingPage(
         }
 
         Spacer(Modifier.weight(1f))
+        if (state.saveFailed) {
+            Text(
+                text = stringResource(R.string.onboarding_save_failed),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.align(Alignment.End).padding(bottom = 16.dp),
+            )
+        }
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
             Button(onClick = onStart, enabled = state.canStart, modifier = Modifier.width(400.dp).height(112.dp)) {
                 Text(stringResource(R.string.onboarding_start), style = MaterialTheme.typography.headlineMedium)

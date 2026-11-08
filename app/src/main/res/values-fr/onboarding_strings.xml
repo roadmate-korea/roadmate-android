@@ -3,7 +3,7 @@
 <resources>
     <string name="onboarding_country_question">Dans quel pays conduisez-vous habituellement&#160;?</string>
     <string name="onboarding_experience_question">Avez-vous déjà conduit en Corée&#160;?</string>
-    <string name="onboarding_start">COMMENCER</string>
+    <string name="onboarding_start">Commencer</string>
     <string name="onboarding_back">Retour</string>
 
     <string name="country_cn">Chine</string>
@@ -35,8 +35,18 @@
     <string name="drive_recent_title">Conseils récents</string>
     <string name="drive_waiting">Les conseils s\'afficheront ici.</string>
 
-    <string name="drive_demo_play">Lancer la démo · %1$s</string>
-    <string name="drive_demo_running">DÉMO · %1$s</string>
+    <string name="drive_demo_play">Lancer la démo : %1$s</string>
+    <string name="drive_demo_running">Démo : %1$s</string>
     <string name="drive_demo_finished">Démo terminée</string>
     <string name="drive_demo_stop">Quitter la démo</string>
+    <!-- 앱 머리, 주행 상태 -->
+    <string name="drive_state_parked">Stationné</string>
+    <string name="drive_state_locked">En conduite, écran verrouillé</string>
+    <string name="header_settings">Réglages</string>
+    <!-- 운전 경험 설명, 주행 화면 -->
+    <string name="experience_desc_drove_in_korea">Consignes courtes et alertes de sécurité</string>
+    <string name="experience_desc_first_time_in_korea">Consignes détaillées sur les règles coréennes</string>
+    <string name="experience_desc_first_time_left_hand_drive">Règles coréennes et conseils pour le volant à gauche</string>
+    <string name="drive_last_guidance">Dernière consigne</string>
+    <string name="drive_speed_limit_desc">Vitesse limitée à %1$d km/h</string>
 </resources>

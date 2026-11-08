@@ -1,8 +1,8 @@
 package com.roadmatekorea.android.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,6 +34,7 @@ import com.roadmatekorea.android.ui.onboarding.OnboardingOptions
 import com.roadmatekorea.android.ui.onboarding.OnboardingScreen
 import com.roadmatekorea.android.ui.onboarding.OnboardingState
 import com.roadmatekorea.android.ui.onboarding.OnboardingViewModel
+import com.roadmatekorea.android.ui.theme.RoadMate
 
 /**
  * 저장된 프로필이 없으면 온보딩, 있으면 주행 화면.
@@ -56,9 +57,9 @@ fun RoadMateApp(store: ProfileStore) {
     var announceOnEnter by rememberSaveable { mutableStateOf(false) }
 
     when (val current = read) {
-        null -> Box(Modifier.fillMaxSize())
-        ProfileRead.Error -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(stringResource(R.string.settings_read_error), style = MaterialTheme.typography.headlineMedium)
+        null -> Box(Modifier.fillMaxSize().background(RoadMate.colors.canvas))
+        ProfileRead.Error -> Box(Modifier.fillMaxSize().background(RoadMate.colors.canvas), contentAlignment = Alignment.Center) {
+            Text(stringResource(R.string.settings_read_error), style = RoadMate.type.titleM, color = RoadMate.colors.inkSecondary)
         }
         is ProfileRead.Loaded -> {
             val profile = current.profile
@@ -93,7 +94,6 @@ fun RoadMateApp(store: ProfileStore) {
                 // 시연 중에는 시연 페르소나의 언어로 화면을 보여 준다
                 ProvideLanguage(driveState.profile?.language ?: profile.language) {
                     DriveScreen(
-                        savedProfile = profile,
                         state = driveState,
                         onChangeSettings = {
                             // 설정 화면에 가도 주행 세션은 유지한다(편집 중 출발해도 안전 경고가 계속 나가야 함)

@@ -38,4 +38,12 @@ object ProfileLabels {
         KoreaExperience.FIRST_TIME_IN_KOREA -> R.string.experience_first_time_in_korea
         KoreaExperience.FIRST_TIME_LEFT_HAND_DRIVE -> R.string.experience_first_time_left_hand_drive
     }
+
+    /** 운전 경험 선택지 아래 한 줄 설명(어떤 안내를 받는지). */
+    @StringRes
+    fun experienceDescription(experience: KoreaExperience): Int = when (experience) {
+        KoreaExperience.DROVE_IN_KOREA -> R.string.experience_desc_drove_in_korea
+        KoreaExperience.FIRST_TIME_IN_KOREA -> R.string.experience_desc_first_time_in_korea
+        KoreaExperience.FIRST_TIME_LEFT_HAND_DRIVE -> R.string.experience_desc_first_time_left_hand_drive
+    }
 }

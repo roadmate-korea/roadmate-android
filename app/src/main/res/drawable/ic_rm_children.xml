@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- RoadMate 아이콘 (Figma icon/children). 32 격자, 선 3, 끝은 자른 모양. 색은 tint로 준다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+    <path
+        android:pathData="M8.5,6.5a3.0,3.0 0 1 0 6.0,0a3.0,3.0 0 1 0 -6.0,0z"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="3"
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" />
+    <path
+        android:pathData="M11.5 11v9"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="3"
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" />
+    <path
+        android:pathData="M7 14h9"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="3"
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" />
+    <path
+        android:pathData="M11.5 20l-3.5 8"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="3"
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" />
+    <path
+        android:pathData="M11.5 20l3.5 8"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="3"
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" />
+    <path
+        android:pathData="M20.0,13.0a2.5,2.5 0 1 0 5.0,0a2.5,2.5 0 1 0 -5.0,0z"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="3"
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" />
+    <path
+        android:pathData="M22.5 16.5v5.5"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="3"
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" />
+    <path
+        android:pathData="M19 18.5h7"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="3"
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" />
+    <path
+        android:pathData="M22.5 22l-2.5 6"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="3"
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" />
+    <path
+        android:pathData="M22.5 22l2.5 6"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="3"
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" />
+</vector>

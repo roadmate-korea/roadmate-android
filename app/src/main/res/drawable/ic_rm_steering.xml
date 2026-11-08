@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- RoadMate 아이콘 (Figma icon/steering). 32 격자, 선 3, 끝은 자른 모양. 색은 tint로 준다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+    <path
+        android:pathData="M4.5,16.0a11.5,11.5 0 1 0 23.0,0a11.5,11.5 0 1 0 -23.0,0z"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="3"
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" />
+    <path
+        android:pathData="M13.0,16.0a3.0,3.0 0 1 0 6.0,0a3.0,3.0 0 1 0 -6.0,0z"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="3"
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" />
+    <path
+        android:pathData="M4.8 13.5c7-2.5 15.4-2.5 22.4 0"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="3"
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" />
+    <path
+        android:pathData="M16 19v8.5"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="3"
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" />
+</vector>

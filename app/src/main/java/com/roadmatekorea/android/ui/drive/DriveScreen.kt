@@ -106,7 +106,7 @@ private fun GuidanceArea(state: DriveUiState, modifier: Modifier) {
     val last = state.history.firstOrNull()
     Box(modifier.fillMaxWidth(), contentAlignment = Alignment.TopStart) {
         when {
-            state.guidance != null -> GuidanceCard(state.guidance)
+            state.guidance != null -> GuidanceCard(state.guidance, fullText = caption, voiced = state.guidanceVoiced)
             caption != null -> Text(caption, style = RoadMate.type.headlineS, color = c.ink)
             last != null -> Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp),

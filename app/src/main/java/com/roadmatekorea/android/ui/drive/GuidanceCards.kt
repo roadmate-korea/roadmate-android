@@ -21,6 +21,8 @@ data class GuidanceCardContent(
     val scene: SceneKind?,
     /** 안전 경고면 빨간 띠와 빨간 바탕 */
     val safety: Boolean,
+    /** 그림에 그릴 제한 속도가 안내 인자의 몇 번째 값인지. null이면 그림에 숫자를 그리지 않는다(추정 금지). */
+    val sceneSpeedArg: Int? = null,
 )
 
 object GuidanceCards {
@@ -34,11 +36,11 @@ object GuidanceCards {
             GuidanceId.WELCOME_EXPERIENCED -> card(R.string.card_welcome_experienced_kicker, R.string.card_welcome_experienced_headline, R.string.card_welcome_experienced_body, R.drawable.ic_rm_check, null, safety)
             GuidanceId.LHD_INTRO -> card(R.string.card_lhd_intro_kicker, R.string.card_lhd_intro_headline, R.string.card_lhd_intro_body, R.drawable.ic_rm_steering, SceneKind.LANE_CHANGE_LHD, safety)
             GuidanceId.LHD_MIRROR_CHECK -> card(R.string.card_lhd_mirror_check_kicker, R.string.card_lhd_mirror_check_headline, R.string.card_lhd_mirror_check_body, R.drawable.ic_rm_lane_change, SceneKind.LANE_CHANGE_LHD, safety)
-            GuidanceId.RIGHT_SIDE_LEFT_TURN -> card(R.string.card_right_side_left_turn_kicker, R.string.card_right_side_left_turn_headline, R.string.card_right_side_left_turn_body, R.drawable.ic_rm_turn_left, SceneKind.UNPROTECTED_LEFT, safety)
+            GuidanceId.RIGHT_SIDE_LEFT_TURN -> card(R.string.card_right_side_left_turn_kicker, R.string.card_right_side_left_turn_headline, R.string.card_right_side_left_turn_body, R.drawable.ic_rm_turn_left, SceneKind.LEFT_TURN_KEEP_RIGHT, safety)
             GuidanceId.RIGHT_TURN_RULE -> card(R.string.card_right_turn_rule_kicker, R.string.card_right_turn_rule_headline, R.string.card_right_turn_rule_body, R.drawable.ic_rm_turn_right, SceneKind.RIGHT_TURN_RED, safety)
-            GuidanceId.LEFT_TURN_RULE -> card(R.string.card_left_turn_rule_kicker, R.string.card_left_turn_rule_headline, R.string.card_left_turn_rule_body, R.drawable.ic_rm_turn_left, SceneKind.UNPROTECTED_LEFT, safety)
+            GuidanceId.LEFT_TURN_RULE -> card(R.string.card_left_turn_rule_kicker, R.string.card_left_turn_rule_headline, R.string.card_left_turn_rule_body, R.drawable.ic_rm_turn_left, SceneKind.LEFT_TURN_ARROW, safety)
             GuidanceId.SCHOOL_ZONE_AHEAD -> card(R.string.card_school_zone_ahead_kicker, R.string.card_school_zone_ahead_headline, R.string.card_school_zone_ahead_body, R.drawable.ic_rm_children, SceneKind.SCHOOL_ZONE, safety)
-            GuidanceId.SCHOOL_ZONE_SPEED_LIMIT -> card(R.string.card_school_zone_speed_limit_kicker, R.string.card_school_zone_speed_limit_headline, R.string.card_school_zone_speed_limit_body, R.drawable.ic_rm_children, SceneKind.SCHOOL_ZONE, safety)
+            GuidanceId.SCHOOL_ZONE_SPEED_LIMIT -> card(R.string.card_school_zone_speed_limit_kicker, R.string.card_school_zone_speed_limit_headline, R.string.card_school_zone_speed_limit_body, R.drawable.ic_rm_children, SceneKind.SCHOOL_ZONE, safety).copy(sceneSpeedArg = 0)
             GuidanceId.SCHOOL_ZONE_CROSSWALK -> card(R.string.card_school_zone_crosswalk_kicker, R.string.card_school_zone_crosswalk_headline, R.string.card_school_zone_crosswalk_body, R.drawable.ic_rm_children, SceneKind.SCHOOL_ZONE, safety)
             GuidanceId.BUS_LANE_AHEAD -> card(R.string.card_bus_lane_ahead_kicker, R.string.card_bus_lane_ahead_headline, R.string.card_bus_lane_ahead_body, R.drawable.ic_rm_bus, SceneKind.BUS_LANE, safety)
             GuidanceId.SECTION_START -> card(R.string.card_section_start_kicker, R.string.card_section_start_headline, R.string.card_section_start_body, R.drawable.ic_rm_camera, SceneKind.SECTION_CHECK, safety)
@@ -49,4 +51,10 @@ object GuidanceCards {
 
     private fun card(kicker: Int, headline: Int, body: Int, icon: Int, scene: SceneKind?, safety: Boolean) =
         GuidanceCardContent(kicker, headline, body, icon, scene, safety)
+
+    /**
+     * 카드 설명 줄. 음성으로 나가면 짧은 요약을, 음성을 쓸 수 없으면(자막만) 법규 조건을 빠짐없이 담은 전체 문장을 쓴다.
+     */
+    fun bodyText(voiced: Boolean, summary: () -> String, fullText: String?): String =
+        if (!voiced && !fullText.isNullOrBlank()) fullText else summary()
 }

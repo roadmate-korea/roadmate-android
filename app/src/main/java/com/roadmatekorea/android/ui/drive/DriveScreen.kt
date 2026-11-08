@@ -69,16 +69,19 @@ fun DriveScreen(
             Spacer(Modifier.height(24.dp))
             Banners(state)
 
+            // 말하는 중이면 지금 안내를, 아니면 마지막 안내를 흐리게 남겨 둔다
+            val speaking = state.caption != null
+            val cardText = state.caption ?: state.history.firstOrNull()
             Surface(
                 shape = RoundedCornerShape(28.dp),
-                color = if (state.caption != null) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                color = if (speaking) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 280.dp),
             ) {
                 Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.padding(40.dp)) {
                     Text(
-                        text = state.caption ?: stringResource(R.string.drive_waiting),
-                        style = if (state.caption != null) MaterialTheme.typography.headlineLarge else MaterialTheme.typography.headlineSmall,
-                        color = if (state.caption != null) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = cardText ?: stringResource(R.string.drive_waiting),
+                        style = if (cardText != null) MaterialTheme.typography.headlineLarge else MaterialTheme.typography.headlineSmall,
+                        color = if (speaking) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -87,8 +90,8 @@ fun DriveScreen(
             if (state.history.isNotEmpty()) {
                 Text(stringResource(R.string.drive_recent_title), style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(12.dp))
-                // 지금 말하는 문장은 위 카드에 있으므로 목록에서는 뺀다
-                state.history.filter { it != state.caption }.take(3).forEach {
+                // 위 카드에 보이는 문장은 목록에서 뺀다
+                state.history.filter { it != cardText }.take(3).forEach {
                     Text(
                         text = it,
                         style = MaterialTheme.typography.titleLarge,

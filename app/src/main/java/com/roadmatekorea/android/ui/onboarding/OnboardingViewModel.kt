@@ -28,12 +28,13 @@ class OnboardingViewModel(
     fun back() = _state.update { it.back() }
 
     /**
-     * 세 항목을 모두 골랐을 때만 저장한다. 저장이 끝나면 [onSaved]를 부른다.
+     * 세 항목을 모두 골랐을 때만 저장한다. 저장이 끝나면 상태의 [OnboardingState.saved]가 true가 된다.
+     * 완료를 콜백이 아니라 상태로 두어, 저장 중 화면이 다시 만들어져도 새 화면이 완료를 받는다.
      * 저장에 실패하면 고른 값은 그대로 두고 오류를 보여 주며, START로 다시 시도할 수 있다.
      */
-    fun start(onSaved: (DriverProfile) -> Unit) {
+    fun start() {
         val current = _state.value
-        if (current.saving) return
+        if (current.saving || current.saved) return
         val profile = current.toProfile() ?: return
         _state.update { it.copy(saving = true, saveFailed = false) }
         viewModelScope.launch {
@@ -43,8 +44,7 @@ class OnboardingViewModel(
             } catch (e: IOException) {
                 false
             }
-            _state.update { it.copy(saving = false, saveFailed = !saved) }
-            if (saved) onSaved(profile)
+            _state.update { it.copy(saving = false, saveFailed = !saved, saved = saved) }
         }
     }
 }

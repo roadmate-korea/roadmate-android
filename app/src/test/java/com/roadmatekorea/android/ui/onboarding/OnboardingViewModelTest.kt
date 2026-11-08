@@ -54,16 +54,21 @@ class OnboardingViewModelTest {
     }
 
     @Test
-    fun start_savesAndCallsOnSaved() = runTest(dispatcher) {
+    fun start_saves_andMarksSavedInState() = runTest(dispatcher) {
         val store = FakeStore()
         val vm = OnboardingViewModel(store, existing = null)
         vm.chooseCarlos()
-        var done: DriverProfile? = null
-        vm.start { done = it }
+        vm.start()
+        assertFalse(vm.state.value.saved)
         advanceUntilIdle()
         assertEquals(listOf(Personas.CARLOS), store.saved)
-        assertEquals(Personas.CARLOS, done)
+        assertTrue(vm.state.value.saved)
         assertFalse(vm.state.value.saveFailed)
+        // 저장이 끝난 뒤 START는 다시 저장하지 않는다
+        assertFalse(vm.state.value.canStart)
+        vm.start()
+        advanceUntilIdle()
+        assertEquals(1, store.saved.size)
     }
 
     @Test
@@ -71,17 +76,16 @@ class OnboardingViewModelTest {
         val store = FakeStore(failNext = 1)
         val vm = OnboardingViewModel(store, existing = null)
         vm.chooseCarlos()
-        var doneCount = 0
-        vm.start { doneCount++ }
+        vm.start()
         advanceUntilIdle()
-        assertEquals(0, doneCount)
+        assertFalse(vm.state.value.saved)
         assertTrue(vm.state.value.saveFailed)
         assertEquals(Personas.CARLOS, vm.state.value.toProfile())
         assertTrue(vm.state.value.canStart)
 
-        vm.start { doneCount++ }
+        vm.start()
         advanceUntilIdle()
-        assertEquals(1, doneCount)
+        assertTrue(vm.state.value.saved)
         assertFalse(vm.state.value.saveFailed)
         assertEquals(listOf(Personas.CARLOS), store.saved)
     }
@@ -91,15 +95,15 @@ class OnboardingViewModelTest {
         val store = FakeStore()
         val vm = OnboardingViewModel(store, existing = null)
         vm.selectLanguage(AppLanguage.EN)
-        vm.start { }
+        vm.start()
         advanceUntilIdle()
         assertTrue(store.saved.isEmpty())
 
         vm.selectCountry(DrivingCountry.JP)
         vm.selectExperience(KoreaExperience.FIRST_TIME_LEFT_HAND_DRIVE)
-        vm.start { }
+        vm.start()
         assertFalse(vm.state.value.canStart) // 저장 중
-        vm.start { }
+        vm.start()
         advanceUntilIdle()
         assertEquals(listOf(Personas.NAKAMURA), store.saved)
     }

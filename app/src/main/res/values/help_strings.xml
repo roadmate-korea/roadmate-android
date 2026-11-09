@@ -12,10 +12,10 @@
     <string name="help_call">Call %1$s</string>
     <string name="accident_title">Accident</string>
     <string name="accident_first">Do this first</string>
-    <string name="accident_step_1">Turn on the hazard lights. Move to a safe place if you can. On a highway, wait behind the guardrail.</string>
+    <string name="accident_step_1">Turn on the hazard lights. If the car can move, pull over to a safe place. On a highway, get out and wait behind the guardrail.</string>
     <string name="accident_step_2">If anyone is hurt, call 119. To report the accident, call 112.</string>
     <string name="accident_step_3">Call your rental company. The number is on your contract.</string>
-    <string name="accident_step_4">Take photos of both cars and the road before you move the car.</string>
+    <string name="accident_step_4">Take photos of both cars and the road only if it is safe. Do not stay on or go back onto the road to take photos.</string>
     <string name="accident_show">Show this to people nearby</string>
     <string name="accident_play_korean">Play in Korean</string>
     <string name="accident_call_rental">Call your rental company</string>

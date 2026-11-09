@@ -147,6 +147,21 @@ class StringResourcesTest {
     }
 
     @Test
+    fun accidentSteps_putSafetyBeforePhotos_inEveryLanguage() {
+        // 사진은 안전할 때만. 고속도로에서는 가드레일 밖 대피(한국도로공사 사고 대응 요령)
+        val words = mapOf(
+            AppLanguage.EN to listOf("guardrail", "only if it is safe"),
+            AppLanguage.FR to listOf("glissière", "sans danger"),
+            AppLanguage.ES to listOf("guardarraíl", "si es seguro"),
+            AppLanguage.KO to listOf("가드레일", "안전할 때만"),
+        )
+        words.forEach { (language, expected) ->
+            val text = load(language).getValue(keyOf(GuidanceId.HELP_ACCIDENT_STEPS))
+            expected.forEach { w -> assertTrue("$language: '$w' 없음", text.contains(w, ignoreCase = true)) }
+        }
+    }
+
+    @Test
     fun english_formatsLikeAndroid() {
         val text = load(AppLanguage.EN).getValue(keyOf(GuidanceId.SCHOOL_ZONE_SPEED_LIMIT))
         assertEquals("School zone. The speed limit is 30 kilometers per hour.", String.format(Locale.US, text, 30))

@@ -308,4 +308,40 @@ class GuidanceSpeakerTest {
         s.say(g(GuidanceId.ARRIVED), "arrived", en)
         assertEquals(listOf("arrived"), engine.spoken)
     }
+    // ---- 상황 도움 음성(끊어도 되는 안내) ----
+
+    @Test
+    fun safetyWarning_interruptsHelpSpeech_insteadOfWaitingBehindIt() = runTest {
+        val engine = FakeEngine()
+        val s = speaker(engine)
+        s.say(g(GuidanceId.HELP_ACCIDENT_STEPS), "help", en)
+        s.say(g(GuidanceId.SCHOOL_ZONE_CROSSWALK), "school", en)
+        assertEquals(1, engine.stops)
+        assertEquals(listOf("help", "school"), engine.spoken)
+        assertEquals("school", s.current.value?.text)
+    }
+
+    @Test
+    fun safetyWarning_stillWaitsBehindNormalGuidance() = runTest {
+        val engine = FakeEngine()
+        val s = speaker(engine)
+        s.say(g(GuidanceId.RIGHT_TURN_RULE), "right", en)
+        s.say(g(GuidanceId.SCHOOL_ZONE_CROSSWALK), "school", en)
+        assertEquals(0, engine.stops)
+        assertEquals(listOf("right"), engine.spoken)
+    }
+
+    @Test
+    fun cancel_stopsOnlyTheGivenGuidance() = runTest {
+        val engine = FakeEngine()
+        val s = speaker(engine)
+        s.say(g(GuidanceId.HELP_ACCIDENT_STEPS), "help", en)
+        s.say(g(GuidanceId.ARRIVED), "arrived", en)
+        s.say(g(GuidanceId.PHRASE_ACCIDENT_HELP), "phrase", en)
+        s.cancel(setOf(GuidanceId.HELP_ACCIDENT_STEPS, GuidanceId.PHRASE_ACCIDENT_HELP))
+        assertEquals(1, engine.stops)
+        assertEquals("다른 안내는 이어서", listOf("help", "arrived"), engine.spoken)
+        engine.complete()
+        assertNull(s.current.value)
+    }
 }

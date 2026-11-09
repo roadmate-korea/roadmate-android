@@ -1,5 +1,6 @@
 package com.roadmatekorea.android.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -70,6 +71,7 @@ private fun RoadMateContent(
     var announceOnEnter by rememberSaveable { mutableStateOf(false) }
     // 주행 화면 위에 연 상황 도움 화면(정차 중에만)
     var help by rememberSaveable { mutableStateOf<HelpRoute?>(null) }
+    var accidentAnnounced by rememberSaveable { mutableStateOf(false) }
 
     when (val current = read) {
         null -> Box(Modifier.fillMaxSize().background(RoadMate.colors.canvas))
@@ -107,13 +109,39 @@ private fun RoadMateContent(
                     announceOnEnter = false
                 }
                 // 상황 도움은 정차 중에만 연다. 기어가 P를 벗어나면 주행 화면으로 돌아간다(읽기 전용 원칙)
-                LaunchedEffect(vehicleLocked) { if (vehicleLocked) help = null }
+                // 닫을 때는 도움 음성만 멈춘다(안전 경고와 다른 안내는 그대로)
+                val closeHelp = {
+                    help = null
+                    driveVm.stopHelp()
+                }
+                LaunchedEffect(vehicleLocked) { if (vehicleLocked && help != null) closeHelp() }
                 val route = if (vehicleLocked) null else help
+                val backFromHelp = {
+                    when (help) {
+                        HelpRoute.ACCIDENT -> {
+                            help = HelpRoute.MENU
+                            driveVm.stopHelp()
+                        }
+                        else -> closeHelp()
+                    }
+                }
+                // 시스템 뒤로 가기도 화면의 뒤로 버튼과 같은 순서로(사고 → 도움 → 주행)
+                BackHandler(enabled = route != null, onBack = backFromHelp)
                 // 시연 중에는 시연 페르소나의 언어로 화면을 보여 준다
                 ProvideLanguage(driveState.profile?.language ?: profile.language) {
+                  Box(Modifier.fillMaxSize()) {
                     when (route) {
-                        HelpRoute.MENU -> HelpScreen(onBack = { help = null }, onAccident = { help = HelpRoute.ACCIDENT })
-                        HelpRoute.ACCIDENT -> AccidentScreen(onBack = { help = HelpRoute.MENU }, onSpeak = driveVm::sayHelp)
+                        HelpRoute.MENU -> HelpScreen(onBack = backFromHelp, onAccident = {
+                            accidentAnnounced = false
+                            help = HelpRoute.ACCIDENT
+                        })
+                        HelpRoute.ACCIDENT -> AccidentScreen(
+                            onBack = backFromHelp,
+                            onSpeak = driveVm::sayHelp,
+                            // 화면을 새로 열 때 한 번만 읽는다(회전 등으로 다시 만들어질 때는 읽지 않는다)
+                            announce = !accidentAnnounced,
+                            onAnnounced = { accidentAnnounced = true },
+                        )
                         null -> DriveScreen(
                         state = driveState,
                         onChangeSettings = {
@@ -129,6 +157,13 @@ private fun RoadMateContent(
                         onHelp = { if (!driveVm.vehicle.value.locked) help = HelpRoute.MENU },
                     )
                     }
+                    // 도움 화면은 주행 화면을 가리므로, 그동안 나오는 다른 안내(안전 경고 포함)의 자막을 위에 보여 준다.
+                    // 음성을 쓸 수 없을 때 유일한 출력이다. 도움 음성 자체는 화면 내용과 같아 띄우지 않는다.
+                    val caption = driveState.caption
+                    if (route != null && caption != null && driveState.guidance?.id?.preemptible != true) {
+                        GuidanceCaptionBar(caption)
+                    }
+                  }
                 }
             }
         }

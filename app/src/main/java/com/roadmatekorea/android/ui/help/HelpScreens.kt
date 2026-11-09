@@ -77,10 +77,15 @@ fun HelpScreen(onBack: () -> Unit, onAccident: () -> Unit) {
  * 전화는 전화 앱의 번호 입력 화면만 연다(권한 없이, 운전자가 직접 건다).
  */
 @Composable
-fun AccidentScreen(onBack: () -> Unit, onSpeak: (Guidance, Boolean) -> Unit) {
+fun AccidentScreen(onBack: () -> Unit, onSpeak: (Guidance, Boolean) -> Unit, announce: Boolean = true, onAnnounced: () -> Unit = {}) {
     val c = RoadMate.colors
     val compact = LocalCompact.current
-    LaunchedEffect(Unit) { onSpeak(Guidance(GuidanceId.HELP_ACCIDENT_STEPS), false) }
+    LaunchedEffect(Unit) {
+        if (announce) {
+            onSpeak(Guidance(GuidanceId.HELP_ACCIDENT_STEPS), false)
+            onAnnounced()
+        }
+    }
     Column(Modifier.fillMaxSize().background(c.canvas).padding(start = 40.dp, end = 40.dp, top = 24.dp, bottom = 40.dp)) {
         BackRow(stringResource(R.string.accident_title), onBack)
         Spacer(Modifier.size(24.dp))

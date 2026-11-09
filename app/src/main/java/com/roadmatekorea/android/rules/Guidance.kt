@@ -7,7 +7,10 @@ enum class Priority { INFO, ADAPTATION, RULE, SAFETY }
  * 안내 종류. 문장은 i18n 층에서 이 ID로 찾는다.
  * 형식 인자가 있는 안내는 [Guidance.args]에 값을 담는다.
  */
-enum class GuidanceId(val priority: Priority) {
+/**
+ * @param preemptible 안전 경고가 오면 읽던 중이라도 끊는다(운전자가 연 상황 도움 음성처럼 길고 급하지 않은 것).
+ */
+enum class GuidanceId(val priority: Priority, val preemptible: Boolean = false) {
     WELCOME_RIGHT_SIDE(Priority.INFO),
     WELCOME_FIRST_TIME(Priority.INFO),
     WELCOME_EXPERIENCED(Priority.INFO),
@@ -53,10 +56,10 @@ enum class GuidanceId(val priority: Priority) {
 
     // ---- 상황 도움(정차 중 화면에서 운전자가 열 때만) ----
     /** 사고 뒤 할 일을 차례로 읽는다(프로필 언어). */
-    HELP_ACCIDENT_STEPS(Priority.INFO),
+    HELP_ACCIDENT_STEPS(Priority.INFO, preemptible = true),
 
     /** 주변 사람에게 들려줄 한국어 문장. 화면 버튼으로 한국어로 읽는다. */
-    PHRASE_ACCIDENT_HELP(Priority.INFO),
+    PHRASE_ACCIDENT_HELP(Priority.INFO, preemptible = true),
 }
 
 data class Guidance(val id: GuidanceId, val args: List<Int> = emptyList()) {

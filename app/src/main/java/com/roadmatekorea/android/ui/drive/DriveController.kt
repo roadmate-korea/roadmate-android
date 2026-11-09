@@ -9,6 +9,7 @@ import com.roadmatekorea.android.i18n.AppLocales
 import com.roadmatekorea.android.profile.model.AppLanguage
 import com.roadmatekorea.android.profile.model.DriverProfile
 import com.roadmatekorea.android.rules.Guidance
+import com.roadmatekorea.android.rules.GuidanceId
 import com.roadmatekorea.android.voice.GuidanceSpeaker
 import com.roadmatekorea.android.voice.SpeechInput
 import com.roadmatekorea.android.voice.TtsEngine
@@ -335,6 +336,9 @@ class DriveController(
         speaker.say(guidance, textFor(s.profile.copy(language = language))(guidance), AppLocales.localeOf(language))
     }
 
+    /** 상황 도움 화면을 닫을 때(뒤로, 기어가 P를 벗어남) 도움 음성만 멈춘다. 안전 경고와 다른 안내는 그대로다. */
+    fun stopHelp() = speaker.cancel(HELP_SPEECH)
+
     /** 프로세스가 끝날 때까지 보통 부르지 않는다(테스트와 정리용). */
     fun release() {
         speechInput?.release()
@@ -342,6 +346,9 @@ class DriveController(
     }
 
     private companion object {
+        /** 상황 도움 음성(운전자가 화면에서 연 것). */
+        val HELP_SPEECH = GuidanceId.entries.filter { it.preemptible }.toSet()
+
         /** 듣기 제한 시간. 지나면 못 알아들었다고 답한다. */
         const val LISTEN_TIMEOUT_MS = 10_000L
     }

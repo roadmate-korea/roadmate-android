@@ -12,10 +12,10 @@
     <string name="help_call">Llamar al %1$s</string>
     <string name="accident_title">Accidente</string>
     <string name="accident_first">Haz esto primero</string>
-    <string name="accident_step_1">Enciende las luces de emergencia. Ponte a salvo si puedes. En autopista, espera detrás del guardarraíl.</string>
+    <string name="accident_step_1">Enciende las luces de emergencia. Si el coche puede moverse, apártate a un lugar seguro. En autopista, sal y espera detrás del guardarraíl.</string>
     <string name="accident_step_2">Si alguien está herido, llama al 119. Para denunciar el accidente, llama al 112.</string>
     <string name="accident_step_3">Llama a tu empresa de alquiler. El número está en tu contrato.</string>
-    <string name="accident_step_4">Haz fotos de los dos coches y de la vía antes de mover el coche.</string>
+    <string name="accident_step_4">Haz fotos de los dos coches y de la vía solo si es seguro. No te quedes en la vía ni vuelvas a ella para hacer fotos.</string>
     <string name="accident_show">Enséñale esto a la gente cerca</string>
     <string name="accident_play_korean">Reproducir en coreano</string>
     <string name="accident_call_rental">Llamar a tu empresa de alquiler</string>

@@ -12,10 +12,10 @@
     <string name="help_call">Appeler le %1$s</string>
     <string name="accident_title">Accident</string>
     <string name="accident_first">Faites ceci d\'abord</string>
-    <string name="accident_step_1">Allumez les feux de détresse. Mettez-vous en sécurité si vous le pouvez. Sur l\'autoroute, attendez derrière la glissière.</string>
+    <string name="accident_step_1">Allumez les feux de détresse. Si la voiture peut rouler, garez-vous en sécurité. Sur l\'autoroute, sortez et attendez derrière la glissière.</string>
     <string name="accident_step_2">Si quelqu\'un est blessé, appelez le 119. Pour signaler l\'accident, appelez le 112.</string>
     <string name="accident_step_3">Appelez votre loueur. Le numéro figure sur votre contrat.</string>
-    <string name="accident_step_4">Photographiez les deux véhicules et la route avant de déplacer la voiture.</string>
+    <string name="accident_step_4">Photographiez les deux véhicules et la route seulement si c\'est sans danger. Ne restez pas sur la route et n\'y retournez pas pour prendre des photos.</string>
     <string name="accident_show">Montrez ceci aux personnes autour</string>
     <string name="accident_play_korean">Lire en coréen</string>
     <string name="accident_call_rental">Appeler votre loueur</string>

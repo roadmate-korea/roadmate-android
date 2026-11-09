@@ -6,8 +6,10 @@ import com.roadmatekorea.android.drive.DriveSession
 import com.roadmatekorea.android.drive.DriveSignalHub
 import com.roadmatekorea.android.drive.VehicleStatus
 import com.roadmatekorea.android.i18n.AppLocales
+import com.roadmatekorea.android.profile.model.AppLanguage
 import com.roadmatekorea.android.profile.model.DriverProfile
 import com.roadmatekorea.android.rules.Guidance
+import com.roadmatekorea.android.rules.GuidanceId
 import com.roadmatekorea.android.voice.GuidanceSpeaker
 import com.roadmatekorea.android.voice.SpeechInput
 import com.roadmatekorea.android.voice.TtsEngine
@@ -115,7 +117,10 @@ class DriveController(
         scope.launch {
             hub.signals.collect { signal ->
                 // 잠금은 시연 중에도 항상 실제 차량을 따른다
+                val wasLocked = _vehicle.value.locked
                 _vehicle.value = _vehicle.value.on(signal)
+                // P를 벗어나면 상황 도움 음성을 멈춘다. 화면이 백그라운드여도(내비를 앞에 띄움) 여기서 처리한다
+                if (!wasLocked && _vehicle.value.locked) stopHelp()
                 // 시연 중에 실제로 출발하면(P를 벗어남) 시연을 바로 끝내고 실제 세션으로 돌아간다.
                 // 실제 안전 경고가 시연 때문에 막히면 안 된다.
                 if (_demo.value != null && _vehicle.value.locked) exitDemoToRealSession()
@@ -324,6 +329,19 @@ class DriveController(
         speaker.resume()
     }
 
+    /**
+     * 상황 도움 화면(정차 중)에서 운전자가 연 안내를 읽는다. [inKorean]이면 주변 사람에게 들려줄 수 있게 한국어로 읽는다.
+     * 같은 음성 큐를 쓰므로 안전 경고가 오면 그것이 먼저다.
+     */
+    fun sayHelp(guidance: Guidance, inKorean: Boolean = false) {
+        val s = session.value ?: return
+        val language = if (inKorean) AppLanguage.KO else s.profile.language
+        speaker.say(guidance, textFor(s.profile.copy(language = language))(guidance), AppLocales.localeOf(language))
+    }
+
+    /** 상황 도움 화면을 닫을 때(뒤로, 기어가 P를 벗어남) 도움 음성만 멈춘다. 안전 경고와 다른 안내는 그대로다. */
+    fun stopHelp() = speaker.cancel(HELP_SPEECH)
+
     /** 프로세스가 끝날 때까지 보통 부르지 않는다(테스트와 정리용). */
     fun release() {
         speechInput?.release()
@@ -331,6 +349,9 @@ class DriveController(
     }
 
     private companion object {
+        /** 상황 도움 음성(운전자가 화면에서 연 것). */
+        val HELP_SPEECH = GuidanceId.entries.filter { it.preemptible }.toSet()
+
         /** 듣기 제한 시간. 지나면 못 알아들었다고 답한다. */
         const val LISTEN_TIMEOUT_MS = 10_000L
     }

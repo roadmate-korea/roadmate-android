@@ -71,4 +71,11 @@
     <string name="card_answer_not_heard_kicker">Pregunta a RoadMate</string>
     <string name="card_answer_not_heard_headline">Perdona, no te he entendido.</string>
     <string name="card_answer_not_heard_body">Toca el micrófono y vuelve a preguntar.</string>
+    <!-- 상황 도움 -->
+    <string name="card_help_accident_steps_kicker">Accidente</string>
+    <string name="card_help_accident_steps_headline">Haz esto primero.</string>
+    <string name="card_help_accident_steps_body">Luces de emergencia, luego 119 o 112.</string>
+    <string name="card_phrase_accident_help_kicker">Enséñalo a la gente cerca</string>
+    <string name="card_phrase_accident_help_headline">사고가 났어요. 도와주세요.</string>
+    <string name="card_phrase_accident_help_body">Ha habido un accidente. Ayúdeme, por favor.</string>
 </resources>

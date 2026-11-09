@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 상황 도움, 사고 화면 문구 -->
+<resources>
+    <string name="header_help">도움</string>
+    <string name="help_title">도움</string>
+    <string name="help_accident">사고</string>
+    <string name="help_accident_sub">먼저 할 일과 연락처</string>
+    <string name="help_emergency">긴급 번호</string>
+    <string name="help_119">소방, 구급</string>
+    <string name="help_112">경찰</string>
+    <string name="help_1330">관광 통역 안내</string>
+    <string name="help_call">%1$s 전화</string>
+    <string name="accident_title">사고</string>
+    <string name="accident_first">먼저 이렇게 하세요</string>
+    <string name="accident_step_1">비상등을 켜세요. 차가 움직일 수 있으면 안전한 곳으로 옮기세요. 고속도로에서는 차에서 내려 가드레일 밖에서 기다리세요.</string>
+    <string name="accident_step_2">다친 사람이 있으면 119, 사고 신고는 112에 전화하세요.</string>
+    <string name="accident_step_3">렌터카 회사에 전화하세요. 번호는 계약서에 있어요.</string>
+    <string name="accident_step_4">안전할 때만 두 차와 도로 사진을 찍으세요. 사진을 찍으려고 도로에 머물거나 다시 들어가지 마세요.</string>
+    <string name="accident_show">주변 사람에게 보여 주세요</string>
+    <string name="accident_play_korean">한국어로 읽기</string>
+    <string name="accident_call_rental">렌터카 회사에 전화</string>
+</resources>

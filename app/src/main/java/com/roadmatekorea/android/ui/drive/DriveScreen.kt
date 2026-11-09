@@ -48,6 +48,7 @@ fun DriveScreen(
     onPlayDemo: (DemoPersona) -> Unit,
     onStopDemo: () -> Unit,
     onMic: () -> Unit = {},
+    onHelp: (() -> Unit)? = null,
 ) {
     val c = RoadMate.colors
     val locked = state.vehicle.locked
@@ -56,7 +57,7 @@ fun DriveScreen(
     Box(Modifier.fillMaxSize().background(c.canvas)) {
         Column(Modifier.fillMaxSize()) {
             // 시연 중에는 설정을 열지 않는다(끝내기 버튼으로 먼저 돌아온다)
-            AppHeader(locked = locked, onSettings = if (state.demo == null) onChangeSettings else null)
+            AppHeader(locked = locked, onSettings = if (state.demo == null) onChangeSettings else null, onHelp = if (state.demo == null) onHelp else null)
             Column(
                 verticalArrangement = Arrangement.spacedBy(if (LocalCompact.current) 24.dp else 32.dp),
                 modifier = Modifier.weight(1f).fillMaxWidth().padding(start = 40.dp, end = 40.dp, top = 8.dp, bottom = bottomPadding),

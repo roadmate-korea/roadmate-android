@@ -29,4 +29,7 @@
     <string name="guidance_answer_speed_limit_unknown">Je n\'ai pas la limite de vitesse de cette route pour le moment. Suivez les panneaux.</string>
     <string name="guidance_answer_help">Vous pouvez me poser des questions sur les virages à droite, les virages à gauche, les zones scolaires, les voies de bus, les contrôles de vitesse moyenne ou la limite de vitesse ici.</string>
     <string name="guidance_answer_not_heard">Désolé, je n\'ai pas compris. Touchez le micro et posez votre question à nouveau.</string>
+    <!-- 상황 도움 -->
+    <string name="guidance_help_accident_steps">Après un accident, allumez les feux de détresse et mettez-vous en sécurité. Sur l\'autoroute, sortez et attendez derrière la glissière. Si quelqu\'un est blessé, appelez le 119. Pour signaler l\'accident, appelez le 112. Ensuite, appelez votre loueur. Ne prenez des photos que si c\'est sans danger, et ne restez jamais sur la route pour cela.</string>
+    <string name="guidance_phrase_accident_help">Il y a eu un accident. Aidez-moi, s\'il vous plaît.</string>
 </resources>

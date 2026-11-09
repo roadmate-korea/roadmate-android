@@ -71,4 +71,11 @@
     <string name="card_answer_not_heard_kicker">Demandez à RoadMate</string>
     <string name="card_answer_not_heard_headline">Désolé, je n\'ai pas compris.</string>
     <string name="card_answer_not_heard_body">Touchez le micro et reposez votre question.</string>
+    <!-- 상황 도움 -->
+    <string name="card_help_accident_steps_kicker">Accident</string>
+    <string name="card_help_accident_steps_headline">Faites ceci d\'abord.</string>
+    <string name="card_help_accident_steps_body">Feux de détresse, puis 119 ou 112.</string>
+    <string name="card_phrase_accident_help_kicker">Montrez ceci autour de vous</string>
+    <string name="card_phrase_accident_help_headline">사고가 났어요. 도와주세요.</string>
+    <string name="card_phrase_accident_help_body">Il y a eu un accident. Aidez-moi, s\'il vous plaît.</string>
 </resources>

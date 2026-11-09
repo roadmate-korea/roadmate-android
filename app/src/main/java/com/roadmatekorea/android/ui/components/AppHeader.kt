@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.roadmatekorea.android.R
+import com.roadmatekorea.android.ui.LocalCompact
 import com.roadmatekorea.android.ui.theme.RoadMate
 
 /**
@@ -83,12 +84,14 @@ fun DriveStateChip(locked: Boolean, modifier: Modifier = Modifier) {
  * [onSettings]가 null이면 설정 버튼을 그리지 않는다.
  */
 @Composable
-fun AppHeader(locked: Boolean, onSettings: (() -> Unit)?, modifier: Modifier = Modifier) {
+fun AppHeader(locked: Boolean, onSettings: (() -> Unit)?, modifier: Modifier = Modifier, onHelp: (() -> Unit)? = null) {
     val c = RoadMate.colors
+    // 좁은 창(내비와 나란히)에서는 머리 버튼을 아이콘만 보여 준다
+    val compact = LocalCompact.current
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(24.dp),
-        modifier = modifier.fillMaxWidth().height(112.dp).padding(start = 56.dp, end = 40.dp),
+        horizontalArrangement = Arrangement.spacedBy(if (compact) 16.dp else 24.dp),
+        modifier = modifier.fillMaxWidth().height(112.dp).padding(start = if (compact) 40.dp else 56.dp, end = if (compact) 24.dp else 40.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             LogoMark()
@@ -100,20 +103,26 @@ fun AppHeader(locked: Boolean, onSettings: (() -> Unit)?, modifier: Modifier = M
         }
         Spacer(Modifier.weight(1f))
         DriveStateChip(locked)
-        if (!locked && onSettings != null) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier
-                    .heightIn(min = 64.dp)
-                    .clip(RoundedCornerShape(32.dp))
-                    .background(c.surface)
-                    .clickable(role = Role.Button, onClick = onSettings)
-                    .padding(start = 20.dp, end = 24.dp),
-            ) {
-                RmIcon(R.drawable.ic_rm_settings, size = 36.dp)
-                Text(stringResource(R.string.header_settings), style = RoadMate.type.labelM, color = c.ink)
-            }
-        }
+        if (!locked && onHelp != null) HeaderChip(R.drawable.ic_rm_help, stringResource(R.string.header_help), compact, onHelp)
+        if (!locked && onSettings != null) HeaderChip(R.drawable.ic_rm_settings, stringResource(R.string.header_settings), compact, onSettings)
+    }
+}
+
+/** 머리의 둥근 버튼(설정, 도움). 좁은 창에서는 아이콘만(이름은 접근성 설명으로). */
+@Composable
+private fun HeaderChip(icon: Int, label: String, iconOnly: Boolean, onClick: () -> Unit) {
+    val c = RoadMate.colors
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier
+            .heightIn(min = 64.dp)
+            .clip(RoundedCornerShape(32.dp))
+            .background(c.surface)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(start = 20.dp, end = if (iconOnly) 20.dp else 24.dp),
+    ) {
+        RmIcon(icon, contentDescription = if (iconOnly) label else null, size = 36.dp)
+        if (!iconOnly) Text(label, style = RoadMate.type.labelM, color = c.ink)
     }
 }

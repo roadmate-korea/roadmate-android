@@ -37,6 +37,8 @@ object GuidanceStrings {
         GuidanceId.ANSWER_SPEED_LIMIT_UNKNOWN -> R.string.guidance_answer_speed_limit_unknown
         GuidanceId.ANSWER_HELP -> R.string.guidance_answer_help
         GuidanceId.ANSWER_NOT_HEARD -> R.string.guidance_answer_not_heard
+        GuidanceId.HELP_ACCIDENT_STEPS -> R.string.guidance_help_accident_steps
+        GuidanceId.PHRASE_ACCIDENT_HELP -> R.string.guidance_phrase_accident_help
     }
 
     /** [resources]는 프로필 언어로 맞춘 Context의 것을 넘긴다(시스템 언어가 아니라). */

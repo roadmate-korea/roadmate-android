@@ -76,6 +76,9 @@ class GuidanceSpeaker(
         _idle.value = false
         // 듣는 중에 안전 경고가 오면 질문보다 경고가 먼저다
         if (guidance.priority == Priority.SAFETY) holdInterrupt?.let { interrupt -> resume(); interrupt() }
+        // 끊어도 되는 안내(상황 도움 음성)를 읽는 중에 안전 경고가 오면 끊고 경고를 먼저 말한다.
+        // 긴 도움 음성이 끝나기를 기다리다 경고의 유효 시간(15초)이 지나 사라지지 않게.
+        if (guidance.priority == Priority.SAFETY && playing?.guidance?.id?.preemptible == true) stopCurrentAndPlayNext()
         // 엔진 준비 전에는 쌓아 두었다가 준비가 끝나면 말한다.
         if (playing == null && engineState != EngineState.INITIALIZING) playNext()
     }
@@ -110,6 +113,19 @@ class GuidanceSpeaker(
         if (holdInterrupt == null) return
         holdInterrupt = null
         if (playing == null && engineState != EngineState.INITIALIZING) playNext()
+    }
+
+    /** [ids] 안내만 멈추고 버린다(기다리는 것과 지금 말하는 것). 다른 안내는 그대로 이어서 말한다. */
+    fun cancel(ids: Set<GuidanceId>) {
+        ids.forEach(queue::remove)
+        if (playing?.guidance?.id in ids) stopCurrentAndPlayNext() else if (playing == null && queue.size == 0) _idle.value = true
+    }
+
+    private fun stopCurrentAndPlayNext() {
+        timer?.cancel()
+        if (playing != null && _current.value?.voiced == true) engine.stop()
+        playing = null
+        if (engineState != EngineState.INITIALIZING) playNext()
     }
 
     /** 기다리는 안내를 모두 버리고 지금 말하는 것도 멈춘다. */

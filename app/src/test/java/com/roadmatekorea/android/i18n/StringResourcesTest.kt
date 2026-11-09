@@ -129,6 +129,24 @@ class StringResourcesTest {
     }
 
     @Test
+    fun sectionCheck_mentionsStartEndAndAverage_inEveryLanguage() {
+        // 구간 단속은 시작·끝 지점 속도와 구간 평균을 모두 잰다. 평균만 말하면 지점 과속을 빠뜨린다(제주경찰청 단속장비 안내)
+        val words = mapOf(
+            AppLanguage.EN to listOf("start", "end", "average"),
+            AppLanguage.FR to listOf("début", "fin", "moyenne"),
+            AppLanguage.ES to listOf("inicio", "final", "media"),
+            AppLanguage.KO to listOf("시작", "끝", "평균"),
+        )
+        words.forEach { (language, expected) ->
+            val texts = load(language)
+            listOf(GuidanceId.SECTION_START, GuidanceId.ANSWER_SECTION).forEach { id ->
+                val text = texts.getValue(keyOf(id))
+                expected.forEach { w -> assertTrue("$language/${id.name}: '$w' 없음", text.contains(w, ignoreCase = true)) }
+            }
+        }
+    }
+
+    @Test
     fun english_formatsLikeAndroid() {
         val text = load(AppLanguage.EN).getValue(keyOf(GuidanceId.SCHOOL_ZONE_SPEED_LIMIT))
         assertEquals("School zone. The speed limit is 30 kilometers per hour.", String.format(Locale.US, text, 30))

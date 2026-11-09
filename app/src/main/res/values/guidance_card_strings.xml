@@ -44,8 +44,8 @@
     <string name="card_bus_lane_ahead_headline">Stay out of the blue lane.</string>
     <string name="card_bus_lane_ahead_body">Check the hours on the sign.</string>
     <string name="card_section_start_kicker">Average speed check</string>
-    <string name="card_section_start_headline">Keep your average at or below %1$d km/h.</string>
-    <string name="card_section_start_body">Cameras at the start and the end measure your speed.</string>
+    <string name="card_section_start_headline">Stay at or below %1$d km/h.</string>
+    <string name="card_section_start_body">Start, end, and average speeds are all checked.</string>
     <string name="card_section_over_average_kicker">Average speed check</string>
     <string name="card_section_over_average_headline">Average %1$d km/h. Slow down.</string>
     <string name="card_section_over_average_body">The limit is %2$d km/h.</string>
@@ -57,8 +57,8 @@
     <string name="card_answer_bus_lane_headline">Stay out of the blue lane.</string>
     <string name="card_answer_bus_lane_body">Check the hours on the sign.</string>
     <string name="card_answer_section_kicker">Average speed check</string>
-    <string name="card_answer_section_headline">Keep your average at or below the limit.</string>
-    <string name="card_answer_section_body">Cameras at the start and the end measure your speed.</string>
+    <string name="card_answer_section_headline">Stay at or below the limit the whole way.</string>
+    <string name="card_answer_section_body">Start, end, and average speeds are all checked.</string>
     <string name="card_answer_speed_limit_kicker">Speed limit</string>
     <string name="card_answer_speed_limit_headline">%1$d km/h on this road.</string>
     <string name="card_answer_speed_limit_body">From the navigation map.</string>

@@ -23,12 +23,12 @@
 
     <string name="guidance_arrived">You have arrived. Thank you for driving safely in Korea.</string>
     <string name="guidance_bus_lane_ahead">Bus lane in %1$d meters. Do not drive in the blue bus lane during the hours shown on the sign.</string>
-    <string name="guidance_section_start">Average speed check starts. Keep your average speed at or below %1$d kilometers per hour until the section ends.</string>
+    <string name="guidance_section_start">Average speed check starts. Your speed is checked at the start, at the end, and on average. Stay at or below %1$d kilometers per hour until the section ends.</string>
     <string name="guidance_section_over_average">Your average speed is %1$d, above the limit of %2$d. Slow down.</string>
     <!-- 음성 질문에 대한 답 -->
     <string name="guidance_answer_school_zone">In school zones, drive at or below the speed limit on the signs and watch for children. Always stop before a crosswalk without traffic lights, even if no one is crossing.</string>
     <string name="guidance_answer_bus_lane">Do not drive in the blue bus lane during the hours shown on the sign. Some bus lanes are for buses all day, so always check the sign.</string>
-    <string name="guidance_answer_section">On an average speed check, cameras at the start and the end of the section measure your average speed. Keep it at or below the posted limit for the whole section.</string>
+    <string name="guidance_answer_section">On an average speed check, cameras measure your speed at the start, at the end, and on average between them. Stay at or below the posted limit for the whole section.</string>
     <string name="guidance_answer_speed_limit">The speed limit on this road is %1$d kilometers per hour.</string>
     <string name="guidance_answer_speed_limit_unknown">I don\'t have the speed limit for this road right now. Please follow the road signs.</string>
     <string name="guidance_answer_help">You can ask me about right turns, left turns, school zones, bus lanes, average speed checks, or the speed limit here.</string>

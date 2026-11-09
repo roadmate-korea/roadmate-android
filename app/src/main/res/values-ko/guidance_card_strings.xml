@@ -44,8 +44,8 @@
     <string name="card_bus_lane_ahead_headline">파란 차로에 들어가지 마세요.</string>
     <string name="card_bus_lane_ahead_body">표지판의 운영 시간을 확인하세요.</string>
     <string name="card_section_start_kicker">구간 단속</string>
-    <string name="card_section_start_headline">평균 시속 %1$dkm 이하로 달리세요.</string>
-    <string name="card_section_start_body">시작과 끝의 카메라가 속도를 재요.</string>
+    <string name="card_section_start_headline">시속 %1$dkm 이하로 달리세요.</string>
+    <string name="card_section_start_body">시작, 끝, 평균 속도를 모두 재요.</string>
     <string name="card_section_over_average_kicker">구간 단속</string>
     <string name="card_section_over_average_headline">평균 시속 %1$dkm예요. 속도를 줄이세요.</string>
     <string name="card_section_over_average_body">제한 속도는 시속 %2$dkm예요.</string>
@@ -57,8 +57,8 @@
     <string name="card_answer_bus_lane_headline">파란 차로에 들어가지 마세요.</string>
     <string name="card_answer_bus_lane_body">표지판의 운영 시간을 확인하세요.</string>
     <string name="card_answer_section_kicker">구간 단속</string>
-    <string name="card_answer_section_headline">평균 속도를 제한 이하로 유지하세요.</string>
-    <string name="card_answer_section_body">시작과 끝의 카메라가 속도를 재요.</string>
+    <string name="card_answer_section_headline">구간 내내 제한 속도 이하로 달리세요.</string>
+    <string name="card_answer_section_body">시작, 끝, 평균 속도를 모두 재요.</string>
     <string name="card_answer_speed_limit_kicker">제한 속도</string>
     <string name="card_answer_speed_limit_headline">이 도로는 시속 %1$dkm예요.</string>
     <string name="card_answer_speed_limit_body">내비게이션 지도 기준이에요.</string>

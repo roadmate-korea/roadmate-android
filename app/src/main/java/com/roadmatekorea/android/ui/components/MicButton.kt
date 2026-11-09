@@ -28,7 +28,7 @@ val MIC_BUTTON_HEIGHT = 104.dp
  * 주행 중에도 눌리는 유일한 버튼이다. 그래서 크고 한 번에 누르기 쉽게 둔다.
  */
 @Composable
-fun MicButton(listening: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun MicButton(listening: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, iconOnly: Boolean = false) {
     val c = RoadMate.colors
     val (container, content) = if (listening) c.centerline to c.onCenterline else c.ink to c.onInk
     val description = stringResource(R.string.drive_mic_desc)
@@ -41,13 +41,18 @@ fun MicButton(listening: Boolean, onClick: () -> Unit, modifier: Modifier = Modi
             .background(container)
             .clickable(role = Role.Button, onClick = onClick)
             .semantics { contentDescription = description }
-            .padding(start = 36.dp, end = 44.dp),
+            .padding(start = if (iconOnly) 30.dp else 36.dp, end = if (iconOnly) 30.dp else 44.dp),
     ) {
         RmIcon(R.drawable.ic_rm_mic, size = 44.dp, tint = content)
-        Text(
-            stringResource(if (listening) R.string.drive_mic_listening else R.string.drive_mic_ask),
-            style = RoadMate.type.titleS,
-            color = content,
-        )
+        // 좁은 창에서 다른 버튼과 한 줄에 둘 때는 아이콘만(이름은 접근성 설명으로)
+        if (!iconOnly) {
+            Text(
+                stringResource(if (listening) R.string.drive_mic_listening else R.string.drive_mic_ask),
+                style = RoadMate.type.titleS,
+                color = content,
+                maxLines = 1,
+                softWrap = false,
+            )
+        }
     }
 }

@@ -28,8 +28,6 @@ import com.roadmatekorea.android.profile.model.DriverProfile
 import com.roadmatekorea.android.ui.components.GuidanceCaptionBar
 import com.roadmatekorea.android.ui.components.ReadOnlyOverlay
 import com.roadmatekorea.android.ui.drive.DriveScreen
-import com.roadmatekorea.android.ui.drive.DriveViewModel
-import com.roadmatekorea.android.ui.drive.createDriveViewModel
 import com.roadmatekorea.android.ui.onboarding.OnboardingOptions
 import com.roadmatekorea.android.ui.onboarding.OnboardingScreen
 import com.roadmatekorea.android.ui.onboarding.OnboardingState
@@ -46,10 +44,22 @@ import com.roadmatekorea.android.ui.theme.RoadMate
 @Composable
 fun RoadMateApp(store: ProfileStore) {
     val app = LocalContext.current.applicationContext as RoadMateApplication
-    val driveVm: DriveViewModel = viewModel { createDriveViewModel(app) }
+    // 안내 세션은 화면이 아니라 앱 범위에 있다(내비를 앞에 띄워도 계속)
+    val driveVm = app.driveController
     val vehicle by driveVm.vehicle.collectAsStateWithLifecycle()
 
     val read by remember(store) { store.profile }.collectAsStateWithLifecycle(initialValue = null)
+
+    ProvideWindowSize { RoadMateContent(store, driveVm, read, vehicle.locked) }
+}
+
+@Composable
+private fun RoadMateContent(
+    store: ProfileStore,
+    driveVm: com.roadmatekorea.android.ui.drive.DriveController,
+    read: ProfileRead?,
+    vehicleLocked: Boolean,
+) {
     var editing by rememberSaveable { mutableStateOf(false) }
     // 설정을 다시 할 때마다 늘려서 온보딩 편집 세션을 구분한다
     var onboardingSession by rememberSaveable { mutableIntStateOf(0) }
@@ -72,7 +82,7 @@ fun RoadMateApp(store: ProfileStore) {
                         store = store,
                         existing = profile,
                         session = onboardingSession,
-                        locked = vehicle.locked,
+                        locked = vehicleLocked,
                         // 입력이 실제로 실행되는 순간의 기어로 다시 확인한다(누른 채 D로 바꾸거나 키보드·접근성 입력)
                         isLockedNow = { driveVm.vehicle.value.locked },
                         // 저장이 끝나는 순간 프로필이 먼저 바뀌어 주행 화면으로 넘어갈 수 있으므로 START를 누를 때 표시한다

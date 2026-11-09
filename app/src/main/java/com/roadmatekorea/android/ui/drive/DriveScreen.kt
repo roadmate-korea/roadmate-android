@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.roadmatekorea.android.R
 import com.roadmatekorea.android.demo.DemoPersona
 import com.roadmatekorea.android.rules.GuidanceEngine
+import com.roadmatekorea.android.ui.LocalCompact
 import com.roadmatekorea.android.ui.components.AppHeader
 import com.roadmatekorea.android.ui.components.ReadOnlyOverlay
 import com.roadmatekorea.android.ui.components.RmButton
@@ -52,8 +53,8 @@ fun DriveScreen(
             // 시연 중에는 설정을 열지 않는다(끝내기 버튼으로 먼저 돌아온다)
             AppHeader(locked = locked, onSettings = if (state.demo == null) onChangeSettings else null)
             Column(
-                verticalArrangement = Arrangement.spacedBy(32.dp),
-                modifier = Modifier.weight(1f).fillMaxWidth().padding(start = 40.dp, end = 40.dp, top = 8.dp, bottom = 40.dp),
+                verticalArrangement = Arrangement.spacedBy(if (LocalCompact.current) 24.dp else 32.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth().padding(start = 40.dp, end = 40.dp, top = 8.dp, bottom = if (LocalCompact.current) 32.dp else 40.dp),
             ) {
                 StatusRow(state)
                 GuidanceArea(state, Modifier.weight(1f))
@@ -154,9 +155,12 @@ private fun GuidanceArea(state: DriveUiState, modifier: Modifier) {
 private fun DemoControls(state: DriveUiState, onPlayDemo: (DemoPersona) -> Unit, onStopDemo: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
         if (state.demo == null) {
+            // 좁은 창(내비와 나란히)에서는 이름만 보여 준다(재생 아이콘이 뜻을 전한다)
+            val compact = LocalCompact.current
             DemoPersona.entries.forEach { persona ->
+                val name = stringResource(personaName(persona))
                 RmButton(
-                    text = stringResource(R.string.drive_demo_play, stringResource(personaName(persona))),
+                    text = if (compact) name else stringResource(R.string.drive_demo_play, name),
                     onClick = { onPlayDemo(persona) },
                     style = RmButtonStyle.Secondary,
                     icon = R.drawable.ic_rm_play,

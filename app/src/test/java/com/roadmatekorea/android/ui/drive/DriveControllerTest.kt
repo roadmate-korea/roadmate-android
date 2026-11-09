@@ -30,7 +30,7 @@ import ai.pleos.playground.navi.data.CautionPoint as SdkCautionPoint
 
 /** 실제 신호·시연·설정 화면 사이의 세션 전환을 JVM에서 확인한다(TTS와 문장은 가짜). */
 @OptIn(ExperimentalCoroutinesApi::class)
-class DriveViewModelTest {
+class DriveControllerTest {
 
     private val dispatcher = StandardTestDispatcher()
 
@@ -56,13 +56,13 @@ class DriveViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private class Rig(val vm: DriveViewModel, val upstream: MutableSharedFlow<RawSignal>, val tts: InstantTts)
+    private class Rig(val vm: DriveController, val upstream: MutableSharedFlow<RawSignal>, val tts: InstantTts)
 
     private fun TestScope.rig(): Rig {
         val upstream = MutableSharedFlow<RawSignal>()
         val hub = DriveSignalHub(DriveSignalSource { upstream }, backgroundScope).also { it.start() }
         val tts = InstantTts()
-        val vm = DriveViewModel(hub, tts) { profile -> { g -> (listOf("${profile.language}:${g.id.name}") + g.args).joinToString(":") } }
+        val vm = DriveController(hub, tts, { profile -> { g -> (listOf("${profile.language}:${g.id.name}") + g.args).joinToString(":") } }, backgroundScope)
         runCurrent()
         return Rig(vm, upstream, tts)
     }
@@ -110,6 +110,32 @@ class DriveViewModelTest {
         r.real(schoolZone("real-sz"))
         runCurrent()
         assertNull(r.vm.uiState.value.demo)
+        assertTrue(r.tts.spoken.contains("ES:SCHOOL_ZONE_AHEAD:300"))
+    }
+
+    @Test
+    fun endSession_stopsDemoAndGuidance_untilTheScreenOpensASessionAgain() = runTest(dispatcher) {
+        val r = rig()
+        r.real(RawSignal.Vehicle.Gear(VehicleGear.GEAR_PARK))
+        runCurrent()
+        r.vm.ensureSession(Personas.CARLOS)
+        r.vm.startDemo(DemoPersona.NAKAMURA)
+        runCurrent()
+        // 최근 앱에서 지움
+        r.vm.endSession()
+        runCurrent()
+        assertNull(r.vm.uiState.value.demo)
+        assertNull(r.vm.uiState.value.profile)
+        val spokenBefore = r.tts.spoken.size
+        r.real(RawSignal.Vehicle.Gear(VehicleGear.GEAR_DRIVE))
+        r.real(schoolZone("after-end"))
+        advanceTimeBy(60_000)
+        runCurrent()
+        assertEquals("세션이 없으면 말하지 않음", spokenBefore, r.tts.spoken.size)
+        // 다시 열면(화면이 저장된 프로필로) 새 세션
+        r.vm.ensureSession(Personas.CARLOS)
+        r.real(schoolZone("reopened"))
+        runCurrent()
         assertTrue(r.tts.spoken.contains("ES:SCHOOL_ZONE_AHEAD:300"))
     }
 

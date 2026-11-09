@@ -3,9 +3,12 @@ package com.roadmatekorea.android
 import android.app.Application
 import android.content.pm.PackageManager
 import com.roadmatekorea.android.drive.DriveSignalHub
+import com.roadmatekorea.android.drive.SavedSessionRestorer
 import com.roadmatekorea.android.drive.RealDriveSignalSource
 import com.roadmatekorea.android.navi.NaviSignalSource
 import com.roadmatekorea.android.profile.ProfileRepository
+import com.roadmatekorea.android.ui.drive.DriveController
+import com.roadmatekorea.android.ui.drive.createDriveController
 import com.roadmatekorea.android.vehicle.VehicleSignalSource
 import com.roadmatekorea.android.vehicle.VehicleSpeedSource
 import kotlinx.coroutines.CoroutineScope
@@ -24,8 +27,8 @@ class RoadMateApplication : Application() {
     /** 차량 속도 권한(`CAR_SPEED`)이 허용되었는지. 화면에서 허용을 받으면 true로 바꾼다. */
     val speedPermissionGranted: MutableStateFlow<Boolean> by lazy { MutableStateFlow(hasSpeedPermission()) }
 
-    /** 이 프로세스에서 속도 권한 창을 이미 띄웠는지. 화면이 다시 만들어져도 유지된다(한 번만 묻는다). */
-    var speedPermissionAsked = false
+    /** 이 프로세스에서 권한 창(속도, 알림)을 이미 띄웠는지. 화면이 다시 만들어져도 유지된다(한 번만 묻는다). */
+    var permissionsAsked = false
 
     fun hasSpeedPermission(): Boolean = checkSelfPermission(CAR_SPEED) == PackageManager.PERMISSION_GRANTED
 
@@ -35,6 +38,24 @@ class RoadMateApplication : Application() {
             RealDriveSignalSource(VehicleSignalSource(this), NaviSignalSource(this), VehicleSpeedSource(this, speedPermissionGranted)),
             appScope,
         ).also { it.start() }
+    }
+
+    /** 안내 세션(판단, 음성). 화면과 상관없이 프로세스 수명 동안 하나. */
+    val driveController: DriveController by lazy { createDriveController(this) }
+
+    private val restorer by lazy { SavedSessionRestorer(appScope, profileRepository.profile, driveController::ensureSession) }
+
+    /**
+     * 저장된 프로필로 안내 세션을 연다(시작 인사 없이). 화면 없이 서비스만 다시 만들어진 경우(프로세스가 죽은 뒤
+     * START_STICKY 재시작)에도 안전 경고가 나가게 한다. 온보딩 전이거나 저장소를 읽지 못하면 기다리기만 한다.
+     * 화면이 먼저 세션을 열었으면 ensureSession은 아무 일도 하지 않는다.
+     */
+    fun restoreSavedSession() = restorer.restore()
+
+    /** 사용자가 안내를 끝냈다(최근 앱에서 제거): 기다리던 복원을 버리고 세션·시연·음성을 끝낸다. */
+    fun endGuidance() {
+        restorer.cancel()
+        driveController.endSession()
     }
 
     companion object {

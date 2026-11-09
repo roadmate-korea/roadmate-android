@@ -39,6 +39,7 @@ object GuidanceStrings {
         GuidanceId.ANSWER_NOT_HEARD -> R.string.guidance_answer_not_heard
         GuidanceId.HELP_ACCIDENT_STEPS -> R.string.guidance_help_accident_steps
         GuidanceId.PHRASE_ACCIDENT_HELP -> R.string.guidance_phrase_accident_help
+        GuidanceId.INTERPRETER_SPEECH -> R.string.guidance_interpreter_speech
     }
 
     /** [resources]는 프로필 언어로 맞춘 Context의 것을 넘긴다(시스템 언어가 아니라). */

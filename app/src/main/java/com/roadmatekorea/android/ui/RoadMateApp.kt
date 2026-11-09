@@ -34,6 +34,7 @@ import com.roadmatekorea.android.ui.drive.DriveScreen
 import com.roadmatekorea.android.ui.help.AccidentScreen
 import com.roadmatekorea.android.ui.help.HelpRoute
 import com.roadmatekorea.android.ui.help.HelpScreen
+import com.roadmatekorea.android.ui.help.InterpreterScreen
 import com.roadmatekorea.android.ui.onboarding.OnboardingOptions
 import com.roadmatekorea.android.ui.onboarding.OnboardingScreen
 import com.roadmatekorea.android.ui.onboarding.OnboardingState
@@ -120,7 +121,7 @@ private fun RoadMateContent(
                 val route = if (vehicleLocked) null else help
                 val backFromHelp = {
                     when (help) {
-                        HelpRoute.ACCIDENT -> {
+                        HelpRoute.ACCIDENT, HelpRoute.INTERPRETER -> {
                             help = HelpRoute.MENU
                             driveVm.stopHelp()
                         }
@@ -141,10 +142,29 @@ private fun RoadMateContent(
                     }
                   Box(Modifier.weight(1f)) {
                     when (route) {
-                        HelpRoute.MENU -> HelpScreen(onBack = backFromHelp, onAccident = {
-                            accidentAnnounced = false
-                            help = HelpRoute.ACCIDENT
-                        })
+                        HelpRoute.MENU -> HelpScreen(
+                            onBack = backFromHelp,
+                            onAccident = {
+                                accidentAnnounced = false
+                                help = HelpRoute.ACCIDENT
+                            },
+                            onInterpreter = { help = HelpRoute.INTERPRETER },
+                        )
+                        HelpRoute.INTERPRETER -> {
+                            val interpreter = (LocalContext.current.applicationContext as RoadMateApplication).interpreter
+                            val interp by interpreter.state.collectAsStateWithLifecycle()
+                            val context = LocalContext.current
+                            InterpreterScreen(
+                                state = interp,
+                                onBack = backFromHelp,
+                                onSituation = interpreter::select,
+                                onPhrase = { phrase ->
+                                    interpreter.showPhrase(context.getString(phrase.driverText), context.getString(phrase.korean))
+                                },
+                                onListen = interpreter::toggleListen,
+                                onLeave = interpreter::leave,
+                            )
+                        }
                         HelpRoute.ACCIDENT -> AccidentScreen(
                             onBack = backFromHelp,
                             onSpeak = driveVm::sayHelp,

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 통역 화면과 상황별 문장(운전자 언어). 한국어 문장은 values/interpreter_korean.xml -->
+<resources>
+    <string name="interp_title">Interpreter</string>
+    <string name="interp_situation">Situation</string>
+    <string name="sit_gas_station">Gas station</string>
+    <string name="sit_parking">Parking</string>
+    <string name="sit_accident">Accident</string>
+    <string name="sit_rental">Rental counter</string>
+    <string name="interp_you_said">You said</string>
+    <string name="interp_staff_said">Staff said</string>
+    <string name="interp_speak_mine">Speak English</string>
+    <string name="interp_speak_staff">한국어로 말하기</string>
+    <string name="interp_listening">Listening…</string>
+    <string name="interp_phrases">Tap a phrase to show it in Korean</string>
+    <string name="interp_no_connection">No connection. Tap a phrase below instead.</string>
+    <string name="interp_staff_needs_connection">Translating staff speech needs a connection.</string>
+    <string name="interp_not_heard">Sorry, I didn\'t catch that. Try again.</string>
+    <string name="interp_hint_mine">Tap the button and speak. RoadMate will say it in Korean.</string>
+    <string name="interp_hint_staff">Hand the button to the staff member to answer in Korean.</string>
+    <string name="help_interpreter">Interpreter</string>
+    <string name="help_interpreter_sub">Talk with staff while parked</string>
+    <string name="phrase_gas_full">Fill it up with gasoline, please.</string>
+    <string name="phrase_gas_diesel">Fill it up with diesel, please.</string>
+    <string name="phrase_gas_amount">50,000 won of fuel, please.</string>
+    <string name="phrase_gas_card">I will pay by card.</string>
+    <string name="phrase_park_here">Can I park here?</string>
+    <string name="phrase_park_fee">How much is parking?</string>
+    <string name="phrase_park_pay">Where do I pay for parking?</string>
+    <string name="phrase_acc_help">There has been an accident. Please help.</string>
+    <string name="phrase_acc_police">Please call the police.</string>
+    <string name="phrase_acc_hurt">Someone is hurt. Please call an ambulance.</string>
+    <string name="phrase_acc_rental">I will call my rental company.</string>
+    <string name="phrase_rent_return">I am here to return the car.</string>
+    <string name="phrase_rent_time">By what time do I need to return the car?</string>
+    <string name="phrase_rent_fuel">Do I need to fill the tank before returning it?</string>
+    <string name="phrase_rent_problem">There is a problem with the car.</string>
+</resources>

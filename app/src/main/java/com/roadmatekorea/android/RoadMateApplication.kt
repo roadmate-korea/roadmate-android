@@ -3,18 +3,33 @@ package com.roadmatekorea.android
 import android.app.Application
 import android.content.pm.PackageManager
 import com.roadmatekorea.android.drive.DriveSignalHub
-import com.roadmatekorea.android.drive.SavedSessionRestorer
 import com.roadmatekorea.android.drive.RealDriveSignalSource
+import com.roadmatekorea.android.drive.SavedSessionRestorer
+import com.roadmatekorea.android.i18n.AppLocales
+import com.roadmatekorea.android.i18n.withLanguage
+import com.roadmatekorea.android.interpreter.DemoTranslationClient
+import com.roadmatekorea.android.interpreter.HttpTranslationClient
+import com.roadmatekorea.android.interpreter.InterpreterController
+import com.roadmatekorea.android.interpreter.NoTranslationClient
+import com.roadmatekorea.android.interpreter.Phrases
+import com.roadmatekorea.android.interpreter.TranslationClient
 import com.roadmatekorea.android.navi.NaviSignalSource
 import com.roadmatekorea.android.profile.ProfileRepository
+import com.roadmatekorea.android.profile.model.AppLanguage
 import com.roadmatekorea.android.ui.drive.DriveController
 import com.roadmatekorea.android.ui.drive.createDriveController
 import com.roadmatekorea.android.vehicle.VehicleSignalSource
 import com.roadmatekorea.android.vehicle.VehicleSpeedSource
+import com.roadmatekorea.android.voice.PleosSpeechInput
+import com.roadmatekorea.android.voice.SpeechInput
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 /** 앱 전체에서 하나만 쓰는 객체를 둔다(간단한 수동 의존성 주입). */
 class RoadMateApplication : Application() {
@@ -47,6 +62,38 @@ class RoadMateApplication : Application() {
 
     /** 안내 세션(판단, 음성). 화면과 상관없이 프로세스 수명 동안 하나. */
     val driveController: DriveController by lazy { createDriveController(this) }
+
+    /** 음성 인식 엔진(앱에 하나). 인식 서비스는 결과를 마지막으로 만든 엔진에만 보내므로 음성 질문과 통역이 같이 쓴다. */
+    val speechInput: SpeechInput by lazy { PleosSpeechInput(this) }
+
+    /** 정차 중 통역. 번역은 서버(서버 주소가 없으면 debug는 시연용 가짜 서버, release는 문장 카드만). */
+    val interpreter: InterpreterController by lazy {
+        InterpreterController(
+            speech = speechInput,
+            client = translationClient(),
+            say = driveController::sayInterpreter,
+            prepareToListen = driveController::prepareForInterpreter,
+            driverLocale = { AppLocales.localeOf(driveController.uiState.value.profile?.language ?: AppLanguage.EN) },
+            scope = appScope,
+        ).also { controller ->
+            // 화면이 백그라운드여도 기어가 P를 벗어나면 듣기와 기다리던 번역을 멈춘다
+            appScope.launch {
+                driveController.vehicle.map { it.locked }.distinctUntilChanged().filter { it }.collect { controller.leave() }
+            }
+        }
+    }
+
+    private fun translationClient(): TranslationClient = when {
+        BuildConfig.SERVER_URL.isNotBlank() -> HttpTranslationClient(BuildConfig.SERVER_URL)
+        BuildConfig.DEBUG -> DemoTranslationClient(
+            // 모든 언어의 문장 카드(운전자 언어 문장 → 한국어)
+            AppLanguage.entries.flatMap { language ->
+                val res = withLanguage(language).resources
+                Phrases.all.map { res.getString(it.driverText) to res.getString(it.korean) }
+            }.toMap(),
+        )
+        else -> NoTranslationClient
+    }
 
     private val restorer by lazy { SavedSessionRestorer(appScope, profileRepository.profile, driveController::ensureSession) }
 

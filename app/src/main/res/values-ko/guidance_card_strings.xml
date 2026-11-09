@@ -78,4 +78,7 @@
     <string name="card_phrase_accident_help_kicker">주변 사람에게 보여 주세요</string>
     <string name="card_phrase_accident_help_headline">사고가 났어요. 도와주세요.</string>
     <string name="card_phrase_accident_help_body">사고가 났어요. 도와주세요.</string>
+    <string name="card_interpreter_speech_kicker">통역</string>
+    <string name="card_interpreter_speech_headline">번역</string>
+    <string name="card_interpreter_speech_body">통역 화면에 보여요.</string>
 </resources>

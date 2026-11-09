@@ -29,11 +29,20 @@ val MIC_BUTTON_HEIGHT = 104.dp
  * 주행 중에도 눌리는 유일한 버튼이다. 그래서 크고 한 번에 누르기 쉽게 둔다.
  */
 @Composable
-fun MicButton(listening: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, iconOnly: Boolean = false, preparing: Boolean = false) {
+fun MicButton(
+    listening: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    iconOnly: Boolean = false,
+    preparing: Boolean = false,
+    /** 기본 "묻기" 대신 보여 줄 이름(통역: "한국어로 말하기" 등). */
+    label: String? = null,
+) {
     val c = RoadMate.colors
     val (container, content) = if (listening) c.centerline to c.onCenterline else c.ink to c.onInk
     // 화면 낭독기: 지금 상태와 누르면 무엇을 하는지(듣는 중에는 멈추기)
-    val description = stringResource(if (listening) R.string.drive_mic_cancel_desc else R.string.drive_mic_desc)
+    val description = if (listening) stringResource(R.string.drive_mic_cancel_desc) else label ?: stringResource(R.string.drive_mic_desc)
+    val idleLabel = label ?: stringResource(R.string.drive_mic_ask)
     val state = when {
         preparing -> stringResource(R.string.drive_mic_preparing)
         listening -> stringResource(R.string.drive_mic_listening)
@@ -57,13 +66,11 @@ fun MicButton(listening: Boolean, onClick: () -> Unit, modifier: Modifier = Modi
         // 좁은 창에서 다른 버튼과 한 줄에 둘 때는 아이콘만(이름은 접근성 설명으로)
         if (!iconOnly) {
             Text(
-                stringResource(
-                    when {
-                        preparing -> R.string.drive_mic_preparing
-                        listening -> R.string.drive_mic_listening
-                        else -> R.string.drive_mic_ask
-                    },
-                ),
+                when {
+                    preparing -> stringResource(R.string.drive_mic_preparing)
+                    listening -> stringResource(R.string.drive_mic_listening)
+                    else -> idleLabel
+                },
                 style = RoadMate.type.titleS,
                 color = content,
                 maxLines = 1,

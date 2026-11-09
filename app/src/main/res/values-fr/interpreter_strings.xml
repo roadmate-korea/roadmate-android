@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 통역 화면과 상황별 문장(운전자 언어). 한국어 문장은 values/interpreter_korean.xml -->
+<resources>
+    <string name="interp_title">Interprète</string>
+    <string name="interp_situation">Situation</string>
+    <string name="sit_gas_station">Station-service</string>
+    <string name="sit_parking">Parking</string>
+    <string name="sit_accident">Accident</string>
+    <string name="sit_rental">Agence de location</string>
+    <string name="interp_you_said">Vous avez dit</string>
+    <string name="interp_staff_said">L\'employé a dit</string>
+    <string name="interp_speak_mine">Parler français</string>
+    <string name="interp_speak_staff">한국어로 말하기</string>
+    <string name="interp_listening">J\'écoute…</string>
+    <string name="interp_phrases">Touchez une phrase pour l\'afficher en coréen</string>
+    <string name="interp_no_connection">Pas de connexion. Touchez plutôt une phrase ci-dessous.</string>
+    <string name="interp_staff_needs_connection">La traduction de l\'employé nécessite une connexion.</string>
+    <string name="interp_not_heard">Désolé, je n\'ai pas compris. Réessayez.</string>
+    <string name="interp_hint_mine">Touchez le bouton et parlez. RoadMate le dira en coréen.</string>
+    <string name="interp_hint_staff">Tendez le bouton à l\'employé pour qu\'il réponde en coréen.</string>
+    <string name="help_interpreter">Interprète</string>
+    <string name="help_interpreter_sub">Parler avec le personnel à l\'arrêt</string>
+    <string name="phrase_gas_full">Le plein d\'essence, s\'il vous plaît.</string>
+    <string name="phrase_gas_diesel">Le plein de gazole, s\'il vous plaît.</string>
+    <string name="phrase_gas_amount">Pour 50 000 wons de carburant, s\'il vous plaît.</string>
+    <string name="phrase_gas_card">Je vais payer par carte.</string>
+    <string name="phrase_park_here">Je peux me garer ici ?</string>
+    <string name="phrase_park_fee">Combien coûte le stationnement ?</string>
+    <string name="phrase_park_pay">Où est-ce que je paie le stationnement ?</string>
+    <string name="phrase_acc_help">Il y a eu un accident. Aidez-moi, s\'il vous plaît.</string>
+    <string name="phrase_acc_police">Appelez la police, s\'il vous plaît.</string>
+    <string name="phrase_acc_hurt">Quelqu\'un est blessé. Appelez une ambulance, s\'il vous plaît.</string>
+    <string name="phrase_acc_rental">Je vais appeler mon loueur.</string>
+    <string name="phrase_rent_return">Je viens rendre la voiture.</string>
+    <string name="phrase_rent_time">Je dois rendre la voiture avant quelle heure ?</string>
+    <string name="phrase_rent_fuel">Je dois faire le plein avant de la rendre ?</string>
+    <string name="phrase_rent_problem">Il y a un problème avec la voiture.</string>
+</resources>

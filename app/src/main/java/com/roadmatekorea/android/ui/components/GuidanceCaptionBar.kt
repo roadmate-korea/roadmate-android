@@ -27,11 +27,17 @@ import com.roadmatekorea.android.ui.theme.RoadMate
  */
 @Composable
 fun GuidanceCaptionBar(text: String) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) { GuidanceCaptionStrip(text) }
+}
+
+/** 자막 띠 자체. 덮지 않고 화면 위쪽에 자리를 차지하게 둘 때(상황 도움 화면) 쓴다. */
+@Composable
+fun GuidanceCaptionStrip(text: String, modifier: Modifier = Modifier) {
     val c = RoadMate.colors
     val shape = RoundedCornerShape(16.dp)
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+    run {
         Row(
-            Modifier
+            modifier
                 .padding(horizontal = 48.dp, vertical = 16.dp)
                 .fillMaxWidth()
                 .height(IntrinsicSize.Min)

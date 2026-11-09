@@ -445,6 +445,35 @@ class DriveControllerTest {
     }
 
     @Test
+    fun leavingPark_stopsHelpSpeech_evenWithoutTheScreen() = runTest(dispatcher) {
+        val upstream = MutableSharedFlow<RawSignal>()
+        val hub = DriveSignalHub(DriveSignalSource { upstream }, backgroundScope).also { it.start() }
+        // 말을 끝내지 않는 TTS: 도움 음성이 재생 중인 상태를 만든다
+        val tts = object : TtsEngine {
+            val spoken = mutableListOf<String>()
+            var stops = 0
+            override fun initialize(onResult: (ready: Boolean) -> Unit) = onResult(true)
+            override fun setListener(listener: TtsEngine.Listener?) = Unit
+            override fun speak(text: String, locale: Locale) { spoken += text }
+            override fun stop() { stops++ }
+            override fun release() = Unit
+        }
+        val vm = DriveController(hub, tts, { profile -> { g -> "${profile.language}:${g.id.name}" } }, backgroundScope)
+        runCurrent()
+        upstream.emit(RawSignal.Vehicle.Gear(VehicleGear.GEAR_PARK))
+        runCurrent()
+        vm.ensureSession(Personas.CARLOS)
+        vm.sayHelp(Guidance(GuidanceId.HELP_ACCIDENT_STEPS))
+        runCurrent()
+        assertEquals(listOf("ES:HELP_ACCIDENT_STEPS"), tts.spoken)
+        // 화면은 백그라운드(내비를 앞에 띄움). 기어만 D로
+        upstream.emit(RawSignal.Vehicle.Gear(VehicleGear.GEAR_DRIVE))
+        runCurrent()
+        assertEquals("도움 음성을 멈춤", 1, tts.stops)
+        assertEquals("그다음은 주행 시작 안내", "ES:WELCOME_FIRST_TIME", tts.spoken.last())
+    }
+
+    @Test
     fun micIsHidden_withoutPermission_orWithoutSession() = runTest(dispatcher) {
         val r = rig()
         assertFalse("세션 없음", r.vm.uiState.value.micAvailable)

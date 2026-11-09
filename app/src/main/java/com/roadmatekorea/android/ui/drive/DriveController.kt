@@ -117,7 +117,10 @@ class DriveController(
         scope.launch {
             hub.signals.collect { signal ->
                 // 잠금은 시연 중에도 항상 실제 차량을 따른다
+                val wasLocked = _vehicle.value.locked
                 _vehicle.value = _vehicle.value.on(signal)
+                // P를 벗어나면 상황 도움 음성을 멈춘다. 화면이 백그라운드여도(내비를 앞에 띄움) 여기서 처리한다
+                if (!wasLocked && _vehicle.value.locked) stopHelp()
                 // 시연 중에 실제로 출발하면(P를 벗어남) 시연을 바로 끝내고 실제 세션으로 돌아간다.
                 // 실제 안전 경고가 시연 때문에 막히면 안 된다.
                 if (_demo.value != null && _vehicle.value.locked) exitDemoToRealSession()

@@ -3,6 +3,7 @@ package com.roadmatekorea.android.ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,6 +28,7 @@ import com.roadmatekorea.android.profile.ProfileStore
 import com.roadmatekorea.android.profile.model.AppLanguage
 import com.roadmatekorea.android.profile.model.DriverProfile
 import com.roadmatekorea.android.ui.components.GuidanceCaptionBar
+import com.roadmatekorea.android.ui.components.GuidanceCaptionStrip
 import com.roadmatekorea.android.ui.components.ReadOnlyOverlay
 import com.roadmatekorea.android.ui.drive.DriveScreen
 import com.roadmatekorea.android.ui.help.AccidentScreen
@@ -129,7 +131,15 @@ private fun RoadMateContent(
                 BackHandler(enabled = route != null, onBack = backFromHelp)
                 // 시연 중에는 시연 페르소나의 언어로 화면을 보여 준다
                 ProvideLanguage(driveState.profile?.language ?: profile.language) {
-                  Box(Modifier.fillMaxSize()) {
+                  Column(Modifier.fillMaxSize()) {
+                    // 도움 화면은 주행 화면을 가리므로, 그동안 나오는 다른 안내(안전 경고 포함)의 자막을 위쪽에 둔다.
+                    // 음성을 쓸 수 없을 때 유일한 출력이다. 덮지 않고 자리를 차지해 뒤로 버튼과 제목을 가리지 않는다.
+                    // 도움 음성 자체는 화면 내용과 같아 띄우지 않는다.
+                    val caption = driveState.caption
+                    if (route != null && caption != null && driveState.guidance?.id?.preemptible != true) {
+                        GuidanceCaptionStrip(caption)
+                    }
+                  Box(Modifier.weight(1f)) {
                     when (route) {
                         HelpRoute.MENU -> HelpScreen(onBack = backFromHelp, onAccident = {
                             accidentAnnounced = false
@@ -157,12 +167,7 @@ private fun RoadMateContent(
                         onHelp = { if (!driveVm.vehicle.value.locked) help = HelpRoute.MENU },
                     )
                     }
-                    // 도움 화면은 주행 화면을 가리므로, 그동안 나오는 다른 안내(안전 경고 포함)의 자막을 위에 보여 준다.
-                    // 음성을 쓸 수 없을 때 유일한 출력이다. 도움 음성 자체는 화면 내용과 같아 띄우지 않는다.
-                    val caption = driveState.caption
-                    if (route != null && caption != null && driveState.guidance?.id?.preemptible != true) {
-                        GuidanceCaptionBar(caption)
-                    }
+                  }
                   }
                 }
             }

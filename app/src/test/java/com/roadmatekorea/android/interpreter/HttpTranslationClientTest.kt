@@ -28,10 +28,14 @@ class HttpTranslationClientTest {
     private val url = "http://127.0.0.1:${server.localPort}"
     private var handler: (body: String, send: (Int, ByteArray) -> OutputStream) -> Unit = { _, send -> send(404, ByteArray(0)) }
 
+    /** 서버가 받은 연결 수. */
+    private val accepted = java.util.concurrent.atomic.AtomicInteger()
+
     init {
         thread(isDaemon = true) {
             while (!server.isClosed) {
                 val socket = runCatching { server.accept() }.getOrNull() ?: break
+                accepted.incrementAndGet()
                 thread(isDaemon = true) { serve(socket) }
             }
         }
@@ -137,5 +141,40 @@ class HttpTranslationClientTest {
     fun anOversizedResponse_fails() = runBlocking {
         respond { _, send -> send(200, ("""{"text":"""" + "a".repeat(100_000) + """"}""").toByteArray()) }
         assertNull(HttpTranslationClient(url, maxResponseBytes = 1_024).translate("a", Locale.KOREA, Locale.US, Situation.PARKING))
+    }
+
+    /** 테스트가 [runAll]을 부를 때까지 작업을 쌓아 두는 실행기(입출력 작업이 늦게 시작되는 상황). */
+    private class HeldExecutor : java.util.concurrent.Executor {
+        private val queued = mutableListOf<Runnable>()
+        override fun execute(command: Runnable) {
+            synchronized(queued) { queued += command }
+        }
+        fun runAll() = synchronized(queued) { queued.toList().also { queued.clear() } }.forEach { it.run() }
+    }
+
+    @Test
+    fun cancelledBeforeTheWorkStarts_neverConnects() = runBlocking {
+        respond { _, send -> send(200, """{"text":"x"}""".toByteArray()) }
+        val held = HeldExecutor()
+        val call = async(Dispatchers.Default) {
+            HttpTranslationClient(url, executor = held).translate("a", Locale.KOREA, Locale.US, Situation.PARKING)
+        }
+        delay(100)
+        call.cancel()
+        call.join()
+        held.runAll()
+        delay(200)
+        assertEquals("취소한 뒤에는 연결하지 않음", 0, accepted.get())
+    }
+
+    @Test
+    fun deadlinePassedBeforeTheWorkStarts_neverConnects() = runBlocking {
+        respond { _, send -> send(200, """{"text":"x"}""".toByteArray()) }
+        val held = HeldExecutor()
+        val result = HttpTranslationClient(url, timeoutMs = 100, executor = held).translate("a", Locale.KOREA, Locale.US, Situation.PARKING)
+        assertNull(result)
+        held.runAll()
+        delay(200)
+        assertEquals("기한이 지난 뒤에는 연결하지 않음", 0, accepted.get())
     }
 }

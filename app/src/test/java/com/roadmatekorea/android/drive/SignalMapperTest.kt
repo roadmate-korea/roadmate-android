@@ -145,4 +145,12 @@ class SignalMapperTest {
         assertEquals(com.roadmatekorea.android.rules.CautionKind.BUS_LANE, SignalMapper.cautionKind(CautionPointType.BUS_LANE_UNAVAILABLE_NOTICE))
         assertEquals(com.roadmatekorea.android.rules.CautionKind.OTHER, SignalMapper.cautionKind(CautionPointType.BUS_LANE_AVAILABLE_NOTICE))
     }
+
+    @Test
+    fun vehicleSpeed_isMetersPerSecond_toWholeKmh_andReverseIsPositive() {
+        assertEquals(DriveEvent.VehicleSpeedChanged(45), SignalMapper.map(RawSignal.Vehicle.Speed(12.5f)))
+        assertEquals(DriveEvent.VehicleSpeedChanged(0), SignalMapper.map(RawSignal.Vehicle.Speed(0f)))
+        assertEquals(DriveEvent.VehicleSpeedChanged(18), SignalMapper.map(RawSignal.Vehicle.Speed(-5f)))
+        assertEquals(DriveEvent.VehicleSpeedChanged(null), SignalMapper.map(RawSignal.Vehicle.SpeedUnavailable))
+    }
 }

@@ -15,6 +15,7 @@
     <string name="guidance_school_zone_ahead">Zone scolaire dans %1$d mètres. Ralentissez et faites attention aux enfants.</string>
     <string name="guidance_school_zone_speed_limit">Zone scolaire. La vitesse est limitée à %1$d kilomètres par heure.</string>
     <string name="guidance_school_zone_crosswalk">Dans les zones scolaires, arrêtez-vous toujours avant un passage piéton sans feu, même si personne ne traverse.</string>
+    <string name="guidance_school_zone_over_speed">Zone scolaire. Vous roulez à %1$d kilomètres par heure, au-dessus de la limite de %2$d. Ralentissez maintenant.</string>
 
     <string name="guidance_arrived">Vous êtes arrivé à destination. Merci d\'avoir conduit prudemment en Corée.</string>
     <string name="guidance_bus_lane_ahead">Voie de bus dans %1$d mètres. Ne roulez pas dans la voie de bus bleue pendant les horaires indiqués sur le panneau.</string>

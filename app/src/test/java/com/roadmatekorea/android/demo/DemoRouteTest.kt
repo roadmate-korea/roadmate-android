@@ -88,7 +88,7 @@ class DemoRouteTest {
     private val nakamuraExpected = listOf(
         "WELCOME_RIGHT_SIDE", "LHD_INTRO",
         "SCHOOL_ZONE_AHEAD:300", "SCHOOL_ZONE_CROSSWALK",
-        "SCHOOL_ZONE_SPEED_LIMIT:30",
+        "SCHOOL_ZONE_OVER_SPEED:45:30",
         "BUS_LANE_AHEAD:250",
         "LHD_MIRROR_CHECK",
         "RIGHT_TURN_RULE",
@@ -100,7 +100,7 @@ class DemoRouteTest {
     private val carlosExpected = listOf(
         "WELCOME_FIRST_TIME",
         "SCHOOL_ZONE_AHEAD:300", "SCHOOL_ZONE_CROSSWALK",
-        "SCHOOL_ZONE_SPEED_LIMIT:30",
+        "SCHOOL_ZONE_OVER_SPEED:45:30",
         "BUS_LANE_AHEAD:250",
         "RIGHT_TURN_RULE",
         "LEFT_TURN_RULE",
@@ -130,7 +130,7 @@ class DemoRouteTest {
         val carlos = play(DemoPersona.CARLOS, 0)
         assertNotEquals(nakamura, carlos)
         // 필수 안전 경고는 둘 다
-        listOf("SCHOOL_ZONE_AHEAD:300", "SCHOOL_ZONE_SPEED_LIMIT:30").forEach {
+        listOf("SCHOOL_ZONE_AHEAD:300", "SCHOOL_ZONE_OVER_SPEED:45:30").forEach {
             assertTrue(it in nakamura && it in carlos)
         }
         // 카를로스에게는 통행 방향 비교, 좌핸들 적응 안내가 없다

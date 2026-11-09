@@ -127,8 +127,10 @@ class GuidanceEngineTest {
         e.send(schoolZone("sz", 300))
         clock.advanceSeconds(10)
         assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(40))), e.send(DriveEvent.SpeedLimitChanged(40)))
-        // 같은 구역에서 다시 말하지 않는다(카메라로 같은 값이 와도)
-        assertEquals(emptyList<Guidance>(), e.send(schoolCamera("cam", 40), DriveEvent.SpeedLimitChanged(30)))
+        // 같은 구역에서 같은 값은 다시 말하지 않는다(카메라로 같은 값이 와도)
+        assertEquals(emptyList<Guidance>(), e.send(schoolCamera("cam", 40), DriveEvent.SpeedLimitChanged(40)))
+        // 구역 안에서 제한이 더 내려가면 새 값을 말한다(NaviHelper 값을 따른다)
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), e.send(DriveEvent.SpeedLimitChanged(30)))
     }
 
     @Test
@@ -299,7 +301,7 @@ class GuidanceEngineTest {
         e.send(schoolCamera("A", 30))
         clock.advanceSeconds(20)
         assertEquals(emptyList<Guidance>(), e.send(schoolCamera("B", 30)))
-        clock.advanceSeconds(71) // A 구역 시작에서 91초
+        clock.advanceSeconds(91) // 마지막 구역 근거(같은 제한의 카메라 B)에서 91초
         assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), e.send(schoolCamera("B", 30)))
         assertEquals(emptyList<Guidance>(), e.send(schoolCamera("B", 30)))
     }

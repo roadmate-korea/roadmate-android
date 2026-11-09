@@ -5,6 +5,7 @@ import com.roadmatekorea.android.rules.Clock
 import com.roadmatekorea.android.rules.DriveEvent
 import com.roadmatekorea.android.rules.Guidance
 import com.roadmatekorea.android.rules.GuidanceEngine
+import com.roadmatekorea.android.rules.GuidanceId
 import com.roadmatekorea.android.voice.GuidanceSpeaker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,6 +38,11 @@ class DriveSession(
     /** NaviHelper가 준 현재 도로 제한 속도. 0이나 값 없음은 null. */
     val speedLimitKmh: StateFlow<Int?> = _speedLimitKmh.asStateFlow()
 
+    private val _speedKmh = MutableStateFlow<Int?>(null)
+
+    /** 차량 속도(km/h). 읽을 수 없으면 null. */
+    val speedKmh: StateFlow<Int?> = _speedKmh.asStateFlow()
+
     /** START 직후처럼 바로 시작 안내를 낼 때 부른다. 주행 시작(기어 D) 때는 엔진이 알아서 낸다. */
     fun announceStart() = onEvent(DriveEvent.SessionStarted)
 
@@ -46,7 +52,17 @@ class DriveSession(
 
     private fun onEvent(event: DriveEvent) {
         if (event is DriveEvent.SpeedLimitChanged) _speedLimitKmh.value = event.kmh.takeIf { it > 0 }
-        engine.onEvent(event).forEach { guidance ->
+        if (event is DriveEvent.VehicleSpeedChanged) _speedKmh.value = event.kmh
+        val out = engine.onEvent(event)
+        // 아직 말하지 않은 과속 경고는 지금 상황에 맞춘다: 풀렸으면 버리고, 계속 빠르면 지금 속도·제한으로 바꾼다
+        // (지난 숫자를 "지금"이라고 말하지 않게)
+        val overSpeed = engine.overSpeedNow()
+        if (overSpeed == null) {
+            speaker.drop(GuidanceId.SCHOOL_ZONE_OVER_SPEED)
+        } else {
+            speaker.refreshQueued(overSpeed, textOf(overSpeed))
+        }
+        out.forEach { guidance ->
             val text = textOf(guidance)
             speaker.say(guidance, text, locale)
             _history.update { (listOf(text) + it).take(HISTORY_SIZE) }

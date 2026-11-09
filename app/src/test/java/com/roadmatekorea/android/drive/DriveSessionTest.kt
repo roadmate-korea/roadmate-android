@@ -50,6 +50,62 @@ class DriveSessionTest {
         return s to tts
     }
 
+    /** 끝내라고 할 때까지 말하는 중인 가짜 TTS(앞 문장이 길게 이어지는 상황). */
+    private class HoldTts : TtsEngine {
+        val spoken = mutableListOf<String>()
+        private var listener: TtsEngine.Listener? = null
+        override fun initialize(onResult: (ready: Boolean) -> Unit) = onResult(true)
+        override fun setListener(listener: TtsEngine.Listener?) {
+            this.listener = listener
+        }
+        override fun speak(text: String, locale: Locale) {
+            spoken += text
+            listener?.onStart()
+        }
+        fun finish() = listener?.onDone()
+        override fun stop() = Unit
+        override fun release() = Unit
+    }
+
+    @Test
+    fun pendingOverSpeedWarning_isDropped_whenTheDriverSlowsDownBeforeItIsSpoken() = runTest {
+        val tts = HoldTts()
+        val clock = Clock { testScheduler.currentTime }
+        val speaker = GuidanceSpeaker(tts, backgroundScope, clock).also { it.start() }
+        val s = DriveSession(Personas.CARLOS, speaker, { g -> (listOf(g.id.name) + g.args).joinToString(":") }, Locale.US, clock)
+        fun kmh(v: Int) = RawSignal.Vehicle.Speed(v / 3.6f)
+        s.onSignal(RawSignal.Vehicle.Gear(VehicleGear.GEAR_DRIVE)) // 시작 인사가 재생 중(끝나지 않음)
+        s.onSignal(RawSignal.Navi.SpeedLimit(50))
+        s.onSignal(kmh(25))
+        s.onSignal(RawSignal.Navi.CautionPoints(listOf(SdkCautionPoint("sz", CautionPointType.SCHOOL_ZONE, 300))))
+        s.onSignal(RawSignal.Navi.SpeedLimit(30))
+        s.onSignal(kmh(45)) // 과속 경고가 대기열에 들어감
+        s.onSignal(kmh(25)) // 말하기 전에 감속
+        repeat(6) { tts.finish() }
+        assertTrue(tts.spoken.none { it.startsWith("SCHOOL_ZONE_OVER_SPEED") })
+        assertTrue(tts.spoken.contains("SCHOOL_ZONE_SPEED_LIMIT:30"))
+    }
+
+    @Test
+    fun pendingOverSpeedWarning_isUpdatedToTheCurrentSpeedAndLimit_whileStillOver() = runTest {
+        val tts = HoldTts()
+        val clock = Clock { testScheduler.currentTime }
+        val speaker = GuidanceSpeaker(tts, backgroundScope, clock).also { it.start() }
+        val s = DriveSession(Personas.CARLOS, speaker, { g -> (listOf(g.id.name) + g.args).joinToString(":") }, Locale.US, clock)
+        fun kmh(v: Int) = RawSignal.Vehicle.Speed(v / 3.6f)
+        s.onSignal(RawSignal.Vehicle.Gear(VehicleGear.GEAR_DRIVE)) // 시작 인사가 재생 중(끝나지 않음)
+        s.onSignal(RawSignal.Navi.SpeedLimit(50))
+        s.onSignal(kmh(25))
+        s.onSignal(RawSignal.Navi.CautionPoints(listOf(SdkCautionPoint("sz", CautionPointType.SCHOOL_ZONE, 300))))
+        s.onSignal(RawSignal.Navi.SpeedLimit(40))
+        s.onSignal(kmh(45)) // "45, 제한 40"이 대기열에
+        s.onSignal(RawSignal.Navi.SpeedLimit(30))
+        s.onSignal(kmh(43)) // 아직 말하기 전: 지금은 "43, 제한 30"
+        repeat(8) { tts.finish() }
+        val over = tts.spoken.filter { it.startsWith("SCHOOL_ZONE_OVER_SPEED") }
+        assertEquals(listOf("SCHOOL_ZONE_OVER_SPEED:43:30"), over)
+    }
+
     @Test
     fun nakamura_afterStart_hearsRightSideGreetingThenLhdIntro() = runTest {
         val (s, tts) = session(Personas.NAKAMURA)

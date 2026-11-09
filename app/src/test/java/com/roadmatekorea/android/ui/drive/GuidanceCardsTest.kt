@@ -35,7 +35,7 @@ class GuidanceCardsTest {
     @Test
     fun guidanceWithArgs_showsTheValueOnTheCard_inEveryLanguage() {
         // 거리와 제한 속도는 NaviHelper 값이다. 카드에도 그 값이 보여야 한다(고정값 금지).
-        listOf(GuidanceId.SCHOOL_ZONE_AHEAD, GuidanceId.SCHOOL_ZONE_SPEED_LIMIT, GuidanceId.BUS_LANE_AHEAD, GuidanceId.SECTION_START, GuidanceId.SECTION_OVER_AVERAGE).forEach { id ->
+        listOf(GuidanceId.SCHOOL_ZONE_AHEAD, GuidanceId.SCHOOL_ZONE_SPEED_LIMIT, GuidanceId.BUS_LANE_AHEAD, GuidanceId.SECTION_START, GuidanceId.SECTION_OVER_AVERAGE, GuidanceId.SCHOOL_ZONE_OVER_SPEED).forEach { id ->
             folders.forEach { folder ->
                 val strings = load(folder)
                 val lines = listOf("kicker", "headline", "body").map { strings.getValue("card_${id.name.lowercase()}_$it") }

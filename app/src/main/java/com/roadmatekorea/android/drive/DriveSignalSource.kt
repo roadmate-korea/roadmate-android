@@ -11,10 +11,9 @@ fun interface DriveSignalSource {
     fun signals(): Flow<RawSignal>
 }
 
-/** 실제 차량(Vehicle)과 내비(NaviHelper) 신호를 합친다. */
+/** 실제 차량(Vehicle, 차량 속도)과 내비(NaviHelper) 신호를 합친다. */
 class RealDriveSignalSource(
-    private val vehicle: DriveSignalSource,
-    private val navi: DriveSignalSource,
+    private vararg val sources: DriveSignalSource,
 ) : DriveSignalSource {
-    override fun signals(): Flow<RawSignal> = merge(vehicle.signals(), navi.signals())
+    override fun signals(): Flow<RawSignal> = merge(*sources.map { it.signals() }.toTypedArray())
 }

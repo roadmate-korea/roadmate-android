@@ -21,9 +21,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.roadmatekorea.android.R
 import com.roadmatekorea.android.demo.DemoPersona
+import com.roadmatekorea.android.rules.GuidanceEngine
 import com.roadmatekorea.android.ui.components.AppHeader
 import com.roadmatekorea.android.ui.components.ReadOnlyOverlay
 import com.roadmatekorea.android.ui.components.RmButton
@@ -62,7 +65,7 @@ fun DriveScreen(
     }
 }
 
-/** 제한 속도와 시연·알림 표시. 비어 있으면 자리를 차지하지 않는다. */
+/** 제한 속도, 지금 속도, 시연·알림 표시. 비어 있으면 자리를 차지하지 않는다. */
 @Composable
 private fun StatusRow(state: DriveUiState) {
     val notices = buildList {
@@ -72,12 +75,28 @@ private fun StatusRow(state: DriveUiState) {
         if (state.voiceUnavailable) add(stringResource(R.string.drive_voice_unavailable))
     }
     val limit = state.speedLimitKmh
-    if (limit == null && notices.isEmpty()) return
+    val speed = state.speedKmh
+    if (limit == null && speed == null && notices.isEmpty()) return
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(32.dp)) {
         if (limit != null) SpeedSign(limit, stringResource(R.string.drive_speed_limit_desc, limit))
+        if (speed != null) CurrentSpeed(speed, over = limit != null && speed > limit + GuidanceEngine.OVER_SPEED_MARGIN_KMH)
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             notices.forEach { Notice(it) }
         }
+    }
+}
+
+/** 지금 속도. 제한 속도를 넘으면 빨간색(안전 색)으로 바뀐다. */
+@Composable
+private fun CurrentSpeed(kmh: Int, over: Boolean) {
+    val c = RoadMate.colors
+    val description = stringResource(R.string.drive_current_speed_desc, kmh)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(160.dp).semantics(mergeDescendants = true) { contentDescription = description },
+    ) {
+        Text(kmh.toString(), style = RoadMate.type.numberXL, color = if (over) c.danger else c.ink)
+        Text(stringResource(R.string.unit_kmh), style = RoadMate.type.labelM, color = if (over) c.danger else c.inkSecondary)
     }
 }
 

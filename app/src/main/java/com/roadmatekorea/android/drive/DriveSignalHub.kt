@@ -1,5 +1,6 @@
 package com.roadmatekorea.android.drive
 
+import com.roadmatekorea.android.rules.Gear
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
@@ -45,6 +46,14 @@ class DriveSignalHub(
 
     private var unavailableSinceLastGear = false
 
+    private val _parkedConfirmed = MutableStateFlow(false)
+
+    /**
+     * 정상적으로 받은 마지막 기어가 P이고, 그 뒤 Vehicle 오류가 없었다. 화면 잠금과 같은 기준으로
+     * 정차 중에만 해야 하는 일(권한 창 등)에 쓴다.
+     */
+    val parkedConfirmed: StateFlow<Boolean> = _parkedConfirmed.asStateFlow()
+
     /** 마지막 기어 신호 뒤에 Vehicle 사용 불가 신호가 왔는지. 늦게 구독한 쪽의 잠금 판단에 쓴다. */
     fun vehicleUnavailableSinceLastGear(): Boolean = unavailableSinceLastGear
 
@@ -59,10 +68,12 @@ class DriveSignalHub(
                     is RawSignal.Vehicle.Gear -> {
                         _lastGear.value = signal
                         unavailableSinceLastGear = false
+                        _parkedConfirmed.value = SignalMapper.gear(signal.value) == Gear.PARK
                     }
                     is RawSignal.Vehicle.Unavailable -> {
                         _vehicleUnavailable.value = true
                         unavailableSinceLastGear = true
+                        _parkedConfirmed.value = false
                     }
                     else -> Unit
                 }

@@ -26,6 +26,9 @@ enum class GuidanceId(val priority: Priority) {
     SCHOOL_ZONE_SPEED_LIMIT(Priority.SAFETY),
     SCHOOL_ZONE_CROSSWALK(Priority.SAFETY),
 
+    /** args: [지금 속도(km/h), 제한 속도(km/h)]. 어린이보호구역에서 제한보다 빠를 때. 모든 사용자. */
+    SCHOOL_ZONE_OVER_SPEED(Priority.SAFETY),
+
     /** args: [남은 거리(m)]. 상세 안내 대상만. */
     BUS_LANE_AHEAD(Priority.RULE),
 

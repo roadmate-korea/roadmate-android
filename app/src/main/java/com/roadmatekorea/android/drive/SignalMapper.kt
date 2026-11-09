@@ -26,6 +26,8 @@ object SignalMapper {
     fun map(signal: RawSignal): DriveEvent? = when (signal) {
         is RawSignal.Vehicle.Gear -> DriveEvent.GearChanged(gear(signal.value))
         is RawSignal.Vehicle.TurnSignal -> DriveEvent.TurnSignalChanged(turnSignal(signal.value))
+        is RawSignal.Vehicle.Speed -> DriveEvent.VehicleSpeedChanged(signal.kmh)
+        RawSignal.Vehicle.SpeedUnavailable -> DriveEvent.VehicleSpeedChanged(null)
         is RawSignal.Vehicle.Unavailable -> null
         is RawSignal.Navi.SpeedLimit -> DriveEvent.SpeedLimitChanged(signal.kmh)
         is RawSignal.Navi.CautionPoints -> DriveEvent.CautionPointsUpdated(

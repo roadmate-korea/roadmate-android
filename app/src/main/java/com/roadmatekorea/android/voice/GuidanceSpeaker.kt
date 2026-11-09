@@ -2,6 +2,7 @@ package com.roadmatekorea.android.voice
 
 import com.roadmatekorea.android.rules.Clock
 import com.roadmatekorea.android.rules.Guidance
+import com.roadmatekorea.android.rules.GuidanceId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -70,6 +71,15 @@ class GuidanceSpeaker(
         _idle.value = false
         // 엔진 준비 전에는 쌓아 두었다가 준비가 끝나면 말한다.
         if (playing == null && engineState != EngineState.INITIALIZING) playNext()
+    }
+
+    /** 기다리는 같은 종류의 안내를 지금 값으로 바꾼다. 지금 말하고 있는 것은 그대로 둔다. */
+    fun refreshQueued(guidance: Guidance, text: String) = queue.replace(guidance, text)
+
+    /** 기다리는 [id] 안내를 버린다. 지금 말하고 있는 것은 그대로 둔다. */
+    fun drop(id: GuidanceId) {
+        queue.remove(id)
+        if (playing == null && queue.size == 0) _idle.value = true
     }
 
     /** 기다리는 안내를 모두 버리고 지금 말하는 것도 멈춘다. */

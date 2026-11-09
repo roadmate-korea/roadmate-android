@@ -38,4 +38,20 @@ class DriveSignalHubTest {
         upstream.emit(RawSignal.Vehicle.Gear(VehicleGear.GEAR_PARK))
         assertEquals(false, hub.vehicleUnavailableSinceLastGear())
     }
+
+    @Test
+    fun parkedConfirmed_onlyForANormalParkGear_andClearedByVehicleError() = runTest(UnconfinedTestDispatcher()) {
+        val upstream = MutableSharedFlow<RawSignal>()
+        val hub = DriveSignalHub(DriveSignalSource { upstream }, backgroundScope).also { it.start() }
+        assertEquals(false, hub.parkedConfirmed.value)
+        upstream.emit(RawSignal.Vehicle.Gear(VehicleGear.GEAR_PARK))
+        assertEquals(true, hub.parkedConfirmed.value)
+        // 오류 뒤에는 마지막 P를 믿지 않는다
+        upstream.emit(RawSignal.Vehicle.Unavailable("gear: x"))
+        assertEquals(false, hub.parkedConfirmed.value)
+        upstream.emit(RawSignal.Vehicle.Gear(VehicleGear.GEAR_DRIVE))
+        assertEquals(false, hub.parkedConfirmed.value)
+        upstream.emit(RawSignal.Vehicle.Gear(VehicleGear.GEAR_PARK))
+        assertEquals(true, hub.parkedConfirmed.value)
+    }
 }

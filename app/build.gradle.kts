@@ -7,6 +7,8 @@ plugins {
 android {
     namespace = "com.roadmatekorea.android"
     compileSdk = 35
+    // 차량 속도(CarPropertyManager). 기기에 있는 라이브러리를 컴파일할 때만 쓴다.
+    useLibrary("android.car")
 
     defaultConfig {
         applicationId = "com.roadmatekorea.android"

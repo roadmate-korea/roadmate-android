@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -154,11 +155,51 @@ private class ScenePainter(private val d: DrawScope, private val c: RoadMateColo
         arrowHead(516f, 327f, 506f, 335f, 516f, 343f, c.go)
     }
 
+    /**
+     * 사람 픽토그램(아이콘 icon/children과 같은 모양). [ox], [oy]는 32 격자 원점의 그림 좌표, [s]는 격자 한 칸의 크기.
+     * 머리와 몸(다리 포함)을 면으로 채운다. 막대 인형은 쓰지 않는다.
+     */
+    private fun adultPath(ox: Float, oy: Float, s: Float) = Path().apply {
+        addOval(Rect(Offset((ox + 10.5f * s) * u, (oy + 5.5f * s) * u), 3f * s * u))
+        figureBody(ox, oy, s, left = 7f, top = 13f, width = 7f, legGap = 1.5f, crotch = 20f)
+    }
+
+    private fun childPath(ox: Float, oy: Float, s: Float) = Path().apply {
+        addOval(Rect(Offset((ox + 22f * s) * u, (oy + 12f * s) * u), 2.5f * s * u))
+        figureBody(ox, oy, s, left = 19f, top = 18.5f, width = 6f, legGap = 1.5f, crotch = 23f)
+    }
+
+    /** 위가 둥근 몸통과 두 다리를 한 덩어리로. 발끝은 격자 28. */
+    private fun Path.figureBody(ox: Float, oy: Float, s: Float, left: Float, top: Float, width: Float, legGap: Float, crotch: Float) {
+        fun x(v: Float) = (ox + v * s) * u
+        fun y(v: Float) = (oy + v * s) * u
+        val r = width / 2
+        val leg = (width - legGap) / 2
+        moveTo(x(left), y(top))
+        arcTo(Rect(x(left), y(top - r), x(left + width), y(top + r)), 180f, 180f, false)
+        lineTo(x(left + width), y(28f))
+        lineTo(x(left + width - leg), y(28f))
+        lineTo(x(left + width - leg), y(crotch))
+        lineTo(x(left + leg), y(crotch))
+        lineTo(x(left + leg), y(28f))
+        lineTo(x(left), y(28f))
+        close()
+    }
+
+    /** 어른이 아이 손을 잡은 모습. */
+    private fun adultAndChild(ox: Float, oy: Float, s: Float, color: Color) {
+        d.drawPath(adultPath(ox, oy, s), color)
+        d.drawPath(childPath(ox, oy, s), color)
+        val arm = Path().apply { m(ox + 14f * s, oy + 13.5f * s); l(ox + 16.75f * s, oy + 20.5f * s); l(ox + 19f * s, oy + 18.5f * s) }
+        d.drawPath(arm, color, style = Stroke(2.2f * s * u, cap = StrokeCap.Round, join = StrokeJoin.Round))
+    }
+
+    /** 건너는 사람 한 명. 노면 위에서도 보이게 흰 테두리를 두른다. */
     private fun pedestrian(x: Float, y: Float) {
-        d.drawCircle(c.onCenterline, 7 * u, Offset(x * u, y * u))
-        d.drawCircle(c.paint, 7 * u, Offset(x * u, y * u), style = Stroke(2 * u))
-        round(x - 7, y + 9, 14f, 22f, 5f, c.onCenterline)
-        round(x - 7, y + 9, 14f, 22f, 5f, c.paint, stroke = 2f)
+        val s = 1.5f
+        val figure = adultPath(x - 10.5f * s, y - 9f - 2.5f * s, s)
+        d.drawPath(figure, c.paint, style = Stroke(4 * u, join = StrokeJoin.Round))
+        d.drawPath(figure, c.onCenterline)
     }
 
     fun rightTurnRed() {
@@ -215,14 +256,8 @@ private class ScenePainter(private val d: DrawScope, private val c: RoadMateColo
         for (i in 0 until 8) rect(226f + i * 24, 200f, 14f, 32f, c.paint)
         rect(322f, 246f, 96f, 12f, c.danger)
         car(378f, 330f)
-        // 길가의 어린이 둘
-        val kid = c.ink
-        d.drawCircle(kid, 8 * u, Offset(458 * u, 190 * u))
-        line(458f, 202f, 458f, 228f, kid, 5f); line(446f, 212f, 470f, 212f, kid, 5f)
-        line(458f, 228f, 450f, 248f, kid, 5f); line(458f, 228f, 466f, 248f, kid, 5f)
-        d.drawCircle(kid, 6 * u, Offset(484 * u, 206 * u))
-        line(484f, 216f, 484f, 232f, kid, 5f); line(475f, 222f, 493f, 222f, kid, 5f)
-        line(484f, 232f, 478f, 246f, kid, 5f); line(484f, 232f, 490f, 246f, kid, 5f)
+        // 길가에서 어른과 아이가 손을 잡고 있다
+        adultAndChild(428f, 175f, 2.6f, c.ink)
     }
 
     fun laneChangeLhd() {

@@ -5,6 +5,7 @@ import ai.pleos.playground.navi.data.CautionPoint
 import ai.pleos.playground.navi.data.TBTInfo
 import ai.pleos.playground.vehicle.constant.area.TurnSignalValue
 import ai.pleos.playground.vehicle.constant.control.VehicleGear
+import kotlin.math.roundToInt
 
 /**
  * SDK 콜백 값을 그대로 담은 봉투.
@@ -20,6 +21,17 @@ sealed interface RawSignal {
 
         /** `TurnSignalStateListener.onTurnSignalStateUpdated`, `getCurrentTurnSignalState` */
         data class TurnSignal(val value: TurnSignalValue) : Vehicle
+
+        /**
+         * 차량 속도. Android Automotive `PERF_VEHICLE_SPEED`(m/s, Pleos Vehicle SDK에는 속도 API가 없다).
+         * 후진이면 음수가 올 수 있다.
+         */
+        data class Speed(val metersPerSecond: Float) : Vehicle {
+            val kmh: Int get() = kotlin.math.abs(metersPerSecond * 3.6f).roundToInt()
+        }
+
+        /** 속도를 지금 읽을 수 없음(센서 상태 이상, 차량 서비스 끊김). 마지막 속도를 지운다. 화면은 잠그지 않는다. */
+        data object SpeedUnavailable : Vehicle
 
         /** Vehicle SDK를 쓸 수 없음(초기화 실패, 권한 없음 등). 판단 로직에는 들어가지 않는다. */
         data class Unavailable(val reason: String) : Vehicle

@@ -17,6 +17,12 @@
     <!-- TextToSpeech SDK: 음성 안내. 없으면 initialize에서 SecurityException (에뮬레이터 2.1.0에서 확인, normal 권한) -->
     <uses-permission android:name="pleos.car.permission.TTS_SERVICE" />
 
+    <!--
+        차량 속도(어린이보호구역 과속 경고). Pleos Vehicle SDK에 속도 API가 없어 Android Automotive 표준
+        CarPropertyManager PERF_VEHICLE_SPEED를 읽는다. 사용자 허용이 필요한 권한이며, 거부해도 다른 안내는 그대로 나간다.
+    -->
+    <uses-permission android:name="android.car.permission.CAR_SPEED" />
+
     <application
         android:name=".RoadMateApplication"
         android:allowBackup="false"
@@ -27,6 +33,11 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.RoadMateKorea">
+        <!-- CarPropertyManager. 차량이 아니면 없을 수 있어 required=false, 코드에서 확인한다 -->
+        <uses-library
+            android:name="android.car"
+            android:required="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

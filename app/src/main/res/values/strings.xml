@@ -3,4 +3,5 @@
     <string name="app_name" translatable="false">RoadMate Korea</string>
     <!-- 로고 옆 글자 -->
     <string name="app_name_short" translatable="false">RoadMate</string>
+    <string name="unit_kmh" translatable="false">km/h</string>
 </resources>

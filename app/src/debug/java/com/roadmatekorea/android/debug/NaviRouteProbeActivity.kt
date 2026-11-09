@@ -5,7 +5,6 @@ import ai.pleos.playground.navi.constants.NavigationStatus
 import ai.pleos.playground.navi.constants.RouteOption
 import ai.pleos.playground.navi.data.CameraAlert
 import ai.pleos.playground.navi.data.CautionPoint
-import ai.pleos.playground.navi.data.DestinationInfo
 import ai.pleos.playground.navi.data.DrivingInfo
 import ai.pleos.playground.navi.data.RouteInfo
 import ai.pleos.playground.navi.data.RouteStartInfo
@@ -26,7 +25,7 @@ import androidx.activity.ComponentActivity
  *   --ef lat 37.7519 --ef lon 128.8761 --es name Gangneung
  * 취소: --ez cancel true
  * 결과: adb logcat -s RoadMateNaviProbe
- * 목적지는 시험용 공공 장소 좌표만 쓴다. 현재 위치는 기록하지 않는다.
+ * 로그에는 개수·종류·거리 같은 수치만 남긴다. 좌표, 주소, 장소·도로 이름은 기록하지 않는다.
  */
 class NaviRouteProbeActivity : ComponentActivity() {
 
@@ -34,22 +33,23 @@ class NaviRouteProbeActivity : ComponentActivity() {
     private var navi: NaviHelper? = null
 
     private val listener = object : NaviHelperEventListener {
-        override fun onRouteStarted(info: RouteStartInfo) = write("routeStarted $info")
+        // SDK 객체를 통째로 찍지 않는다(목적지 좌표·주소·이름·도로 이름이 들어 있다). 검증에 필요한 수치만 남긴다.
+        override fun onRouteStarted(info: RouteStartInfo) = write("routeStarted distance=${info.distance}m duration=${info.duration}s")
         override fun onRouteEnded() = write("routeEnded")
         override fun onRouteCancelled() = write("routeCancelled")
         override fun onError(code: NaviErrorCode) = write("error $code")
         override fun onNavigationStatus(status: NavigationStatus) = write("status $status")
-        override fun onDestinationInfo(info: DestinationInfo) = writeThrottled("dest", "destination $info")
-        override fun onDrivingInfo(info: DrivingInfo) = writeThrottled("driving", "driving $info")
+        override fun onDrivingInfo(info: DrivingInfo) = writeThrottled("driving", "driving remain=${info.destination?.distance}m")
         override fun onCurrentRoadSpeedLimit(kmh: Int) = writeThrottled("limit", "speedLimit $kmh")
         override fun onCautionPointInfo(points: List<CautionPoint>) =
-            write("caution n=${points.size} " + points.joinToString { "${it.type}@${it.remainDistance}m#${it.id}" })
-        override fun onCameraAlert(cameras: List<CameraAlert>) = write("camera n=${cameras.size} $cameras")
+            write("caution n=${points.size} " + points.joinToString { "${it.type}@${it.remainDistance}m" })
+        override fun onCameraAlert(cameras: List<CameraAlert>) =
+            write("camera n=${cameras.size} " + cameras.joinToString { "${it.type}@${it.remainDistance}m limit=${it.speedLimit} status=${it.status}" })
         override fun onTBTInfo(turns: List<TBTInfo>) {
             var sum = 0.0
             val rows = turns.mapIndexed { i, t ->
                 sum += t.distance
-                "#$i ${t.type} d=${"%.0f".format(t.distance)} cum=${"%.0f".format(sum)} ${t.description}"
+                "#$i ${t.type} d=${"%.0f".format(t.distance)} cum=${"%.0f".format(sum)}"
             }
             writeThrottled("tbt", "tbt n=${turns.size} sum=${"%.0f".format(sum)}\n  " + rows.take(8).joinToString("\n  "))
         }
@@ -77,7 +77,7 @@ class NaviRouteProbeActivity : ComponentActivity() {
                 helper.getTBTInfo()
                 return@initialize
             }
-            write("requestRoute $name")
+            write("requestRoute")
             // poiSubId 등에 null을 넣으면 SDK 안에서 NPE가 난다는 기록이 있어 빈 문자열을 넣는다
             helper.requestRoute(RouteInfo(lat, lon, null, null, name, "", "", "", RouteOption.RECOMMENDED, "", false))
         }, { e -> write("init failed $e") })

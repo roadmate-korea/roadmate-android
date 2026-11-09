@@ -120,6 +120,33 @@ class SignalMapperTest {
     }
 
     @Test
+    fun tbt_invalidDistance_dropsThatTurnAndEverythingAfter_butZeroIsValid() {
+        fun map(vararg turns: Pair<TurnType, Double>) =
+            (SignalMapper.map(RawSignal.Navi.Tbt(turns.map { TBTInfo(it.first, it.second, "x") })) as DriveEvent.TurnInstructionsUpdated).turns
+        // 첫 항목 음수: 0m 회전으로 만들지 않는다
+        assertEquals(emptyList<TurnInstruction>(), map(TurnType.TURN_RIGHT to -1.0, TurnType.TURN_LEFT to 200.0))
+        // 중간 음수와 NaN: 그 앞까지만
+        assertEquals(listOf(TurnInstruction(TurnDirection.LEFT, 100)), map(TurnType.TURN_LEFT to 100.0, TurnType.TURN_RIGHT to -5.0, TurnType.TURN_LEFT to 50.0))
+        assertEquals(listOf(TurnInstruction(TurnDirection.LEFT, 100)), map(TurnType.TURN_LEFT to 100.0, TurnType.TURN_RIGHT to Double.NaN))
+        // 유효한 0m는 그대로
+        assertEquals(
+            listOf(TurnInstruction(TurnDirection.OTHER, 0), TurnInstruction(TurnDirection.RIGHT, 0), TurnInstruction(TurnDirection.LEFT, 200)),
+            map(TurnType.TURN_STRAIGHT to 0.0, TurnType.TURN_RIGHT to 0.0, TurnType.TURN_LEFT to 200.0),
+        )
+    }
+
+    @Test
+    fun negativeFirstTurn_isNotAnnounced_andALaterValidUpdateStillWorks() {
+        val engine = GuidanceEngine(Personas.CARLOS, FakeClock())
+        engine.onEvent(DriveEvent.SessionStarted)
+        engine.onEvent(DriveEvent.GearChanged(Gear.DRIVE))
+        fun tbt(vararg turns: Pair<TurnType, Double>) =
+            engine.onEvent(SignalMapper.map(RawSignal.Navi.Tbt(turns.map { TBTInfo(it.first, it.second, "x") }))!!).map { it.id }
+        assertFalse(tbt(TurnType.TURN_RIGHT to -1.0).contains(GuidanceId.RIGHT_TURN_RULE))
+        assertTrue(tbt(TurnType.TURN_RIGHT to 120.0).contains(GuidanceId.RIGHT_TURN_RULE))
+    }
+
+    @Test
     fun realRouteTbt_rightTurnFarAhead_isNotAnnouncedUntilItIsNear() {
         val engine = GuidanceEngine(Personas.CARLOS, FakeClock())
         engine.onEvent(DriveEvent.SessionStarted)

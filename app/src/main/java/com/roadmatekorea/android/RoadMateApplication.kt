@@ -32,6 +32,11 @@ class RoadMateApplication : Application() {
 
     fun hasSpeedPermission(): Boolean = checkSelfPermission(CAR_SPEED) == PackageManager.PERMISSION_GRANTED
 
+    /** 마이크 권한(음성 질문). 허용되면 주행 화면에 마이크 버튼이 보인다. */
+    val micPermissionGranted: MutableStateFlow<Boolean> by lazy { MutableStateFlow(hasMicPermission()) }
+
+    fun hasMicPermission(): Boolean = checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+
     /** 실제 Vehicle·NaviHelper 신호. 처음 쓸 때 한 번 시작하고 프로세스가 끝날 때까지 수집한다. */
     val signalHub: DriveSignalHub by lazy {
         DriveSignalHub(

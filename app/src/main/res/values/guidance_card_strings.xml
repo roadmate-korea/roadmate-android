@@ -49,4 +49,26 @@
     <string name="card_section_over_average_kicker">Average speed check</string>
     <string name="card_section_over_average_headline">Average %1$d km/h. Slow down.</string>
     <string name="card_section_over_average_body">The limit is %2$d km/h.</string>
+    <!-- 음성 질문에 대한 답 -->
+    <string name="card_answer_school_zone_kicker">School zone</string>
+    <string name="card_answer_school_zone_headline">Slow down to the posted limit.</string>
+    <string name="card_answer_school_zone_body">Stop before crosswalks without lights.</string>
+    <string name="card_answer_bus_lane_kicker">Bus lane</string>
+    <string name="card_answer_bus_lane_headline">Stay out of the blue lane.</string>
+    <string name="card_answer_bus_lane_body">Check the hours on the sign.</string>
+    <string name="card_answer_section_kicker">Average speed check</string>
+    <string name="card_answer_section_headline">Keep your average at or below the limit.</string>
+    <string name="card_answer_section_body">Cameras at the start and the end measure your speed.</string>
+    <string name="card_answer_speed_limit_kicker">Speed limit</string>
+    <string name="card_answer_speed_limit_headline">%1$d km/h on this road.</string>
+    <string name="card_answer_speed_limit_body">From the navigation map.</string>
+    <string name="card_answer_speed_limit_unknown_kicker">Speed limit</string>
+    <string name="card_answer_speed_limit_unknown_headline">Not available right now.</string>
+    <string name="card_answer_speed_limit_unknown_body">Follow the road signs.</string>
+    <string name="card_answer_help_kicker">Ask RoadMate</string>
+    <string name="card_answer_help_headline">Ask about a traffic rule.</string>
+    <string name="card_answer_help_body">Right turn, left turn, school zone, bus lane, speed check, speed limit.</string>
+    <string name="card_answer_not_heard_kicker">Ask RoadMate</string>
+    <string name="card_answer_not_heard_headline">Sorry, I didn\'t catch that.</string>
+    <string name="card_answer_not_heard_body">Tap the microphone and ask again.</string>
 </resources>

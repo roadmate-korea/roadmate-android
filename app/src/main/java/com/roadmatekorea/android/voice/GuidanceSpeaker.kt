@@ -3,6 +3,7 @@ package com.roadmatekorea.android.voice
 import com.roadmatekorea.android.rules.Clock
 import com.roadmatekorea.android.rules.Guidance
 import com.roadmatekorea.android.rules.GuidanceId
+import com.roadmatekorea.android.rules.Priority
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -19,6 +20,7 @@ import java.util.Locale
  * - 엔진 초기화 실패, 지원하지 않는 언어, 그 밖의 오류가 나면 그 안내는 자막만 일정 시간 보여 준다.
  *   지원하지 않는 언어는 기억해 두고 이후 그 언어는 바로 자막으로 보낸다.
  * - 엔진이 끝 신호를 주지 않아도 멈추지 않도록 감시 시간이 지나면 다음으로 넘어간다.
+ * - 음성 질문을 듣는 동안에는 말하지 않는다([hold]). 그 사이 안전 경고가 오면 듣기를 끝내고 경고를 말한다.
  *
  * 메인 스레드(또는 [scope]의 단일 스레드)에서만 부른다.
  */
@@ -57,6 +59,9 @@ class GuidanceSpeaker(
     private var playingStarted = false
     private var timer: Job? = null
 
+    /** 음성 질문을 듣는 중. null이 아니면 말하지 않고 쌓아 둔다. 안전 경고가 오면 이것을 불러 듣기를 끝낸다. */
+    private var holdInterrupt: (() -> Unit)? = null
+
     fun start() {
         engine.setListener(this)
         engine.initialize { ready ->
@@ -69,6 +74,8 @@ class GuidanceSpeaker(
     fun say(guidance: Guidance, text: String, locale: Locale) {
         if (!queue.enqueue(guidance, text, locale)) return
         _idle.value = false
+        // 듣는 중에 안전 경고가 오면 질문보다 경고가 먼저다
+        if (guidance.priority == Priority.SAFETY) holdInterrupt?.let { interrupt -> resume(); interrupt() }
         // 엔진 준비 전에는 쌓아 두었다가 준비가 끝나면 말한다.
         if (playing == null && engineState != EngineState.INITIALIZING) playNext()
     }
@@ -82,8 +89,31 @@ class GuidanceSpeaker(
         if (playing == null && queue.size == 0) _idle.value = true
     }
 
+    /**
+     * 음성 질문을 듣는 동안 말하기를 멈춘다. 지금 말하던 안내(안전 경고가 아닌 것)는 그만두고, 새 안내는 쌓아 둔다.
+     * 안전 경고를 말하는 중이면 멈추지 않고 false를 돌려준다(경고를 끊고 질문을 받지 않는다).
+     * 듣는 중에 안전 경고가 들어오면 [onSafetyInterrupt]를 부르고 바로 경고를 말한다.
+     */
+    fun hold(onSafetyInterrupt: () -> Unit): Boolean {
+        if (playing?.guidance?.priority == Priority.SAFETY) return false
+        holdInterrupt = onSafetyInterrupt
+        timer?.cancel()
+        if (playing != null && _current.value?.voiced == true) engine.stop()
+        playing = null
+        _current.value = null
+        return true
+    }
+
+    /** [hold]를 풀고 쌓인 안내를 이어서 말한다. */
+    fun resume() {
+        if (holdInterrupt == null) return
+        holdInterrupt = null
+        if (playing == null && engineState != EngineState.INITIALIZING) playNext()
+    }
+
     /** 기다리는 안내를 모두 버리고 지금 말하는 것도 멈춘다. */
     fun stopAll() {
+        holdInterrupt = null
         queue.clear()
         timer?.cancel()
         if (playing?.let { _current.value?.voiced } == true) engine.stop()
@@ -94,6 +124,7 @@ class GuidanceSpeaker(
 
     /** 해제할 때는 엔진 stop을 부르지 않는다([TtsEngine.release] 참고). 재생 중이던 소리는 엔진 해제로 끝난다. */
     fun release() {
+        holdInterrupt = null
         queue.clear()
         timer?.cancel()
         playing = null
@@ -126,6 +157,12 @@ class GuidanceSpeaker(
 
     private fun playNext() {
         timer?.cancel()
+        if (holdInterrupt != null) {
+            playing = null
+            _current.value = null
+            _idle.value = queue.size == 0
+            return
+        }
         val item = queue.poll()
         playing = item
         playingStarted = false

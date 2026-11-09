@@ -49,4 +49,26 @@
     <string name="card_section_over_average_kicker">구간 단속</string>
     <string name="card_section_over_average_headline">평균 시속 %1$dkm예요. 속도를 줄이세요.</string>
     <string name="card_section_over_average_body">제한 속도는 시속 %2$dkm예요.</string>
+    <!-- 음성 질문에 대한 답 -->
+    <string name="card_answer_school_zone_kicker">어린이보호구역</string>
+    <string name="card_answer_school_zone_headline">표지판의 제한 속도로 줄이세요.</string>
+    <string name="card_answer_school_zone_body">신호등 없는 횡단보도 앞에서 멈추세요.</string>
+    <string name="card_answer_bus_lane_kicker">버스전용차로</string>
+    <string name="card_answer_bus_lane_headline">파란 차로에 들어가지 마세요.</string>
+    <string name="card_answer_bus_lane_body">표지판의 운영 시간을 확인하세요.</string>
+    <string name="card_answer_section_kicker">구간 단속</string>
+    <string name="card_answer_section_headline">평균 속도를 제한 이하로 유지하세요.</string>
+    <string name="card_answer_section_body">시작과 끝의 카메라가 속도를 재요.</string>
+    <string name="card_answer_speed_limit_kicker">제한 속도</string>
+    <string name="card_answer_speed_limit_headline">이 도로는 시속 %1$dkm예요.</string>
+    <string name="card_answer_speed_limit_body">내비게이션 지도 기준이에요.</string>
+    <string name="card_answer_speed_limit_unknown_kicker">제한 속도</string>
+    <string name="card_answer_speed_limit_unknown_headline">지금은 알 수 없어요.</string>
+    <string name="card_answer_speed_limit_unknown_body">표지판을 따라 주세요.</string>
+    <string name="card_answer_help_kicker">RoadMate에게 묻기</string>
+    <string name="card_answer_help_headline">교통 규칙을 물어보세요.</string>
+    <string name="card_answer_help_body">우회전, 좌회전, 어린이보호구역, 버스전용차로, 구간 단속, 제한 속도</string>
+    <string name="card_answer_not_heard_kicker">RoadMate에게 묻기</string>
+    <string name="card_answer_not_heard_headline">잘 못 들었어요.</string>
+    <string name="card_answer_not_heard_body">마이크를 누르고 다시 물어봐 주세요.</string>
 </resources>

@@ -1,16 +1,21 @@
 package com.roadmatekorea.android.ui.drive
 
 import ai.pleos.playground.navi.constants.CautionPointType
+import ai.pleos.playground.vehicle.constant.area.TurnSignalValue
 import ai.pleos.playground.vehicle.constant.control.VehicleGear
 import com.roadmatekorea.android.demo.DemoPersona
 import com.roadmatekorea.android.drive.DriveSignalHub
 import com.roadmatekorea.android.drive.DriveSignalSource
 import com.roadmatekorea.android.drive.RawSignal
 import com.roadmatekorea.android.profile.model.Personas
+import com.roadmatekorea.android.rules.Guidance
+import com.roadmatekorea.android.rules.GuidanceId
+import com.roadmatekorea.android.voice.SpeechInput
 import com.roadmatekorea.android.voice.TtsEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -56,15 +61,43 @@ class DriveControllerTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private class Rig(val vm: DriveController, val upstream: MutableSharedFlow<RawSignal>, val tts: InstantTts)
+    /** 질문을 받으면 기다렸다가 테스트가 [answer]나 [fail]로 결과를 준다. */
+    private class FakeSpeech : SpeechInput {
+        var listener: SpeechInput.Listener? = null
+        var locale: Locale? = null
+        var stops = 0
+        var prepared = 0
+        override fun prepare() {
+            prepared++
+        }
+        override fun listen(locale: Locale, listener: SpeechInput.Listener, audio: ByteArray?) {
+            this.locale = locale
+            this.listener = listener
+            listener.onListening()
+        }
+        override fun stop() {
+            stops++
+            listener = null
+        }
+        override fun release() = Unit
+        fun answer(text: String) = listener!!.onFinal(text)
+        fun fail() = listener!!.onError()
+    }
+
+    private class Rig(val vm: DriveController, val upstream: MutableSharedFlow<RawSignal>, val tts: InstantTts, val speech: FakeSpeech, val mic: MutableStateFlow<Boolean>)
 
     private fun TestScope.rig(): Rig {
         val upstream = MutableSharedFlow<RawSignal>()
         val hub = DriveSignalHub(DriveSignalSource { upstream }, backgroundScope).also { it.start() }
         val tts = InstantTts()
-        val vm = DriveController(hub, tts, { profile -> { g -> (listOf("${profile.language}:${g.id.name}") + g.args).joinToString(":") } }, backgroundScope)
+        val speech = FakeSpeech()
+        val mic = MutableStateFlow(true)
+        val vm = DriveController(
+            hub, tts, { profile -> { g -> (listOf("${profile.language}:${g.id.name}") + g.args).joinToString(":") } }, backgroundScope,
+            speechInput = speech, micPermission = mic, listenTimeoutMs = 10_000,
+        )
         runCurrent()
-        return Rig(vm, upstream, tts)
+        return Rig(vm, upstream, tts, speech, mic)
     }
 
     private suspend fun Rig.real(signal: RawSignal) = upstream.emit(signal)
@@ -187,5 +220,150 @@ class DriveControllerTest {
         r.vm.enterDrive(Personas.CARLOS, announceNow = true)
         runCurrent()
         assertEquals(listOf("ES:WELCOME_FIRST_TIME"), r.tts.spoken)
+    }
+    // ---- 음성 질문 ----
+
+    private suspend fun TestScope.drivingCarlos(r: Rig) {
+        r.real(RawSignal.Vehicle.Gear(VehicleGear.GEAR_PARK))
+        runCurrent()
+        r.vm.ensureSession(Personas.CARLOS)
+        r.real(RawSignal.Vehicle.Gear(VehicleGear.GEAR_DRIVE))
+        runCurrent()
+    }
+
+    @Test
+    fun questionWhileDriving_isAnsweredInTheProfileLanguage() = runTest(dispatcher) {
+        val r = rig()
+        drivingCarlos(r)
+        assertTrue("주행 중 잠금", r.vm.vehicle.value.locked)
+        assertTrue(r.vm.uiState.value.micAvailable)
+        r.vm.toggleQuestion()
+        runCurrent()
+        assertTrue(r.vm.uiState.value.question.listening)
+        assertEquals("es-US", r.speech.locale?.toLanguageTag())
+        r.speech.answer("¿Puedo girar a la derecha en rojo?")
+        runCurrent()
+        assertTrue(r.tts.spoken.contains("ES:RIGHT_TURN_RULE"))
+        val q = r.vm.uiState.value.question
+        assertFalse(q.listening)
+        assertEquals("¿Puedo girar a la derecha en rojo?", q.asked)
+        assertEquals(Guidance(GuidanceId.RIGHT_TURN_RULE), q.answer)
+    }
+
+    @Test
+    fun speedLimitQuestion_usesTheNaviLimit() = runTest(dispatcher) {
+        val r = rig()
+        drivingCarlos(r)
+        r.real(RawSignal.Navi.SpeedLimit(50))
+        runCurrent()
+        r.vm.toggleQuestion()
+        r.speech.answer("¿cuál es el límite de velocidad?")
+        runCurrent()
+        assertTrue(r.tts.spoken.contains("ES:ANSWER_SPEED_LIMIT:50"))
+    }
+
+    @Test
+    fun silenceTimeoutOrError_answersNotHeard() = runTest(dispatcher) {
+        val r = rig()
+        drivingCarlos(r)
+        r.vm.toggleQuestion()
+        runCurrent()
+        advanceTimeBy(10_001)
+        runCurrent()
+        assertEquals(1, r.speech.stops)
+        assertTrue(r.tts.spoken.contains("ES:ANSWER_NOT_HEARD"))
+        assertFalse(r.vm.uiState.value.question.listening)
+        r.tts.spoken.clear()
+        r.vm.toggleQuestion()
+        r.speech.fail()
+        runCurrent()
+        assertEquals(listOf("ES:ANSWER_NOT_HEARD"), r.tts.spoken)
+    }
+
+    @Test
+    fun guidanceDuringListening_waits_butSafetyWarningEndsTheQuestion() = runTest(dispatcher) {
+        val r = rig()
+        drivingCarlos(r)
+        r.tts.spoken.clear()
+        r.vm.toggleQuestion()
+        runCurrent()
+        // 규칙 안내(우회전)는 듣는 동안 기다린다
+        r.real(RawSignal.Vehicle.TurnSignal(TurnSignalValue.RIGHT))
+        runCurrent()
+        assertEquals(emptyList<String>(), r.tts.spoken)
+        // 안전 경고는 듣기를 끝내고 바로 말한다. 질문에는 답하지 않는다
+        r.real(schoolZone("sz"))
+        runCurrent()
+        assertFalse(r.vm.uiState.value.question.listening)
+        assertEquals(1, r.speech.stops)
+        assertEquals("ES:SCHOOL_ZONE_AHEAD:300", r.tts.spoken.first())
+        assertTrue(r.tts.spoken.contains("ES:RIGHT_TURN_RULE"))
+        assertFalse(r.tts.spoken.any { it.contains("ANSWER") })
+    }
+
+    @Test
+    fun answer_comesBefore_lessUrgentGuidanceQueuedWhileListening() = runTest(dispatcher) {
+        val r = rig()
+        r.real(RawSignal.Vehicle.Gear(VehicleGear.GEAR_PARK))
+        runCurrent()
+        r.vm.ensureSession(Personas.NAKAMURA)
+        r.vm.toggleQuestion()
+        runCurrent()
+        // 듣는 동안 출발: 시작 인사와 적응 안내가 쌓인다(규칙보다 덜 급함)
+        r.real(RawSignal.Vehicle.Gear(VehicleGear.GEAR_DRIVE))
+        runCurrent()
+        assertEquals(emptyList<String>(), r.tts.spoken)
+        r.speech.answer("what about bus lanes")
+        runCurrent()
+        assertEquals("EN:ANSWER_BUS_LANE", r.tts.spoken.first())
+        assertTrue(r.tts.spoken.contains("EN:WELCOME_RIGHT_SIDE"))
+    }
+
+    @Test
+    fun tappingAgainWhileListening_cancelsWithoutAnswer() = runTest(dispatcher) {
+        val r = rig()
+        drivingCarlos(r)
+        r.tts.spoken.clear()
+        r.vm.toggleQuestion()
+        r.vm.toggleQuestion()
+        runCurrent()
+        assertFalse(r.vm.uiState.value.question.listening)
+        assertEquals(1, r.speech.stops)
+        advanceTimeBy(20_000)
+        runCurrent()
+        assertEquals(emptyList<String>(), r.tts.spoken)
+    }
+
+    @Test
+    fun engineIsPrepared_onlyOnceTheMicIsAllowed() = runTest(dispatcher) {
+        val r = rig()
+        runCurrent()
+        assertEquals(1, r.speech.prepared)
+    }
+
+    @Test
+    fun micIsHidden_withoutPermission_orWithoutSession() = runTest(dispatcher) {
+        val r = rig()
+        assertFalse("세션 없음", r.vm.uiState.value.micAvailable)
+        drivingCarlos(r)
+        assertTrue(r.vm.uiState.value.micAvailable)
+        r.mic.value = false
+        runCurrent()
+        assertFalse(r.vm.uiState.value.micAvailable)
+        r.vm.toggleQuestion() // 버튼이 없지만 불려도 세션 기준으로만 동작
+    }
+
+    @Test
+    fun repeatQuestion_saysTheLastDrivingGuidanceAgain() = runTest(dispatcher) {
+        val r = rig()
+        drivingCarlos(r)
+        r.real(schoolZone("sz"))
+        runCurrent()
+        r.tts.spoken.clear()
+        r.vm.toggleQuestion()
+        r.speech.answer("repite por favor")
+        runCurrent()
+        // 어린이보호구역 경고 묶음의 마지막 안내(횡단보도 일시정지)를 다시 말한다
+        assertEquals(listOf("ES:SCHOOL_ZONE_CROSSWALK"), r.tts.spoken)
     }
 }

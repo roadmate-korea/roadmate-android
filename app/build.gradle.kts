@@ -66,7 +66,7 @@ dependencies {
     implementation(libs.pleos.vehicle)
     implementation(libs.pleos.navihelper)
     implementation(libs.pleos.tts)
-    debugImplementation(libs.pleos.stt)
+    implementation(libs.pleos.stt)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

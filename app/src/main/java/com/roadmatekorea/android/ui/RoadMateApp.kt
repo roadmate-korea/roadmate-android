@@ -114,6 +114,7 @@ private fun RoadMateContent(
                         },
                         onPlayDemo = driveVm::startDemo,
                         onStopDemo = { driveVm.stopDemo(profile) },
+                        onMic = { driveVm.toggleQuestion() },
                     )
                 }
             }

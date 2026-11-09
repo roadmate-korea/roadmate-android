@@ -9,10 +9,12 @@ import com.roadmatekorea.android.i18n.AppLocales
 import com.roadmatekorea.android.profile.model.DriverProfile
 import com.roadmatekorea.android.rules.Guidance
 import com.roadmatekorea.android.voice.GuidanceSpeaker
+import com.roadmatekorea.android.voice.SpeechInput
 import com.roadmatekorea.android.voice.TtsEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -44,6 +46,19 @@ data class DriveUiState(
     /** 차량 속도(km/h). 읽을 수 없으면 null이고 화면에 보이지 않는다. */
     val speedKmh: Int? = null,
     val voiceUnavailable: Boolean = false,
+    /** 음성 질문을 받을 수 있음(마이크 권한과 세션이 있음). false면 마이크 버튼을 숨긴다. */
+    val micAvailable: Boolean = false,
+    val question: QuestionUi = QuestionUi(),
+)
+
+/** 음성 질문 상태. */
+data class QuestionUi(
+    val listening: Boolean = false,
+    /** 듣는 중의 중간 결과. */
+    val partial: String = "",
+    /** 마지막 질문과 그 답. 지금 말하는 안내가 [answer]이면 화면에 질문을 함께 보여 준다. */
+    val asked: String? = null,
+    val answer: Guidance? = null,
 )
 
 /**
@@ -64,6 +79,9 @@ class DriveController(
     ttsEngine: TtsEngine,
     private val textFor: (DriverProfile) -> (Guidance) -> String,
     private val scope: CoroutineScope,
+    private val speechInput: SpeechInput? = null,
+    micPermission: StateFlow<Boolean> = MutableStateFlow(false),
+    private val listenTimeoutMs: Long = LISTEN_TIMEOUT_MS,
 ) {
 
     private val speaker = GuidanceSpeaker(ttsEngine, scope).also { it.start() }
@@ -82,6 +100,9 @@ class DriveController(
     private val _demo = MutableStateFlow<DemoStatus?>(null)
     private var demoJob: Job? = null
 
+    private val _question = MutableStateFlow(QuestionUi())
+    private var listenTimeout: Job? = null
+
     /** 마지막으로 받은 저장된 프로필. 시연이 끝나면 이 프로필의 실제 세션으로 돌아간다. */
     private var savedProfile: DriverProfile? = null
 
@@ -97,6 +118,10 @@ class DriveController(
                 if (_demo.value == null) session.value?.onSignal(signal)
             }
         }
+        // 마이크 권한이 있으면 음성 엔진을 미리 준비해 첫 질문이 늦지 않게 한다
+        if (speechInput != null) {
+            scope.launch { micPermission.first { it }; speechInput.prepare() }
+        }
     }
 
     val uiState: StateFlow<DriveUiState> = combine(session, _demo) { s, d -> s to d }.flatMapLatest { (s, demo) ->
@@ -105,10 +130,10 @@ class DriveController(
             speaker.current,
             s?.history ?: flowOf(emptyList()),
             combine(s?.speedLimitKmh ?: flowOf(null), s?.speedKmh ?: flowOf(null)) { limit, speed -> limit to speed },
-            combine(speaker.unavailableLocales, speaker.engineFailed) { locales, failed ->
-                failed || (s != null && AppLocales.localeOf(s.profile.language) in locales)
+            combine(speaker.unavailableLocales, speaker.engineFailed, _question, micPermission) { locales, failed, question, mic ->
+                Triple(failed || (s != null && AppLocales.localeOf(s.profile.language) in locales), question, mic && s != null && speechInput != null)
             },
-        ) { vehicle, caption, history, (limit, speed), voiceUnavailable ->
+        ) { vehicle, caption, history, (limit, speed), (voiceUnavailable, question, micAvailable) ->
             DriveUiState(
                 profile = s?.profile,
                 demo = demo,
@@ -120,6 +145,8 @@ class DriveController(
                 speedLimitKmh = limit,
                 speedKmh = speed,
                 voiceUnavailable = voiceUnavailable,
+                micAvailable = micAvailable,
+                question = question,
             )
         }
     }.stateIn(scope, SharingStarted.Eagerly, DriveUiState())
@@ -135,6 +162,7 @@ class DriveController(
         if (_demo.value != null) return // 시연 중(정차)에는 시연 세션을 유지한다
         val current = session.value
         if (!announceNow && current != null && current.profile == profile) return
+        cancelQuestion()
         speaker.stopAll()
         val next = newSession(profile)
         session.value = next
@@ -159,6 +187,7 @@ class DriveController(
     fun startDemo(persona: DemoPersona) {
         if (_vehicle.value.locked) return
         cancelDemo()
+        cancelQuestion()
         speaker.stopAll()
         val demoSession = newSession(persona.profile)
         _demo.value = DemoStatus(persona)
@@ -179,6 +208,7 @@ class DriveController(
 
     private fun exitDemoToRealSession() {
         cancelDemo()
+        cancelQuestion()
         speaker.stopAll()
         session.value = null
         savedProfile?.let { enterDrive(it, announceNow = false) }
@@ -203,13 +233,88 @@ class DriveController(
      */
     fun endSession() {
         cancelDemo()
+        cancelQuestion()
         speaker.stopAll()
         session.value = null
         savedProfile = null
     }
 
+    /**
+     * 마이크 버튼(주행 중에도 받는 유일한 버튼). 듣는 중이면 멈춘다(답하지 않음).
+     * 안전 경고를 말하는 중이면 받지 않는다. 듣는 동안 다른 안내는 쌓아 두었다가 답 뒤에 말한다.
+     * [audio]: 디버그 빌드의 시연용 PCM(마이크 대신 실제 STT에 넣는다).
+     */
+    fun toggleQuestion(audio: ByteArray? = null) {
+        val input = speechInput ?: return
+        val s = session.value ?: return
+        if (_question.value.listening) {
+            cancelQuestion()
+            return
+        }
+        if (!speaker.hold(onSafetyInterrupt = ::cancelQuestion)) return
+        _question.value = QuestionUi(listening = true)
+        // 엔진이 준비될 때까지 넉넉히 기다리고, 실제로 듣기 시작하면 그때부터 제한 시간을 잰다
+        startListenTimeout(s, input, listenTimeoutMs * 2)
+        input.listen(
+            AppLocales.localeOf(s.profile.language),
+            object : SpeechInput.Listener {
+                override fun onListening() {
+                    if (_question.value.listening) startListenTimeout(s, input, listenTimeoutMs)
+                }
+
+                override fun onPartial(text: String) {
+                    if (_question.value.listening) _question.update { it.copy(partial = text) }
+                }
+
+                override fun onFinal(text: String) = finishQuestion(s, text)
+                override fun onError() = finishQuestion(s, null)
+            },
+            audio,
+        )
+    }
+
+    private fun startListenTimeout(asked: DriveSession, input: SpeechInput, timeoutMs: Long) {
+        listenTimeout?.cancel()
+        listenTimeout = scope.launch {
+            delay(timeoutMs)
+            input.stop()
+            finishQuestion(asked, null)
+        }
+    }
+
+    private fun finishQuestion(asked: DriveSession, text: String?) {
+        if (!_question.value.listening) return
+        listenTimeout?.cancel()
+        listenTimeout = null
+        _question.value = QuestionUi()
+        // 듣는 사이 세션이 바뀌었으면 답하지 않는다
+        if (session.value !== asked) {
+            speaker.resume()
+            return
+        }
+        // 답을 먼저 넣고 나서 멈춤을 푼다. 그래야 듣는 동안 쌓인 덜 급한 안내보다 답이 먼저 나간다
+        val answer = asked.ask(text)
+        speaker.resume()
+        _question.value = QuestionUi(asked = text?.takeIf { it.isNotBlank() }, answer = answer)
+    }
+
+    /** 듣기를 그만둔다(답하지 않음). 안전 경고가 오거나 세션이 바뀔 때도 부른다. */
+    private fun cancelQuestion() {
+        listenTimeout?.cancel()
+        listenTimeout = null
+        if (_question.value.listening) speechInput?.stop()
+        _question.value = QuestionUi()
+        speaker.resume()
+    }
+
     /** 프로세스가 끝날 때까지 보통 부르지 않는다(테스트와 정리용). */
     fun release() {
+        speechInput?.release()
         speaker.release()
+    }
+
+    private companion object {
+        /** 듣기 제한 시간. 지나면 못 알아들었다고 답한다. */
+        const val LISTEN_TIMEOUT_MS = 10_000L
     }
 }

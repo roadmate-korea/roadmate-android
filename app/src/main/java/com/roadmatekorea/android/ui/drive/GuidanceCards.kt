@@ -48,6 +48,14 @@ object GuidanceCards {
             GuidanceId.SECTION_START -> card(R.string.card_section_start_kicker, R.string.card_section_start_headline, R.string.card_section_start_body, R.drawable.ic_rm_camera, SceneKind.SECTION_CHECK, safety)
             GuidanceId.SECTION_OVER_AVERAGE -> card(R.string.card_section_over_average_kicker, R.string.card_section_over_average_headline, R.string.card_section_over_average_body, R.drawable.ic_rm_camera, SceneKind.SECTION_CHECK, safety)
             GuidanceId.ARRIVED -> card(R.string.card_arrived_kicker, R.string.card_arrived_headline, R.string.card_arrived_body, R.drawable.ic_rm_flag, null, safety)
+            // 음성 질문에 대한 답. 숫자 그림은 그리지 않는다(어느 구역의 제한인지 모르는 일반 설명이므로)
+            GuidanceId.ANSWER_SCHOOL_ZONE -> card(R.string.card_answer_school_zone_kicker, R.string.card_answer_school_zone_headline, R.string.card_answer_school_zone_body, R.drawable.ic_rm_children, SceneKind.SCHOOL_ZONE, safety)
+            GuidanceId.ANSWER_BUS_LANE -> card(R.string.card_answer_bus_lane_kicker, R.string.card_answer_bus_lane_headline, R.string.card_answer_bus_lane_body, R.drawable.ic_rm_bus, SceneKind.BUS_LANE, safety)
+            GuidanceId.ANSWER_SECTION -> card(R.string.card_answer_section_kicker, R.string.card_answer_section_headline, R.string.card_answer_section_body, R.drawable.ic_rm_camera, SceneKind.SECTION_CHECK, safety)
+            GuidanceId.ANSWER_SPEED_LIMIT -> card(R.string.card_answer_speed_limit_kicker, R.string.card_answer_speed_limit_headline, R.string.card_answer_speed_limit_body, R.drawable.ic_rm_mic, null, safety)
+            GuidanceId.ANSWER_SPEED_LIMIT_UNKNOWN -> card(R.string.card_answer_speed_limit_unknown_kicker, R.string.card_answer_speed_limit_unknown_headline, R.string.card_answer_speed_limit_unknown_body, R.drawable.ic_rm_mic, null, safety)
+            GuidanceId.ANSWER_HELP -> card(R.string.card_answer_help_kicker, R.string.card_answer_help_headline, R.string.card_answer_help_body, R.drawable.ic_rm_mic, null, safety)
+            GuidanceId.ANSWER_NOT_HEARD -> card(R.string.card_answer_not_heard_kicker, R.string.card_answer_not_heard_headline, R.string.card_answer_not_heard_body, R.drawable.ic_rm_mic, null, safety)
         }
     }
 

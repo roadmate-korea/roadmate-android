@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 음성 질문(마이크 버튼) 화면 문구 -->
+<resources>
+    <string name="drive_mic_ask">Ask</string>
+    <string name="drive_mic_listening">Listening…</string>
+    <string name="drive_mic_desc">Ask RoadMate a question</string>
+    <string name="drive_you_asked">You asked: “%1$s”</string>
+</resources>

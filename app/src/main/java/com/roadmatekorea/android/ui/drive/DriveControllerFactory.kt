@@ -5,6 +5,7 @@ import com.roadmatekorea.android.BuildConfig
 import com.roadmatekorea.android.RoadMateApplication
 import com.roadmatekorea.android.i18n.GuidanceStrings
 import com.roadmatekorea.android.i18n.withLanguage
+import com.roadmatekorea.android.voice.PleosSpeechInput
 import com.roadmatekorea.android.voice.PleosTtsEngine
 
 private const val TAG = "RoadMateGuidance"
@@ -23,4 +24,6 @@ fun createDriveController(app: RoadMateApplication) = DriveController(
         text
     },
     scope = app.appScope,
+    speechInput = PleosSpeechInput(app),
+    micPermission = app.micPermissionGranted,
 )

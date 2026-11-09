@@ -5,4 +5,6 @@
     <string name="drive_mic_listening">Escuchando…</string>
     <string name="drive_mic_desc">Hacer una pregunta a RoadMate</string>
     <string name="drive_you_asked">Has preguntado: «%1$s»</string>
+    <string name="drive_mic_preparing">Un momento…</string>
+    <string name="drive_mic_cancel_desc">Dejar de escuchar</string>
 </resources>

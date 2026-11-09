@@ -52,11 +52,15 @@ fun InterpreterScreen(
     onSituation: (Situation) -> Unit,
     onPhrase: (Phrase) -> Unit,
     onListen: (Side) -> Unit,
+    onEnter: () -> Unit,
     onLeave: () -> Unit,
 ) {
     val c = RoadMate.colors
     val compact = LocalCompact.current
-    DisposableEffect(Unit) { onDispose(onLeave) }
+    DisposableEffect(Unit) {
+        onEnter()
+        onDispose(onLeave)
+    }
     Column(Modifier.fillMaxSize().background(c.canvas).padding(start = 40.dp, end = 40.dp, top = 24.dp, bottom = 32.dp)) {
         HelpBackRow(stringResource(R.string.interp_title), onBack)
         Spacer(Modifier.size(12.dp))

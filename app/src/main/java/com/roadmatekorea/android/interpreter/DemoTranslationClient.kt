@@ -10,7 +10,9 @@ import java.util.Locale
  * - 직원 말: 아래 시연 대화 몇 개
  * 그 밖의 문장은 실패(null)로 돌려준다. 실제 번역은 서버가 한다.
  *
- * Pleos STT는 끝 글자를 빠뜨리기도 해서(에뮬레이터: "s'il vous plaî", "결제하시겠어") 글자 85% 이상 같으면 같은 문장으로 본다.
+ * 악센트·대소문자·문장부호·공백을 무시하고 같아야 한다. 단, Pleos STT가 끝 글자를 빠뜨리는 일이 있어(에뮬레이터:
+ * "s'il vous plaî", "결제하시겠어") 끝에서 [MAX_DROPPED_TAIL]글자까지 빠진 것은 같은 문장으로 본다.
+ * 금액·시간처럼 중간이 다른 문장은 섞지 않는다(비슷하다고 고르면 "1만 원어치"가 "5만 원어치"로 번역된다).
  */
 class DemoTranslationClient(private val phraseTexts: Map<String, String>) : TranslationClient {
 
@@ -36,27 +38,16 @@ class DemoTranslationClient(private val phraseTexts: Map<String, String>) : Tran
             Row("이쪽에 주차하시면 됩니다.", "You can park over here.", "Vous pouvez vous garer ici.", "Puede aparcar aquí."),
         )
 
-        const val MIN_SIMILARITY = 0.85
+        const val MAX_DROPPED_TAIL = 3
 
-        /** [key]와 가장 비슷하고 [MIN_SIMILARITY] 이상인 항목. */
-        fun <T> Iterable<T>.closest(key: String, text: (T) -> String): T? =
-            map { it to similarity(key, normalize(text(it))) }
-                .filter { it.second >= MIN_SIMILARITY }
-                .maxByOrNull { it.second }?.first
-
-        /** 1 - 편집 거리 / 긴 쪽 길이. */
-        fun similarity(a: String, b: String): Double {
-            if (a.isEmpty() || b.isEmpty()) return if (a == b) 1.0 else 0.0
-            var prev = IntArray(b.length + 1) { it }
-            for (i in 1..a.length) {
-                val cur = IntArray(b.length + 1)
-                cur[0] = i
-                for (j in 1..b.length) {
-                    cur[j] = minOf(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + if (a[i - 1] == b[j - 1]) 0 else 1)
-                }
-                prev = cur
-            }
-            return 1.0 - prev[b.length].toDouble() / maxOf(a.length, b.length)
+        /** [key]와 같거나, [key]가 끝 글자 몇 개만 빠진 항목. */
+        fun <T> Iterable<T>.closest(key: String, text: (T) -> String): T? {
+            if (key.isEmpty()) return null
+            return firstOrNull { normalize(text(it)) == key }
+                ?: filter { candidate ->
+                    val full = normalize(text(candidate))
+                    full.startsWith(key) && full.length - key.length <= MAX_DROPPED_TAIL
+                }.singleOrNull()
         }
 
         /** 악센트, 대소문자, 문장부호, 공백을 무시하고 비교한다. */

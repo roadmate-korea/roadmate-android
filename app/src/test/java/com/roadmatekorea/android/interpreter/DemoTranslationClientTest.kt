@@ -40,6 +40,16 @@ class DemoTranslationClientTest {
     }
 
     @Test
+    fun differentAmountsOrTimes_areNotTranslatedAsTheNearestPhrase() = runTest {
+        // 비슷한 문장을 고르면 금액·시간이 바뀐다
+        val amount = DemoTranslationClient(mapOf("50,000 won of fuel, please." to "5만 원어치 넣어 주세요."))
+        assertNull(amount.translate("10,000 won of fuel, please.", Locale.US, Locale.KOREA, Situation.GAS_STATION))
+        assertNull(client.translate("내일 오후 8시까지 반납해 주세요.", Locale.KOREA, Locale.US, Situation.RENTAL))
+        assertNull(client.translate("카드로 결제하시겠어요 아니면 현금", Locale.KOREA, Locale.US, Situation.GAS_STATION))
+        assertNull("너무 많이 빠진 것은 맞추지 않음", client.translate("카드로 결제", Locale.KOREA, Locale.US, Situation.GAS_STATION))
+    }
+
+    @Test
     fun anythingElse_fails() = runTest {
         assertNull(client.translate("Où sont les toilettes ?", Locale.CANADA_FRENCH, Locale.KOREA, Situation.GAS_STATION))
     }

@@ -324,10 +324,12 @@ class DriveController(
         listenTimeout?.cancel()
         listenTimeout = null
         // 듣는 중이었는지는 화면 상태가 아니라 질문 표시로 판단한다
-        if (question != null) speechInput?.stop()
+        val asking = question != null
+        if (asking) speechInput?.stop()
         question = null
         _question.value = QuestionUi()
-        speaker.resume()
+        // 질문이 멈춰 둔 음성 큐만 푼다(통역이 멈춰 둔 것은 통역이 푼다)
+        if (asking) speaker.resume()
     }
 
     /**
@@ -351,11 +353,17 @@ class DriveController(
         speaker.say(Guidance(GuidanceId.INTERPRETER_SPEECH), text, locale)
     }
 
-    /** 통역이 마이크를 쓰기 전에: 듣던 음성 질문을 멈추고 읽던 통역 음성을 멈춘다. */
+    /** 통역 화면에 들어오거나 통역을 쓰기 전에: 듣던 음성 질문을 멈추고 읽던 통역 음성을 멈춘다. */
     fun prepareForInterpreter() {
         cancelQuestion()
         speaker.cancel(setOf(GuidanceId.INTERPRETER_SPEECH))
     }
+
+    /** 통역이 마이크를 여는 동안 음성 큐를 멈춘다(음성 질문과 같은 규칙). 안전 경고를 말하거나 기다리는 중이면 false. */
+    fun holdForInterpreter(onSafetyInterrupt: () -> Unit): Boolean = speaker.hold(onSafetyInterrupt)
+
+    /** [holdForInterpreter]를 푼다. */
+    fun releaseInterpreterHold() = speaker.resume()
 
     /** 상황 도움 화면을 닫을 때(뒤로, 기어가 P를 벗어남) 도움 음성만 멈춘다. 안전 경고와 다른 안내는 그대로다. */
     fun stopHelp() = speaker.cancel(HELP_SPEECH)

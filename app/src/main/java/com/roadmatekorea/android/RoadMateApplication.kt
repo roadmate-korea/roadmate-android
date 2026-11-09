@@ -10,6 +10,7 @@ import com.roadmatekorea.android.i18n.withLanguage
 import com.roadmatekorea.android.interpreter.DemoTranslationClient
 import com.roadmatekorea.android.interpreter.HttpTranslationClient
 import com.roadmatekorea.android.interpreter.InterpreterController
+import com.roadmatekorea.android.interpreter.InterpreterVoice
 import com.roadmatekorea.android.interpreter.NoTranslationClient
 import com.roadmatekorea.android.interpreter.Phrases
 import com.roadmatekorea.android.interpreter.TranslationClient
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 /** 앱 전체에서 하나만 쓰는 객체를 둔다(간단한 수동 의존성 주입). */
 class RoadMateApplication : Application() {
@@ -71,8 +73,13 @@ class RoadMateApplication : Application() {
         InterpreterController(
             speech = speechInput,
             client = translationClient(),
-            say = driveController::sayInterpreter,
-            prepareToListen = driveController::prepareForInterpreter,
+            voice = object : InterpreterVoice {
+                override fun parked() = !driveController.vehicle.value.locked
+                override fun stopOthers() = driveController.prepareForInterpreter()
+                override fun hold(onSafetyInterrupt: () -> Unit) = driveController.holdForInterpreter(onSafetyInterrupt)
+                override fun release() = driveController.releaseInterpreterHold()
+                override fun say(text: String, locale: Locale) = driveController.sayInterpreter(text, locale)
+            },
             driverLocale = { AppLocales.localeOf(driveController.uiState.value.profile?.language ?: AppLanguage.EN) },
             scope = appScope,
         ).also { controller ->

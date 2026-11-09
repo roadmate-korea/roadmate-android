@@ -32,4 +32,7 @@
     <string name="guidance_answer_speed_limit_unknown">Ahora no tengo el límite de velocidad de esta vía. Sigue las señales.</string>
     <string name="guidance_answer_help">Puedes preguntarme sobre giros a la derecha, giros a la izquierda, zonas escolares, carriles bus, controles de velocidad media o el límite de velocidad aquí.</string>
     <string name="guidance_answer_not_heard">Perdona, no te he entendido. Toca el micrófono y vuelve a preguntar.</string>
+    <!-- 상황 도움 -->
+    <string name="guidance_help_accident_steps">Después de un accidente, enciende las luces de emergencia y ponte a salvo si puedes. Si alguien está herido, llama al 119. Para denunciar el accidente, llama al 112. Después, llama a tu empresa de alquiler y haz fotos de los dos coches y de la vía antes de mover el coche.</string>
+    <string name="guidance_phrase_accident_help">Ha habido un accidente. Ayúdeme, por favor.</string>
 </resources>

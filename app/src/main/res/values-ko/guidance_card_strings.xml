@@ -71,4 +71,11 @@
     <string name="card_answer_not_heard_kicker">RoadMate에게 묻기</string>
     <string name="card_answer_not_heard_headline">잘 못 들었어요.</string>
     <string name="card_answer_not_heard_body">마이크를 누르고 다시 물어봐 주세요.</string>
+    <!-- 상황 도움 -->
+    <string name="card_help_accident_steps_kicker">사고</string>
+    <string name="card_help_accident_steps_headline">먼저 이렇게 하세요.</string>
+    <string name="card_help_accident_steps_body">비상등, 그다음 119 또는 112.</string>
+    <string name="card_phrase_accident_help_kicker">주변 사람에게 보여 주세요</string>
+    <string name="card_phrase_accident_help_headline">사고가 났어요. 도와주세요.</string>
+    <string name="card_phrase_accident_help_body">사고가 났어요. 도와주세요.</string>
 </resources>

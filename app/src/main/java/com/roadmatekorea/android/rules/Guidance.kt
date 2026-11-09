@@ -50,6 +50,13 @@ enum class GuidanceId(val priority: Priority) {
     ANSWER_SPEED_LIMIT_UNKNOWN(Priority.RULE),
     ANSWER_HELP(Priority.RULE),
     ANSWER_NOT_HEARD(Priority.RULE),
+
+    // ---- 상황 도움(정차 중 화면에서 운전자가 열 때만) ----
+    /** 사고 뒤 할 일을 차례로 읽는다(프로필 언어). */
+    HELP_ACCIDENT_STEPS(Priority.INFO),
+
+    /** 주변 사람에게 들려줄 한국어 문장. 화면 버튼으로 한국어로 읽는다. */
+    PHRASE_ACCIDENT_HELP(Priority.INFO),
 }
 
 data class Guidance(val id: GuidanceId, val args: List<Int> = emptyList()) {

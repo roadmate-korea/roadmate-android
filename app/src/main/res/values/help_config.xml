@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    렌터카 회사 연락처. 렌터카 회사가 차에 설치할 때 넣는 값이다(기획서 리스크 표).
+    비어 있으면 사고 화면에서 렌터카 회사 전화 버튼을 숨긴다(지어낸 번호로 걸지 않게).
+-->
+<resources>
+    <string name="rental_company_phone" translatable="false"></string>
+</resources>

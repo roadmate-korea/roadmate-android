@@ -28,6 +28,9 @@ import com.roadmatekorea.android.profile.model.DriverProfile
 import com.roadmatekorea.android.ui.components.GuidanceCaptionBar
 import com.roadmatekorea.android.ui.components.ReadOnlyOverlay
 import com.roadmatekorea.android.ui.drive.DriveScreen
+import com.roadmatekorea.android.ui.help.AccidentScreen
+import com.roadmatekorea.android.ui.help.HelpRoute
+import com.roadmatekorea.android.ui.help.HelpScreen
 import com.roadmatekorea.android.ui.onboarding.OnboardingOptions
 import com.roadmatekorea.android.ui.onboarding.OnboardingScreen
 import com.roadmatekorea.android.ui.onboarding.OnboardingState
@@ -65,6 +68,8 @@ private fun RoadMateContent(
     var onboardingSession by rememberSaveable { mutableIntStateOf(0) }
     // START 직후 주행 화면에 들어가면 바로 시작 안내를 낸다
     var announceOnEnter by rememberSaveable { mutableStateOf(false) }
+    // 주행 화면 위에 연 상황 도움 화면(정차 중에만)
+    var help by rememberSaveable { mutableStateOf<HelpRoute?>(null) }
 
     when (val current = read) {
         null -> Box(Modifier.fillMaxSize().background(RoadMate.colors.canvas))
@@ -101,9 +106,15 @@ private fun RoadMateContent(
                     driveVm.enterDrive(profile, announceNow = announceOnEnter)
                     announceOnEnter = false
                 }
+                // 상황 도움은 정차 중에만 연다. 기어가 P를 벗어나면 주행 화면으로 돌아간다(읽기 전용 원칙)
+                LaunchedEffect(vehicleLocked) { if (vehicleLocked) help = null }
+                val route = if (vehicleLocked) null else help
                 // 시연 중에는 시연 페르소나의 언어로 화면을 보여 준다
                 ProvideLanguage(driveState.profile?.language ?: profile.language) {
-                    DriveScreen(
+                    when (route) {
+                        HelpRoute.MENU -> HelpScreen(onBack = { help = null }, onAccident = { help = HelpRoute.ACCIDENT })
+                        HelpRoute.ACCIDENT -> AccidentScreen(onBack = { help = HelpRoute.MENU }, onSpeak = driveVm::sayHelp)
+                        null -> DriveScreen(
                         state = driveState,
                         onChangeSettings = {
                             // 설정 화면에 가도 주행 세션은 유지한다(편집 중 출발해도 안전 경고가 계속 나가야 함)
@@ -115,7 +126,9 @@ private fun RoadMateContent(
                         onPlayDemo = driveVm::startDemo,
                         onStopDemo = { driveVm.stopDemo(profile) },
                         onMic = { driveVm.toggleQuestion() },
+                        onHelp = { if (!driveVm.vehicle.value.locked) help = HelpRoute.MENU },
                     )
+                    }
                 }
             }
         }

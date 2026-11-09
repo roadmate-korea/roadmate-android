@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 상황 도움, 사고 화면 문구 -->
+<resources>
+    <string name="header_help">Help</string>
+    <string name="help_title">Help</string>
+    <string name="help_accident">Accident</string>
+    <string name="help_accident_sub">What to do first and who to call</string>
+    <string name="help_emergency">Emergency numbers</string>
+    <string name="help_119">Fire and ambulance</string>
+    <string name="help_112">Police</string>
+    <string name="help_1330">Korea travel help line</string>
+    <string name="help_call">Call %1$s</string>
+    <string name="accident_title">Accident</string>
+    <string name="accident_first">Do this first</string>
+    <string name="accident_step_1">Turn on the hazard lights. Move to a safe place if you can. On a highway, wait behind the guardrail.</string>
+    <string name="accident_step_2">If anyone is hurt, call 119. To report the accident, call 112.</string>
+    <string name="accident_step_3">Call your rental company. The number is on your contract.</string>
+    <string name="accident_step_4">Take photos of both cars and the road before you move the car.</string>
+    <string name="accident_show">Show this to people nearby</string>
+    <string name="accident_play_korean">Play in Korean</string>
+    <string name="accident_call_rental">Call your rental company</string>
+</resources>

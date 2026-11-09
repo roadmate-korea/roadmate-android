@@ -33,4 +33,7 @@
     <string name="guidance_answer_speed_limit_unknown">I don\'t have the speed limit for this road right now. Please follow the road signs.</string>
     <string name="guidance_answer_help">You can ask me about right turns, left turns, school zones, bus lanes, average speed checks, or the speed limit here.</string>
     <string name="guidance_answer_not_heard">Sorry, I didn\'t catch that. Tap the microphone and ask again.</string>
+    <!-- 상황 도움 -->
+    <string name="guidance_help_accident_steps">After an accident, turn on the hazard lights and move to a safe place if you can. If anyone is hurt, call 119. To report the accident, call 112. Then call your rental company, and take photos of both cars and the road before you move the car.</string>
+    <string name="guidance_phrase_accident_help">There has been an accident. Please help.</string>
 </resources>

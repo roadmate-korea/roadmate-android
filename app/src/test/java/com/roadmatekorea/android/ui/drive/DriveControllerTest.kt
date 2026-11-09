@@ -404,6 +404,19 @@ class DriveControllerTest {
     }
 
     @Test
+    fun helpSpeech_usesTheProfileLanguage_andKoreanForThePhraseCard() = runTest(dispatcher) {
+        val r = rig()
+        r.real(RawSignal.Vehicle.Gear(VehicleGear.GEAR_PARK))
+        runCurrent()
+        r.vm.ensureSession(Personas.CARLOS)
+        r.tts.spoken.clear()
+        r.vm.sayHelp(Guidance(GuidanceId.HELP_ACCIDENT_STEPS))
+        r.vm.sayHelp(Guidance(GuidanceId.PHRASE_ACCIDENT_HELP), inKorean = true)
+        runCurrent()
+        assertEquals(listOf("ES:HELP_ACCIDENT_STEPS", "KO:PHRASE_ACCIDENT_HELP"), r.tts.spoken)
+    }
+
+    @Test
     fun micIsHidden_withoutPermission_orWithoutSession() = runTest(dispatcher) {
         val r = rig()
         assertFalse("세션 없음", r.vm.uiState.value.micAvailable)

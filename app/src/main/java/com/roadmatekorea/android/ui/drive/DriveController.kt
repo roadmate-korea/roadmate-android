@@ -6,6 +6,7 @@ import com.roadmatekorea.android.drive.DriveSession
 import com.roadmatekorea.android.drive.DriveSignalHub
 import com.roadmatekorea.android.drive.VehicleStatus
 import com.roadmatekorea.android.i18n.AppLocales
+import com.roadmatekorea.android.profile.model.AppLanguage
 import com.roadmatekorea.android.profile.model.DriverProfile
 import com.roadmatekorea.android.rules.Guidance
 import com.roadmatekorea.android.voice.GuidanceSpeaker
@@ -315,6 +316,16 @@ class DriveController(
         question = null
         _question.value = QuestionUi()
         speaker.resume()
+    }
+
+    /**
+     * 상황 도움 화면(정차 중)에서 운전자가 연 안내를 읽는다. [inKorean]이면 주변 사람에게 들려줄 수 있게 한국어로 읽는다.
+     * 같은 음성 큐를 쓰므로 안전 경고가 오면 그것이 먼저다.
+     */
+    fun sayHelp(guidance: Guidance, inKorean: Boolean = false) {
+        val s = session.value ?: return
+        val language = if (inKorean) AppLanguage.KO else s.profile.language
+        speaker.say(guidance, textFor(s.profile.copy(language = language))(guidance), AppLocales.localeOf(language))
     }
 
     /** 프로세스가 끝날 때까지 보통 부르지 않는다(테스트와 정리용). */

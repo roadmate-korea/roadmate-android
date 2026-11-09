@@ -67,7 +67,7 @@ fun DriveScreen(
                 if (!locked) {
                     // 정차 중에는 마이크 버튼을 시연 버튼과 같은 줄에 둔다(좁은 창에서 겹치지 않게)
                     DemoControls(state, onPlayDemo, onStopDemo) {
-                        if (state.micAvailable) MicButton(listening = state.question.listening, onClick = onMic, iconOnly = compact)
+                        if (state.micAvailable) MicButton(listening = state.question.listening, preparing = state.question.preparing, onClick = onMic, iconOnly = compact)
                     }
                 } else if (state.micAvailable) {
                     // 마이크 버튼 자리(버튼은 잠금 막 위에 따로 그린다)
@@ -81,6 +81,7 @@ fun DriveScreen(
         if (locked && state.micAvailable) {
             MicButton(
                 listening = state.question.listening,
+                preparing = state.question.preparing,
                 onClick = onMic,
                 modifier = Modifier.align(Alignment.BottomEnd).padding(end = 40.dp, bottom = bottomPadding),
             )
@@ -150,7 +151,7 @@ private fun GuidanceArea(state: DriveUiState, modifier: Modifier) {
     Box(modifier.fillMaxWidth(), contentAlignment = Alignment.TopStart) {
         when {
             question.listening -> Column(verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.align(Alignment.CenterStart)) {
-                Text(stringResource(R.string.drive_mic_listening), style = RoadMate.type.headlineM, color = c.ink)
+                Text(stringResource(if (question.preparing) R.string.drive_mic_preparing else R.string.drive_mic_listening), style = RoadMate.type.headlineM, color = c.ink)
                 if (question.partial.isNotBlank()) Text(question.partial, style = RoadMate.type.titleM, color = c.inkSecondary)
             }
             state.guidance != null -> Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {

@@ -5,4 +5,6 @@
     <string name="drive_mic_listening">듣는 중…</string>
     <string name="drive_mic_desc">RoadMate에게 질문하기</string>
     <string name="drive_you_asked">질문: “%1$s”</string>
+    <string name="drive_mic_preparing">잠시만요…</string>
+    <string name="drive_mic_cancel_desc">듣기 멈추기</string>
 </resources>

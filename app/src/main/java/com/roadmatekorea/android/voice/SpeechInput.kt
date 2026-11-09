@@ -11,7 +11,7 @@ import java.util.Locale
 interface SpeechInput {
 
     interface Listener {
-        /** 엔진이 준비되어 실제로 듣기 시작했다(처음에는 초기화 시간이 걸린다). */
+        /** 요청이 엔진에 들어가 이제 말하면 된다(처음 초기화나 앞 질문 정리로 기다릴 수 있다). */
         fun onListening() {}
 
         /** 듣는 중의 중간 결과(화면 표시용). */
@@ -30,8 +30,8 @@ interface SpeechInput {
      */
     fun listen(locale: Locale, listener: Listener, audio: ByteArray? = null)
 
-    /** 처음 질문이 늦지 않게 엔진을 미리 준비한다(마이크는 열지 않는다). */
-    fun prepare() {}
+    /** 처음 질문이 늦지 않게 [locale] 엔진을 미리 준비한다(마이크는 열지 않는다). */
+    fun prepare(locale: Locale) {}
 
     /** 듣기를 멈춘다. 이 뒤에 오는 결과는 버린다. */
     fun stop()

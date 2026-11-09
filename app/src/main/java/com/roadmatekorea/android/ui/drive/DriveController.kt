@@ -55,6 +55,8 @@ data class DriveUiState(
 /** 음성 질문 상태. */
 data class QuestionUi(
     val listening: Boolean = false,
+    /** 마이크를 눌렀지만 아직 실제로 듣기 전(엔진 준비, 앞 질문 정리). 화면은 "잠시만요"를 보여 준다. */
+    val preparing: Boolean = false,
     /** 듣는 중의 중간 결과. */
     val partial: String = "",
     /** 마지막 질문과 그 답. 지금 말하는 안내가 [answer]이면 화면에 질문을 함께 보여 준다. */
@@ -122,9 +124,12 @@ class DriveController(
                 if (_demo.value == null) session.value?.onSignal(signal)
             }
         }
-        // 마이크 권한이 있으면 음성 엔진을 미리 준비해 첫 질문이 늦지 않게 한다
+        // 마이크 권한이 있으면 지금 세션 언어의 음성 엔진을 미리 준비해 첫 질문이 늦지 않게 한다
         if (speechInput != null) {
-            scope.launch { micPermission.first { it }; speechInput.prepare() }
+            scope.launch {
+                combine(micPermission, session) { mic, s -> if (mic && s != null) AppLocales.localeOf(s.profile.language) else null }
+                    .collect { locale -> locale?.let(speechInput::prepare) }
+            }
         }
     }
 
@@ -259,14 +264,16 @@ class DriveController(
         // 질문마다 새 표시를 둔다. 앞 질문에서 늦게 온 신호가 이 질문의 화면, 제한 시간, 답을 바꾸지 못하게
         val q = Any()
         question = q
-        _question.value = QuestionUi(listening = true)
+        _question.value = QuestionUi(listening = true, preparing = true)
         // 엔진이 준비될 때까지 넉넉히 기다리고, 실제로 듣기 시작하면 그때부터 제한 시간을 잰다
         startListenTimeout(q, s, input, listenTimeoutMs * 2)
         input.listen(
             AppLocales.localeOf(s.profile.language),
             object : SpeechInput.Listener {
                 override fun onListening() {
-                    if (question === q) startListenTimeout(q, s, input, listenTimeoutMs)
+                    if (question !== q) return
+                    _question.update { it.copy(preparing = false) }
+                    startListenTimeout(q, s, input, listenTimeoutMs)
                 }
 
                 override fun onPartial(text: String) {

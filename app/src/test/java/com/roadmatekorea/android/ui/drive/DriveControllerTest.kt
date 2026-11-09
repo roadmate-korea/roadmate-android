@@ -66,16 +66,17 @@ class DriveControllerTest {
         var listener: SpeechInput.Listener? = null
         var locale: Locale? = null
         var stops = 0
-        var prepared = 0
-        override fun prepare() {
-            prepared++
+        val prepared = mutableListOf<Locale>()
+        override fun prepare(locale: Locale) {
+            prepared += locale
         }
         val all = mutableListOf<SpeechInput.Listener>()
+        var autoListening = true
         override fun listen(locale: Locale, listener: SpeechInput.Listener, audio: ByteArray?) {
             this.locale = locale
             this.listener = listener
             all += listener
-            listener.onListening()
+            if (autoListening) listener.onListening()
         }
         override fun stop() {
             stops++
@@ -337,10 +338,37 @@ class DriveControllerTest {
     }
 
     @Test
-    fun engineIsPrepared_onlyOnceTheMicIsAllowed() = runTest(dispatcher) {
+    fun engineIsPrepared_forTheSessionLanguage_onceTheMicIsAllowed() = runTest(dispatcher) {
         val r = rig()
+        r.mic.value = false
         runCurrent()
-        assertEquals(1, r.speech.prepared)
+        assertEquals("세션이 없으면 준비하지 않음", emptyList<Locale>(), r.speech.prepared)
+        r.real(RawSignal.Vehicle.Gear(VehicleGear.GEAR_PARK))
+        runCurrent()
+        r.vm.ensureSession(Personas.CARLOS)
+        runCurrent()
+        assertEquals("권한이 없으면 준비하지 않음", emptyList<Locale>(), r.speech.prepared)
+        r.mic.value = true
+        runCurrent()
+        assertEquals(listOf("es-US"), r.speech.prepared.map { it.toLanguageTag() })
+    }
+
+    @Test
+    fun screenSaysOneMoment_untilTheEngineIsReallyListening() = runTest(dispatcher) {
+        val r = rig()
+        drivingCarlos(r)
+        r.speech.autoListening = false
+        r.vm.toggleQuestion()
+        runCurrent()
+        assertTrue(r.vm.uiState.value.question.listening)
+        assertTrue("아직 듣기 전", r.vm.uiState.value.question.preparing)
+        r.speech.listener!!.onListening()
+        runCurrent()
+        assertFalse("이제 듣는 중", r.vm.uiState.value.question.preparing)
+        // 제한 시간은 실제로 듣기 시작한 때부터 잰다
+        advanceTimeBy(9_000)
+        runCurrent()
+        assertTrue(r.vm.uiState.value.question.listening)
     }
 
     @Test

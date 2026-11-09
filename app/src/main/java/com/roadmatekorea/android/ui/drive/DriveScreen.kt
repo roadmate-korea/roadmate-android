@@ -65,7 +65,10 @@ fun DriveScreen(
                 StatusRow(state)
                 GuidanceArea(state, Modifier.weight(1f))
                 if (!locked) {
-                    DemoControls(state, onPlayDemo, onStopDemo)
+                    // 정차 중에는 마이크 버튼을 시연 버튼과 같은 줄에 둔다(좁은 창에서 겹치지 않게)
+                    DemoControls(state, onPlayDemo, onStopDemo) {
+                        if (state.micAvailable) MicButton(listening = state.question.listening, onClick = onMic, iconOnly = compact)
+                    }
                 } else if (state.micAvailable) {
                     // 마이크 버튼 자리(버튼은 잠금 막 위에 따로 그린다)
                     Spacer(Modifier.height(MIC_BUTTON_HEIGHT))
@@ -75,7 +78,7 @@ fun DriveScreen(
         // 주행 중: 모든 터치를 막는다. 상태는 머리의 "주행 중, 화면 잠김"이 알려 준다.
         if (locked) ReadOnlyOverlay(message = null)
         // 마이크 버튼은 주행 중에도 받는 유일한 버튼이라 잠금 막 위에 둔다
-        if (state.micAvailable) {
+        if (locked && state.micAvailable) {
             MicButton(
                 listening = state.question.listening,
                 onClick = onMic,
@@ -183,7 +186,12 @@ private fun GuidanceArea(state: DriveUiState, modifier: Modifier) {
 
 /** 정차 중에만: 시연 재생(페르소나별) 또는 시연 끝내기. */
 @Composable
-private fun DemoControls(state: DriveUiState, onPlayDemo: (DemoPersona) -> Unit, onStopDemo: () -> Unit) {
+private fun DemoControls(
+    state: DriveUiState,
+    onPlayDemo: (DemoPersona) -> Unit,
+    onStopDemo: () -> Unit,
+    trailing: @Composable () -> Unit = {},
+) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
         if (state.demo == null) {
             // 좁은 창(내비와 나란히)에서는 이름만 보여 준다(재생 아이콘이 뜻을 전한다)
@@ -201,6 +209,7 @@ private fun DemoControls(state: DriveUiState, onPlayDemo: (DemoPersona) -> Unit,
             RmButton(text = stringResource(R.string.drive_demo_stop), onClick = onStopDemo, style = RmButtonStyle.Secondary)
         }
         Spacer(Modifier.weight(1f))
+        trailing()
     }
 }
 

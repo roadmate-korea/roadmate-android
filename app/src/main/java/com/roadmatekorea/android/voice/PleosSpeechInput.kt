@@ -8,18 +8,22 @@ import ai.pleos.playground.stt.listener.ResultListener
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.util.Log
 import java.util.Locale
 
 /**
  * Pleos STT(ON_DEVICE)로 질문을 듣는다. 에뮬레이터 2.1.0에서 en-US, fr-CA, es-US 인식을 확인했다.
  *
- * **질문 하나에 엔진 하나.** Pleos STT 결과에는 요청 번호가 없어서, 한 엔진을 다시 쓰면 앞 질문의 늦은 결과가
- * 다음 질문의 결과로 들어올 수 있다(에뮬레이터에서 실제로 섞였다). 한 엔진에서 언어를 바꾸면 서비스가 처음 언어
- * 모델로 계속 듣는 문제도 있었다. 그래서 질문이 끝나면(답, 오류, 취소, 시간 초과 모두) 그 엔진을 멈추고 해제하며,
- * 다음 질문용 새 엔진을 바로 준비해 둔다. 해제한 엔진의 콜백은 자기 엔진에만 묶여 있어 버려진다.
- *
- * - 엔진은 말 사이 쉼마다 끝난 조각을 보낼 수 있다. 질문은 짧으므로 처음 끝난 조각을 질문으로 쓴다.
+ * SDK의 수명 제약(2026-11-09 확인)에 맞춘 규칙:
+ * - **엔진을 질문마다 해제하지 않는다.** SDK의 `stop()`은 종료 작업을 따로 예약하고 바로 돌아오는데, 그 직후 `release()`하면
+ *   늦게 실행된 종료 작업이 해제한 엔진을 서비스에 다시 연결한다. 그래서 한 엔진을 계속 쓴다.
+ * - **결과를 받으면 `stop()`으로 스트림을 닫는다.**
+ * - **도중에 멈추면(취소, 시간 초과, 오류) [SETTLE_MS] 동안 다음 질문을 시작하지 않고 그 사이 신호를 버린다.** 결과에는 요청
+ *   번호가 없고, 도중에 멈춘 뒤에는 "인식 끝" 신호도 오지 않으며, 약 2.2초 뒤 늦은 신호가 왔다(에뮬레이터 실측). 다음 질문은
+ *   화면에서는 바로 "듣는 중"이 되고, 실제 듣기는 기다림이 끝난 뒤 시작한다.
+ * - **언어가 바뀌면 새 엔진을 만든다.** 한 엔진에서 언어를 바꾸면 서비스가 처음 언어 모델로 계속 들었다. 이전 엔진은 위 경합을
+ *   피하려고 해제하지 않고 [release]까지 둔다(언어 변경은 드물다).
  * - 인식한 문장은 로그에 남기지 않는다(SDK 자체 로그는 release 빌드에서 제거한다. proguard-rules.pro).
  */
 class PleosSpeechInput(context: Context) : SpeechInput {
@@ -27,32 +31,34 @@ class PleosSpeechInput(context: Context) : SpeechInput {
     private val appContext = context.applicationContext
     private val main = Handler(Looper.getMainLooper())
 
-    /** 엔진 하나와 그 엔진이 맡은 질문. 콜백은 이 객체에만 묶인다. */
+    /** 엔진 하나. 콜백은 이 객체에 묶여 있어 다른(이전) 엔진의 신호를 구분할 수 있다. */
     private inner class Engine {
         val stt: SpeechToText = SpeechToText(appContext, Mode.ON_DEVICE)
         var ready = false
-        var retired = false
+        var failed = false
 
-        /** 이 엔진이 듣는 질문. 엔진 하나는 질문 하나만 맡는다. */
-        var request: SpeechInput.Listener? = null
-
-        /** 녹음 PCM을 보내는 중이면 true. 질문이 끝나면 false가 되어 남은 음성을 더 보내지 않는다. */
-        @Volatile
-        var sending = false
+        /** 마지막으로 setLocale한 언어. null이면 아직 듣지 않았다. */
+        var locale: Locale? = null
 
         val listener = object : ResultListener {
             override fun onUpdated(text: String, isFinal: Boolean) {
                 main.post {
-                    val owner = owner() ?: return@post
-                    if (isFinal) finish(this@Engine) { owner.onFinal(text) } else owner.onPartial(text)
+                    val owner = ownerFor(this@Engine) ?: return@post
+                    if (isFinal) {
+                        end(stopEngine = true, settle = false)
+                        owner.onFinal(text)
+                    } else {
+                        owner.onPartial(text)
+                    }
                 }
             }
 
             override fun onError(error: ErrorType) {
                 main.post {
                     Log.w(TAG, "stt error $error")
-                    val owner = owner() ?: return@post
-                    finish(this@Engine) { owner.onError() }
+                    val owner = ownerFor(this@Engine) ?: return@post
+                    end(stopEngine = true, settle = true)
+                    owner.onError()
                 }
             }
 
@@ -62,146 +68,158 @@ class PleosSpeechInput(context: Context) : SpeechInput {
             override fun onReady() = Unit
             override fun onUpdatedRms(rms: Double) = Unit
         }
-
-        /** 이 엔진의 결과를 받을 질문. 엔진이 해제됐거나 지금 질문이 아니면 null(결과를 버린다). */
-        fun owner(): SpeechInput.Listener? = request?.takeIf { !retired && it === active }
     }
 
-    /** 다음 질문에 쓸 엔진(아직 아무 질문도 맡지 않음). */
-    private var spare: Engine? = null
+    private var engine: Engine? = null
 
-    /** 지금 듣고 있는 엔진. */
-    private var busy: Engine? = null
+    /** 언어가 바뀌어 더 쓰지 않는 엔진. 해제 경합을 피하려고 [release]까지 둔다. */
+    private val oldEngines = mutableListOf<Engine>()
 
-    /** 지금 듣는 질문. */
-    private var active: SpeechInput.Listener? = null
+    /** 지금 듣는 질문(엔진에서 실제로 듣기 시작한 것). */
+    private var listening: SpeechInput.Listener? = null
 
-    /** 엔진이 준비되면 시작할 질문. */
-    private var pendingStart: (() -> Unit)? = null
+    /** 시작을 기다리는 질문(엔진 준비나 멈춘 뒤 기다림이 끝나면 시작). */
+    private var waiting: Pending? = null
+
+    private class Pending(val listener: SpeechInput.Listener, val locale: Locale, val audio: ByteArray?)
+
+    /** 이 시각(elapsedRealtime)까지는 새 질문을 시작하지 않는다. */
+    private var settleUntil = 0L
+
+    /** 녹음 PCM을 보내는 중인 질문. 끝나면 null이 되어 남은 음성을 더 보내지 않는다. */
+    @Volatile
+    private var sending: SpeechInput.Listener? = null
 
     override fun prepare() {
-        if (spare == null) spare = createEngine()
+        if (engine == null) engine = createEngine()
     }
 
     override fun listen(locale: Locale, listener: SpeechInput.Listener, audio: ByteArray?) {
-        // 앞 질문이 남아 있으면 정리한다(그 결과는 이제 버려진다)
-        busy?.let { retire(it) }
-        active = listener
-        val engine = spare ?: createEngine() ?: return failNow(listener)
-        spare = null
-        busy = engine
-        engine.request = listener
-        val start = { begin(engine, locale, listener, audio) }
-        if (engine.ready) start() else pendingStart = start
+        // 앞 질문이 남아 있으면 그만둔다(그 결과는 버려진다)
+        if (listening != null) stop()
+        waiting = Pending(listener, locale, audio)
+        tryStart()
+    }
+
+    private fun tryStart() {
+        val next = waiting ?: return
+        var current = engine
+        if (current == null || current.failed || (current.locale != null && current.locale != next.locale)) {
+            current?.let { if (!it.failed) oldEngines += it }
+            current = createEngine() ?: return fail(next.listener)
+            engine = current
+        }
+        if (!current.ready) return // 준비되면 다시 부른다
+        val wait = settleUntil - SystemClock.elapsedRealtime()
+        if (wait > 0) {
+            main.postDelayed(::tryStart, wait)
+            return
+        }
+        waiting = null
+        begin(current, next)
     }
 
     private fun createEngine(): Engine? {
-        val engine = runCatching { Engine() }.getOrElse {
+        val created = runCatching { Engine() }.getOrElse {
             Log.w(TAG, "stt create failed", it)
             return null
         }
         runCatching {
-            engine.stt.initialize(object : OnInitializeListener {
+            created.stt.initialize(object : OnInitializeListener {
                 override fun onSuccess() {
                     main.post {
-                        if (engine.retired) return@post
-                        engine.ready = true
+                        created.ready = true
                         // 리스너는 초기화가 끝난 뒤에 붙인다(먼저 붙이면 앱이 죽는다는 다른 팀 기록)
-                        runCatching { engine.stt.addListener(engine.listener) }
-                        if (busy === engine) {
-                            val start = pendingStart
-                            pendingStart = null
-                            start?.invoke()
-                        }
+                        runCatching { created.stt.addListener(created.listener) }
+                        if (engine === created) tryStart()
                     }
                 }
 
                 override fun onFailure(error: ErrorType) {
                     main.post {
                         Log.w(TAG, "stt init failed $error")
-                        if (spare === engine) spare = null
-                        val owner = engine.owner()
-                        if (owner == null) retire(engine) else finish(engine) { owner.onError() }
+                        created.failed = true
+                        if (engine === created) waiting?.let { waiting = null; it.listener.onError() }
                     }
                 }
             })
         }.onFailure {
             Log.w(TAG, "stt init threw", it)
-            engine.retired = true
             return null
         }
-        return engine
+        return created
     }
 
-    private fun begin(engine: Engine, locale: Locale, listener: SpeechInput.Listener, audio: ByteArray?) {
-        if (engine.owner() !== listener) return // 그 사이 멈춤
+    private fun begin(current: Engine, next: Pending) {
+        listening = next.listener
         runCatching {
-            engine.stt.setLocale(locale)
-            if (audio == null) {
-                engine.stt.request()
+            if (current.locale != next.locale) {
+                current.stt.setLocale(next.locale)
+                current.locale = next.locale
+            }
+            if (next.audio == null) {
+                current.stt.request()
             } else {
-                engine.sending = true
+                sending = next.listener
                 Thread {
                     runCatching {
-                        for (chunk in audio.asList().chunked(CHUNK_BYTES)) {
-                            if (!engine.sending) return@runCatching
-                            engine.stt.sendAudio(chunk.toByteArray())
+                        for (chunk in next.audio.asList().chunked(CHUNK_BYTES)) {
+                            if (sending !== next.listener) return@runCatching
+                            current.stt.sendAudio(chunk.toByteArray())
                             Thread.sleep(CHUNK_MS)
                         }
-                        if (engine.sending) engine.stt.completeAudioSend()
+                        if (sending === next.listener) current.stt.completeAudioSend()
                     }.onFailure { Log.w(TAG, "stt sendAudio failed", it) }
                 }.start()
             }
-            listener.onListening()
+            next.listener.onListening()
         }.onFailure {
             Log.w(TAG, "stt start failed", it)
-            finish(engine) { listener.onError() }
+            end(stopEngine = true, settle = true)
+            next.listener.onError()
         }
     }
 
-    /** 질문 하나를 끝낸다: 인식을 멈추고 엔진을 해제한 뒤 결과를 전한다. 다음 질문용 엔진을 준비한다. */
-    private fun finish(engine: Engine, deliver: () -> Unit) {
-        if (active === engine.request) active = null
-        retire(engine)
-        prepare()
-        deliver()
+    /** 지금 엔진에서 지금 질문을 듣는 중일 때만 그 질문을 돌려준다. 그 밖의 신호(이전 엔진, 멈춘 뒤의 늦은 신호)는 버린다. */
+    private fun ownerFor(source: Engine): SpeechInput.Listener? = listening?.takeIf { source === engine }
+
+    /** 지금 질문을 끝낸다. [settle]이면 늦은 신호가 다음 질문에 섞이지 않게 잠시 기다린다. */
+    private fun end(stopEngine: Boolean, settle: Boolean) {
+        listening = null
+        sending = null
+        val current = engine
+        if (stopEngine && current != null && current.ready) runCatching { current.stt.stop() }
+        if (settle) settleUntil = SystemClock.elapsedRealtime() + SETTLE_MS
     }
 
-    private fun retire(engine: Engine) {
-        if (engine.retired) return
-        engine.retired = true
-        engine.sending = false
-        if (busy === engine) {
-            busy = null
-            pendingStart = null
-        }
-        if (engine.ready) runCatching { engine.stt.stop() }
-        runCatching { engine.stt.removeListener(engine.listener) }
-        runCatching { engine.stt.release() }
-    }
-
-    private fun failNow(listener: SpeechInput.Listener) {
-        if (active === listener) active = null
+    private fun fail(listener: SpeechInput.Listener) {
+        waiting = null
         main.post { listener.onError() }
     }
 
     override fun stop() {
-        active = null
-        busy?.let {
-            retire(it)
-            prepare()
-        }
+        waiting = null
+        if (listening != null) end(stopEngine = true, settle = true)
     }
 
+    /** 앱이 끝날 때. 해제 직전에는 stop을 부르지 않는다(위 경합). */
     override fun release() {
-        active = null
-        busy?.let { retire(it) }
-        spare?.let { retire(it) }
-        spare = null
+        waiting = null
+        listening = null
+        sending = null
+        (oldEngines + listOfNotNull(engine)).forEach { e ->
+            runCatching { e.stt.removeListener(e.listener) }
+            runCatching { e.stt.release() }
+        }
+        oldEngines.clear()
+        engine = null
     }
 
     private companion object {
         const val TAG = "RoadMateStt"
+
+        /** 도중에 멈춘 뒤 다음 질문까지 기다리는 시간. 실측한 늦은 신호(약 2.2초)보다 길게. */
+        const val SETTLE_MS = 3_000L
 
         /** 16kHz 16bit mono 100ms = 3,200바이트. 실시간 속도로 넣는다. */
         const val CHUNK_BYTES = 3_200

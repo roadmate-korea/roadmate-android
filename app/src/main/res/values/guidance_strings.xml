@@ -36,4 +36,6 @@
     <!-- 상황 도움 -->
     <string name="guidance_help_accident_steps">After an accident, turn on the hazard lights and move to a safe place. On a highway, get out and wait behind the guardrail. If anyone is hurt, call 119. To report the accident, call 112. Then call your rental company. Take photos only if it is safe, and never stay on the road to take them.</string>
     <string name="guidance_phrase_accident_help">There has been an accident. Please help.</string>
+    <!-- 통역 음성(실제 문장은 그때그때 다르다. 이 문장은 쓰지 않지만 모든 안내 ID에 문장을 둔다) -->
+    <string name="guidance_interpreter_speech">Translation.</string>
 </resources>

@@ -60,6 +60,9 @@ enum class GuidanceId(val priority: Priority, val preemptible: Boolean = false) 
 
     /** 주변 사람에게 들려줄 한국어 문장. 화면 버튼으로 한국어로 읽는다. */
     PHRASE_ACCIDENT_HELP(Priority.INFO, preemptible = true),
+
+    /** 통역 화면에서 번역한 문장을 읽는다(문장은 그때그때 다르다). */
+    INTERPRETER_SPEECH(Priority.INFO, preemptible = true),
 }
 
 data class Guidance(val id: GuidanceId, val args: List<Int> = emptyList()) {

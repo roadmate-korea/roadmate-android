@@ -18,6 +18,9 @@ android {
         versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // 서버(서버·AI 팀) 주소. gradle.properties나 -Proadmate.serverUrl=로 넣는다. 비어 있으면 서버 기능 없이 동작한다.
+        // 서버를 쓸 때는 매니페스트에 INTERNET 권한도 넣어야 한다(서버가 아직 없어 지금은 넣지 않았다)
+        buildConfigField("String", "SERVER_URL", "\"${(project.findProperty("roadmate.serverUrl") as String?) ?: ""}\"")
     }
 
     buildTypes {
@@ -71,6 +74,7 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.org.json)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

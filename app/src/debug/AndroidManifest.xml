@@ -18,5 +18,9 @@
             android:name=".debug.AskWithAudioActivity"
             android:exported="true"
             android:theme="@android:style/Theme.NoDisplay" />
+        <activity
+            android:name=".debug.InterpretWithAudioActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.NoDisplay" />
     </application>
 </manifest>

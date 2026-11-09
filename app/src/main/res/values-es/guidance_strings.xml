@@ -35,4 +35,6 @@
     <!-- 상황 도움 -->
     <string name="guidance_help_accident_steps">Después de un accidente, enciende las luces de emergencia y ponte a salvo. En autopista, sal y espera detrás del guardarraíl. Si alguien está herido, llama al 119. Para denunciar el accidente, llama al 112. Después, llama a tu empresa de alquiler. Haz fotos solo si es seguro, y nunca te quedes en la vía para hacerlas.</string>
     <string name="guidance_phrase_accident_help">Ha habido un accidente. Ayúdeme, por favor.</string>
+    <!-- 통역 음성(실제 문장은 그때그때 다르다. 이 문장은 쓰지 않지만 모든 안내 ID에 문장을 둔다) -->
+    <string name="guidance_interpreter_speech">Traducción.</string>
 </resources>

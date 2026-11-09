@@ -42,28 +42,30 @@ import com.roadmatekorea.android.ui.components.RmIcon
 import com.roadmatekorea.android.ui.theme.RoadMate
 
 /** 상황 도움에서 여는 화면. */
-enum class HelpRoute { MENU, ACCIDENT }
+enum class HelpRoute { MENU, ACCIDENT, INTERPRETER }
 
 /**
  * 상황 도움(Figma 09): 정차(P) 중에만 연다. 지금은 사고 항목과 긴급 번호만 있다.
  * 주유소, 고장, 요금소, 주차 항목은 기능이 생길 때 넣는다(동작 없는 버튼은 두지 않는다).
  */
 @Composable
-fun HelpScreen(onBack: () -> Unit, onAccident: () -> Unit) {
+fun HelpScreen(onBack: () -> Unit, onAccident: () -> Unit, onInterpreter: () -> Unit = {}) {
     val c = RoadMate.colors
     val compact = LocalCompact.current
     Column(Modifier.fillMaxSize().background(c.canvas).padding(start = 40.dp, end = 40.dp, top = 24.dp, bottom = 40.dp)) {
-        BackRow(stringResource(R.string.help_title), onBack)
+        HelpBackRow(stringResource(R.string.help_title), onBack)
         Spacer(Modifier.size(24.dp))
         if (compact) {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(24.dp)) {
                 HelpItem(R.drawable.ic_rm_warning, stringResource(R.string.help_accident), stringResource(R.string.help_accident_sub), onAccident)
+                HelpItem(R.drawable.ic_rm_translate, stringResource(R.string.help_interpreter), stringResource(R.string.help_interpreter_sub), onInterpreter)
                 EmergencyNumbers()
             }
         } else {
             Row(horizontalArrangement = Arrangement.spacedBy(56.dp)) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     HelpItem(R.drawable.ic_rm_warning, stringResource(R.string.help_accident), stringResource(R.string.help_accident_sub), onAccident)
+                    HelpItem(R.drawable.ic_rm_translate, stringResource(R.string.help_interpreter), stringResource(R.string.help_interpreter_sub), onInterpreter)
                 }
                 Box(Modifier.width(560.dp)) { EmergencyNumbers() }
             }
@@ -87,7 +89,7 @@ fun AccidentScreen(onBack: () -> Unit, onSpeak: (Guidance, Boolean) -> Unit, ann
         }
     }
     Column(Modifier.fillMaxSize().background(c.canvas).padding(start = 40.dp, end = 40.dp, top = 24.dp, bottom = 40.dp)) {
-        BackRow(stringResource(R.string.accident_title), onBack)
+        HelpBackRow(stringResource(R.string.accident_title), onBack)
         Spacer(Modifier.size(24.dp))
         val steps = @Composable {
             Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -122,7 +124,7 @@ fun AccidentScreen(onBack: () -> Unit, onSpeak: (Guidance, Boolean) -> Unit, ann
 }
 
 @Composable
-private fun BackRow(title: String, onBack: () -> Unit) {
+internal fun HelpBackRow(title: String, onBack: () -> Unit) {
     val c = RoadMate.colors
     Row(
         verticalAlignment = Alignment.CenterVertically,

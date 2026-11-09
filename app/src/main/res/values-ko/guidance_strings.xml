@@ -32,4 +32,6 @@
     <!-- 상황 도움 -->
     <string name="guidance_help_accident_steps">사고가 나면 비상등을 켜고 안전한 곳으로 옮기세요. 고속도로에서는 차에서 내려 가드레일 밖에서 기다리세요. 다친 사람이 있으면 119, 사고 신고는 112에 전화하세요. 그다음 렌터카 회사에 전화하세요. 사진은 안전할 때만 찍고, 사진을 찍으려고 도로에 머물지 마세요.</string>
     <string name="guidance_phrase_accident_help">사고가 났어요. 도와주세요.</string>
+    <!-- 통역 음성(실제 문장은 그때그때 다르다. 이 문장은 쓰지 않지만 모든 안내 ID에 문장을 둔다) -->
+    <string name="guidance_interpreter_speech">통역.</string>
 </resources>

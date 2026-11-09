@@ -58,6 +58,7 @@ object GuidanceCards {
             GuidanceId.ANSWER_NOT_HEARD -> card(R.string.card_answer_not_heard_kicker, R.string.card_answer_not_heard_headline, R.string.card_answer_not_heard_body, R.drawable.ic_rm_mic, null, safety)
             // 상황 도움(정차 중 화면에서 읽을 때 자막 카드)
             GuidanceId.HELP_ACCIDENT_STEPS -> card(R.string.card_help_accident_steps_kicker, R.string.card_help_accident_steps_headline, R.string.card_help_accident_steps_body, R.drawable.ic_rm_warning, null, safety)
+            GuidanceId.INTERPRETER_SPEECH -> card(R.string.card_interpreter_speech_kicker, R.string.card_interpreter_speech_headline, R.string.card_interpreter_speech_body, R.drawable.ic_rm_translate, null, safety)
             GuidanceId.PHRASE_ACCIDENT_HELP -> card(R.string.card_phrase_accident_help_kicker, R.string.card_phrase_accident_help_headline, R.string.card_phrase_accident_help_body, R.drawable.ic_rm_translate, null, safety)
         }
     }

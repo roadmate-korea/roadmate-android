@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 통역 화면과 상황별 문장(운전자 언어). 한국어 문장은 values/interpreter_korean.xml -->
+<resources>
+    <string name="interp_title">통역</string>
+    <string name="interp_situation">상황</string>
+    <string name="sit_gas_station">주유소</string>
+    <string name="sit_parking">주차</string>
+    <string name="sit_accident">사고</string>
+    <string name="sit_rental">렌터카 카운터</string>
+    <string name="interp_you_said">내가 한 말</string>
+    <string name="interp_staff_said">직원이 한 말</string>
+    <string name="interp_speak_mine">한국어로 말하기</string>
+    <string name="interp_speak_staff">한국어로 말하기</string>
+    <string name="interp_listening">듣는 중…</string>
+    <string name="interp_phrases">문장을 누르면 한국어로 보여 줘요</string>
+    <string name="interp_no_connection">연결이 없어요. 아래 문장을 눌러 주세요.</string>
+    <string name="interp_staff_needs_connection">직원 말을 번역하려면 연결이 필요해요.</string>
+    <string name="interp_not_heard">잘 못 들었어요. 다시 말해 주세요.</string>
+    <string name="interp_hint_mine">버튼을 누르고 말하면 한국어로 말해 줘요.</string>
+    <string name="interp_hint_staff">직원에게 버튼을 눌러 한국어로 답하게 하세요.</string>
+    <string name="help_interpreter">통역</string>
+    <string name="help_interpreter_sub">정차 중 직원과 대화</string>
+    <string name="phrase_gas_full">휘발유로 가득 넣어 주세요.</string>
+    <string name="phrase_gas_diesel">경유로 가득 넣어 주세요.</string>
+    <string name="phrase_gas_amount">5만 원어치 넣어 주세요.</string>
+    <string name="phrase_gas_card">카드로 결제할게요.</string>
+    <string name="phrase_park_here">여기 주차해도 되나요?</string>
+    <string name="phrase_park_fee">주차비는 얼마예요?</string>
+    <string name="phrase_park_pay">주차비는 어디서 내나요?</string>
+    <string name="phrase_acc_help">사고가 났어요. 도와주세요.</string>
+    <string name="phrase_acc_police">경찰을 불러 주세요.</string>
+    <string name="phrase_acc_hurt">다친 사람이 있어요. 구급차를 불러 주세요.</string>
+    <string name="phrase_acc_rental">렌터카 회사에 연락할게요.</string>
+    <string name="phrase_rent_return">차를 반납하러 왔어요.</string>
+    <string name="phrase_rent_time">몇 시까지 반납해야 하나요?</string>
+    <string name="phrase_rent_fuel">기름을 채워서 반납해야 하나요?</string>
+    <string name="phrase_rent_problem">차에 문제가 있어요.</string>
+</resources>

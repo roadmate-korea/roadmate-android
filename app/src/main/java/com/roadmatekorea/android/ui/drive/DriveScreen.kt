@@ -138,7 +138,8 @@ private fun GuidanceArea(state: DriveUiState, modifier: Modifier) {
                     .padding(horizontal = 36.dp, vertical = 28.dp),
             ) {
                 Text(stringResource(R.string.drive_last_guidance), style = RoadMate.type.labelM, color = c.inkTertiary)
-                Text(last, style = RoadMate.type.bodyL, color = c.inkSecondary, maxLines = 3)
+                // 줄 수를 자르지 않는다. 우회전처럼 조건이 이어지는 문장이 중간에서 끊기면 규칙이 달라 보인다
+                Text(last, style = RoadMate.type.bodyL, color = c.inkSecondary)
             }
             else -> Text(
                 text = stringResource(R.string.drive_waiting),

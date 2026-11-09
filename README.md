@@ -69,7 +69,7 @@ Pleos SDK 밖에서 쓰는 것:
 | Android Automotive `CarPropertyManager` | 차량 속도(`PERF_VEHICLE_SPEED`). Vehicle SDK에 속도 API가 없음 | `android.car.permission.CAR_SPEED`(정차 중 한 번 요청, 허용 창에는 "위치 정보"로 표시) |
 | 포그라운드 서비스 | 내비를 앞에 띄워도 안내 유지 | `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE`, `POST_NOTIFICATIONS` |
 
-속도와 위치는 기기 안에서만 쓰고 외부로 보내지 않습니다. 속도 권한을 거부하면 현재 속도 표시와 어린이보호구역 과속 경고가 빠지고, 내비 신호를 쓰는 나머지 안내(구간 단속 평균 속도 경고 포함)는 그대로 나갑니다.
+차량 속도는 기기 안에서만 쓰고 외부로 보내지 않습니다(위치는 앱이 직접 읽지 않습니다). 속도 권한을 거부하면 현재 속도 표시와 어린이보호구역 과속 경고가 빠지고, 내비 신호를 쓰는 나머지 안내(구간 단속 평균 속도 경고 포함)는 그대로 나갑니다.
 
 ## 빌드
 

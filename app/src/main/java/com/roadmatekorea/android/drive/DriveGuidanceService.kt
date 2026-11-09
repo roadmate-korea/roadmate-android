@@ -81,7 +81,8 @@ class DriveGuidanceService : Service() {
             .setContentIntent(open)
             .setOngoing(true)
             .setSilent(true)
-            .setCategory(NotificationCompat.CATEGORY_NAVIGATION)
+            // NAVIGATION으로 두면 Pleos가 중요도와 상관없이 팝업으로 띄우고 닫지 않아 앱 머리글을 가린다(에뮬레이터 2.1.0)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()
     }

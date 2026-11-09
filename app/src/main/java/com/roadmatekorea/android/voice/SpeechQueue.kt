@@ -49,6 +49,12 @@ class SpeechQueue(private val clock: Clock) {
 
     fun clear() = items.clear()
 
+    /** 아직 유효한(만료되지 않은) [priority] 안내가 기다리고 있는지. */
+    fun hasPending(priority: Priority): Boolean {
+        dropExpired()
+        return items.any { it.guidance.priority == priority }
+    }
+
     /**
      * 아직 말하지 않은 [guidance]와 같은 종류의 안내가 있으면 내용을 바꾼다(유효 시간은 처음 넣은 때부터 그대로).
      * 없으면 아무 일도 하지 않는다.

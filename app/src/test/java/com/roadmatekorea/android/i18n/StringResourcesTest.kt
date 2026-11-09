@@ -104,7 +104,7 @@ class StringResourcesTest {
         val withArgs = listOf(
             GuidanceId.SCHOOL_ZONE_AHEAD, GuidanceId.SCHOOL_ZONE_SPEED_LIMIT,
             GuidanceId.BUS_LANE_AHEAD, GuidanceId.SECTION_START, GuidanceId.SECTION_OVER_AVERAGE,
-            GuidanceId.SCHOOL_ZONE_OVER_SPEED,
+            GuidanceId.SCHOOL_ZONE_OVER_SPEED, GuidanceId.ANSWER_SPEED_LIMIT,
         ).map(::keyOf).toSet()
         english.forEach { (key, text) ->
             assertEquals("$key 인자 유무", key in withArgs, argPattern.containsMatchIn(text))
@@ -125,6 +125,24 @@ class StringResourcesTest {
             val text = load(language).getValue(keyOf(GuidanceId.RIGHT_TURN_RULE))
             phrases.forEach { assertTrue("$language 우회전 문장에 '$it' 없음", text.contains(it)) }
             assertTrue("$language: 전용 신호 안내가 적색 안내보다 먼저", text.indexOf(phrases[0]) < text.indexOf(phrases[2]))
+        }
+    }
+
+    @Test
+    fun sectionCheck_mentionsStartEndAndAverage_inEveryLanguage() {
+        // 구간 단속은 시작·끝 지점 속도와 구간 평균을 모두 잰다. 평균만 말하면 지점 과속을 빠뜨린다(제주경찰청 단속장비 안내)
+        val words = mapOf(
+            AppLanguage.EN to listOf("start", "end", "average"),
+            AppLanguage.FR to listOf("début", "fin", "moyenne"),
+            AppLanguage.ES to listOf("inicio", "final", "media"),
+            AppLanguage.KO to listOf("시작", "끝", "평균"),
+        )
+        words.forEach { (language, expected) ->
+            val texts = load(language)
+            listOf(GuidanceId.SECTION_START, GuidanceId.ANSWER_SECTION).forEach { id ->
+                val text = texts.getValue(keyOf(id))
+                expected.forEach { w -> assertTrue("$language/${id.name}: '$w' 없음", text.contains(w, ignoreCase = true)) }
+            }
         }
     }
 

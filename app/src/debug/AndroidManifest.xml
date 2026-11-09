@@ -11,5 +11,12 @@
         <activity
             android:name=".debug.NaviRouteProbeActivity"
             android:exported="true" />
+        <activity
+            android:name=".debug.SttCheckActivity"
+            android:exported="true" />
+        <activity
+            android:name=".debug.AskWithAudioActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.NoDisplay" />
     </application>
 </manifest>

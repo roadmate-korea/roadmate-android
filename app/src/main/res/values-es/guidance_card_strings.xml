@@ -44,9 +44,31 @@
     <string name="card_bus_lane_ahead_headline">No entres en el carril azul.</string>
     <string name="card_bus_lane_ahead_body">Revisa el horario en la señal.</string>
     <string name="card_section_start_kicker">Control de velocidad media</string>
-    <string name="card_section_start_headline">Media máxima de %1$d km/h.</string>
-    <string name="card_section_start_body">Hay cámaras al inicio y al final del tramo.</string>
+    <string name="card_section_start_headline">Máximo %1$d km/h.</string>
+    <string name="card_section_start_body">Se controlan la velocidad al inicio, al final y la media.</string>
     <string name="card_section_over_average_kicker">Control de velocidad media</string>
     <string name="card_section_over_average_headline">Media de %1$d km/h. Reduce la velocidad.</string>
     <string name="card_section_over_average_body">El límite es de %2$d km/h.</string>
+    <!-- 음성 질문에 대한 답 -->
+    <string name="card_answer_school_zone_kicker">Zona escolar</string>
+    <string name="card_answer_school_zone_headline">Baja al límite indicado.</string>
+    <string name="card_answer_school_zone_body">Detente antes de pasos sin semáforo.</string>
+    <string name="card_answer_bus_lane_kicker">Carril bus</string>
+    <string name="card_answer_bus_lane_headline">No entres en el carril azul.</string>
+    <string name="card_answer_bus_lane_body">Revisa el horario en la señal.</string>
+    <string name="card_answer_section_kicker">Control de velocidad media</string>
+    <string name="card_answer_section_headline">No superes el límite en todo el tramo.</string>
+    <string name="card_answer_section_body">Se controlan la velocidad al inicio, al final y la media.</string>
+    <string name="card_answer_speed_limit_kicker">Límite de velocidad</string>
+    <string name="card_answer_speed_limit_headline">%1$d km/h en esta vía.</string>
+    <string name="card_answer_speed_limit_body">Según el mapa de navegación.</string>
+    <string name="card_answer_speed_limit_unknown_kicker">Límite de velocidad</string>
+    <string name="card_answer_speed_limit_unknown_headline">No disponible ahora.</string>
+    <string name="card_answer_speed_limit_unknown_body">Sigue las señales.</string>
+    <string name="card_answer_help_kicker">Pregunta a RoadMate</string>
+    <string name="card_answer_help_headline">Pregunta por una norma de tráfico.</string>
+    <string name="card_answer_help_body">Giro a la derecha, a la izquierda, zona escolar, carril bus, control de velocidad, límite.</string>
+    <string name="card_answer_not_heard_kicker">Pregunta a RoadMate</string>
+    <string name="card_answer_not_heard_headline">Perdona, no te he entendido.</string>
+    <string name="card_answer_not_heard_body">Toca el micrófono y vuelve a preguntar.</string>
 </resources>

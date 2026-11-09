@@ -39,6 +39,17 @@ enum class GuidanceId(val priority: Priority) {
     SECTION_OVER_AVERAGE(Priority.SAFETY),
 
     ARRIVED(Priority.INFO),
+
+    // ---- 음성 질문에 대한 답(QuestionAnswers). 운전자가 직접 물었으므로 엔진 쿨다운을 거치지 않는다 ----
+    ANSWER_SCHOOL_ZONE(Priority.RULE),
+    ANSWER_BUS_LANE(Priority.RULE),
+    ANSWER_SECTION(Priority.RULE),
+
+    /** args: [제한 속도(km/h)] — NaviHelper가 준 지금 도로의 값. */
+    ANSWER_SPEED_LIMIT(Priority.RULE),
+    ANSWER_SPEED_LIMIT_UNKNOWN(Priority.RULE),
+    ANSWER_HELP(Priority.RULE),
+    ANSWER_NOT_HEARD(Priority.RULE),
 }
 
 data class Guidance(val id: GuidanceId, val args: List<Int> = emptyList()) {

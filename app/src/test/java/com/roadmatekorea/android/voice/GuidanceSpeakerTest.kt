@@ -231,4 +231,81 @@ class GuidanceSpeakerTest {
         assertTrue(engine.released)
         assertNull(engine.registered)
     }
+    // ---- 음성 질문을 듣는 동안(hold) ----
+
+    @Test
+    fun hold_stopsCurrentGuidance_andQueuesNewOnes_untilResume() = runTest {
+        val engine = FakeEngine()
+        val s = speaker(engine)
+        s.say(g(GuidanceId.WELCOME_FIRST_TIME), "welcome", en)
+        assertTrue(s.hold {})
+        assertEquals(1, engine.stops)
+        assertNull(s.current.value)
+        s.say(g(GuidanceId.RIGHT_TURN_RULE), "right", en)
+        assertEquals("듣는 동안은 말하지 않음", listOf("welcome"), engine.spoken)
+        s.resume()
+        assertEquals(listOf("welcome", "right"), engine.spoken)
+    }
+
+    @Test
+    fun hold_isRefused_whileASafetyWarningIsSpeaking() = runTest {
+        val engine = FakeEngine()
+        val s = speaker(engine)
+        s.say(g(GuidanceId.SCHOOL_ZONE_CROSSWALK), "school", en)
+        assertFalse(s.hold {})
+        assertEquals(0, engine.stops)
+        assertEquals("school", s.current.value?.text)
+    }
+
+    @Test
+    fun hold_isRefused_whileASafetyWarningIsWaitingBehindOtherGuidance() = runTest {
+        val engine = FakeEngine()
+        val s = speaker(engine)
+        s.say(g(GuidanceId.WELCOME_FIRST_TIME), "welcome", en)
+        s.say(g(GuidanceId.SCHOOL_ZONE_CROSSWALK), "school", en)
+        advanceTimeBy(6_000)
+        // 일반 안내를 끊고 기다리는 경고까지 미루면, 듣는 동안 경고의 유효 시간(15초)이 지나 사라진다
+        assertFalse(s.hold {})
+        assertEquals(0, engine.stops)
+        engine.complete()
+        assertEquals(listOf("welcome", "school"), engine.spoken)
+    }
+
+    @Test
+    fun hold_isRefused_whileASafetyWarningWaitsForTheEngineToStart() = runTest {
+        val engine = FakeEngine()
+        val clock = Clock { testScheduler.currentTime }
+        val s = GuidanceSpeaker(engine, backgroundScope, clock).also { it.start() }
+        s.say(g(GuidanceId.SCHOOL_ZONE_CROSSWALK), "school", en)
+        assertFalse(s.hold {})
+        engine.finishInit()
+        assertEquals(listOf("school"), engine.spoken)
+    }
+
+    @Test
+    fun safetyWarningDuringHold_endsTheHold_andIsSpokenAtOnce() = runTest {
+        val engine = FakeEngine()
+        val s = speaker(engine)
+        var interrupted = 0
+        assertTrue(s.hold { interrupted++ })
+        s.say(g(GuidanceId.RIGHT_TURN_RULE), "right", en)
+        s.say(g(GuidanceId.SCHOOL_ZONE_CROSSWALK), "school", en)
+        assertEquals(1, interrupted)
+        assertEquals("안전 경고가 먼저", listOf("school"), engine.spoken)
+        engine.complete()
+        assertEquals(listOf("school", "right"), engine.spoken)
+        // 이미 풀렸으므로 다시 풀어도 아무 일 없음
+        s.resume()
+        assertEquals(listOf("school", "right"), engine.spoken)
+    }
+
+    @Test
+    fun stopAll_clearsTheHold() = runTest {
+        val engine = FakeEngine()
+        val s = speaker(engine)
+        assertTrue(s.hold {})
+        s.stopAll()
+        s.say(g(GuidanceId.ARRIVED), "arrived", en)
+        assertEquals(listOf("arrived"), engine.spoken)
+    }
 }

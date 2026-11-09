@@ -22,6 +22,14 @@
 
     <string name="guidance_arrived">Has llegado a tu destino. Gracias por conducir con precaución en Corea.</string>
     <string name="guidance_bus_lane_ahead">Carril bus a %1$d metros. No circules por el carril bus azul durante el horario indicado en la señal.</string>
-    <string name="guidance_section_start">Empieza el control de velocidad media. Mantén una velocidad media de %1$d kilómetros por hora como máximo hasta el final del tramo.</string>
+    <string name="guidance_section_start">Empieza el control de velocidad media. Se controla tu velocidad al inicio, al final y la media. No superes %1$d kilómetros por hora hasta el final del tramo.</string>
     <string name="guidance_section_over_average">Tu velocidad media es de %1$d, por encima del límite de %2$d. Reduce la velocidad.</string>
+    <!-- 음성 질문에 대한 답 -->
+    <string name="guidance_answer_school_zone">En las zonas escolares, respeta el límite de velocidad de las señales y presta atención a los niños. Detente siempre antes de un paso de peatones sin semáforo, aunque nadie esté cruzando.</string>
+    <string name="guidance_answer_bus_lane">No circules por el carril bus azul durante el horario indicado en la señal. Algunos carriles bus funcionan todo el día, así que revisa siempre la señal.</string>
+    <string name="guidance_answer_section">En un control de velocidad media, las cámaras miden tu velocidad al inicio, al final y la media del tramo. No superes el límite indicado en todo el tramo.</string>
+    <string name="guidance_answer_speed_limit">El límite de velocidad en esta vía es de %1$d kilómetros por hora.</string>
+    <string name="guidance_answer_speed_limit_unknown">Ahora no tengo el límite de velocidad de esta vía. Sigue las señales.</string>
+    <string name="guidance_answer_help">Puedes preguntarme sobre giros a la derecha, giros a la izquierda, zonas escolares, carriles bus, controles de velocidad media o el límite de velocidad aquí.</string>
+    <string name="guidance_answer_not_heard">Perdona, no te he entendido. Toca el micrófono y vuelve a preguntar.</string>
 </resources>

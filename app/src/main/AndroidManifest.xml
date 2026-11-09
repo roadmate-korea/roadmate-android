@@ -23,6 +23,10 @@
     -->
     <uses-permission android:name="android.car.permission.CAR_SPEED" />
 
+    <!-- 음성 질문(Pleos STT ON_DEVICE). 마이크 권한은 정차 중 다른 권한과 함께 한 번 묻고, 거부하면 마이크 버튼을 숨긴다 -->
+    <uses-permission android:name="pleos.car.permission.STT_SERVICE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
     <!--
         내비를 앞에 띄워도 음성 안내를 계속하는 포그라운드 서비스(DriveGuidanceService). 둘 다 normal 권한.
         Pleos Connect는 화면에서 사라진 앱을 얼릴 수 있어서, 안내가 끊기지 않으려면 포그라운드 서비스가 필요하다.

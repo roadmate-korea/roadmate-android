@@ -29,6 +29,8 @@ import com.roadmatekorea.android.demo.DemoPersona
 import com.roadmatekorea.android.rules.GuidanceEngine
 import com.roadmatekorea.android.ui.LocalCompact
 import com.roadmatekorea.android.ui.components.AppHeader
+import com.roadmatekorea.android.ui.components.MIC_BUTTON_HEIGHT
+import com.roadmatekorea.android.ui.components.MicButton
 import com.roadmatekorea.android.ui.components.ReadOnlyOverlay
 import com.roadmatekorea.android.ui.components.RmButton
 import com.roadmatekorea.android.ui.components.RmButtonStyle
@@ -45,24 +47,44 @@ fun DriveScreen(
     onChangeSettings: () -> Unit,
     onPlayDemo: (DemoPersona) -> Unit,
     onStopDemo: () -> Unit,
+    onMic: () -> Unit = {},
 ) {
     val c = RoadMate.colors
     val locked = state.vehicle.locked
+    val compact = LocalCompact.current
+    val bottomPadding = if (compact) 32.dp else 40.dp
     Box(Modifier.fillMaxSize().background(c.canvas)) {
         Column(Modifier.fillMaxSize()) {
             // 시연 중에는 설정을 열지 않는다(끝내기 버튼으로 먼저 돌아온다)
             AppHeader(locked = locked, onSettings = if (state.demo == null) onChangeSettings else null)
             Column(
                 verticalArrangement = Arrangement.spacedBy(if (LocalCompact.current) 24.dp else 32.dp),
-                modifier = Modifier.weight(1f).fillMaxWidth().padding(start = 40.dp, end = 40.dp, top = 8.dp, bottom = if (LocalCompact.current) 32.dp else 40.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth().padding(start = 40.dp, end = 40.dp, top = 8.dp, bottom = bottomPadding),
             ) {
                 StatusRow(state)
                 GuidanceArea(state, Modifier.weight(1f))
-                if (!locked) DemoControls(state, onPlayDemo, onStopDemo)
+                if (!locked) {
+                    // 정차 중에는 마이크 버튼을 시연 버튼과 같은 줄에 둔다(좁은 창에서 겹치지 않게)
+                    DemoControls(state, onPlayDemo, onStopDemo) {
+                        if (state.micAvailable) MicButton(listening = state.question.listening, preparing = state.question.preparing, onClick = onMic, iconOnly = compact)
+                    }
+                } else if (state.micAvailable) {
+                    // 마이크 버튼 자리(버튼은 잠금 막 위에 따로 그린다)
+                    Spacer(Modifier.height(MIC_BUTTON_HEIGHT))
+                }
             }
         }
         // 주행 중: 모든 터치를 막는다. 상태는 머리의 "주행 중, 화면 잠김"이 알려 준다.
         if (locked) ReadOnlyOverlay(message = null)
+        // 마이크 버튼은 주행 중에도 받는 유일한 버튼이라 잠금 막 위에 둔다
+        if (locked && state.micAvailable) {
+            MicButton(
+                listening = state.question.listening,
+                preparing = state.question.preparing,
+                onClick = onMic,
+                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 40.dp, bottom = bottomPadding),
+            )
+        }
     }
 }
 
@@ -124,9 +146,20 @@ private fun GuidanceArea(state: DriveUiState, modifier: Modifier) {
     val c = RoadMate.colors
     val caption = state.caption
     val last = state.history.firstOrNull()
+    val question = state.question
     Box(modifier.fillMaxWidth(), contentAlignment = Alignment.TopStart) {
         when {
-            state.guidance != null -> GuidanceCard(state.guidance, fullText = caption, voiced = state.guidanceVoiced)
+            question.listening -> Column(verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.align(Alignment.CenterStart)) {
+                Text(stringResource(if (question.preparing) R.string.drive_mic_preparing else R.string.drive_mic_listening), style = RoadMate.type.headlineM, color = c.ink)
+                if (question.partial.isNotBlank()) Text(question.partial, style = RoadMate.type.titleM, color = c.inkSecondary)
+            }
+            state.guidance != null -> Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                // 질문에 대한 답을 말하는 중이면 무엇을 물었는지 함께 보여 준다(문장은 저장하지 않는다)
+                if (question.asked != null && state.guidance == question.answer) {
+                    Text(stringResource(R.string.drive_you_asked, question.asked), style = RoadMate.type.titleS, color = c.inkSecondary)
+                }
+                GuidanceCard(state.guidance, fullText = caption, voiced = state.guidanceVoiced)
+            }
             caption != null -> Text(caption, style = RoadMate.type.headlineS, color = c.ink)
             last != null -> Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -153,7 +186,12 @@ private fun GuidanceArea(state: DriveUiState, modifier: Modifier) {
 
 /** 정차 중에만: 시연 재생(페르소나별) 또는 시연 끝내기. */
 @Composable
-private fun DemoControls(state: DriveUiState, onPlayDemo: (DemoPersona) -> Unit, onStopDemo: () -> Unit) {
+private fun DemoControls(
+    state: DriveUiState,
+    onPlayDemo: (DemoPersona) -> Unit,
+    onStopDemo: () -> Unit,
+    trailing: @Composable () -> Unit = {},
+) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
         if (state.demo == null) {
             // 좁은 창(내비와 나란히)에서는 이름만 보여 준다(재생 아이콘이 뜻을 전한다)
@@ -171,6 +209,7 @@ private fun DemoControls(state: DriveUiState, onPlayDemo: (DemoPersona) -> Unit,
             RmButton(text = stringResource(R.string.drive_demo_stop), onClick = onStopDemo, style = RmButtonStyle.Secondary)
         }
         Spacer(Modifier.weight(1f))
+        trailing()
     }
 }
 

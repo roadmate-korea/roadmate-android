@@ -44,9 +44,31 @@
     <string name="card_bus_lane_ahead_headline">Restez hors de la voie bleue.</string>
     <string name="card_bus_lane_ahead_body">Vérifiez les horaires sur le panneau.</string>
     <string name="card_section_start_kicker">Contrôle de vitesse moyenne</string>
-    <string name="card_section_start_headline">Moyenne de %1$d km/h au maximum.</string>
-    <string name="card_section_start_body">Des caméras au début et à la fin mesurent votre vitesse.</string>
+    <string name="card_section_start_headline">Pas plus de %1$d km/h.</string>
+    <string name="card_section_start_body">La vitesse au début, à la fin et la moyenne sont contrôlées.</string>
     <string name="card_section_over_average_kicker">Contrôle de vitesse moyenne</string>
     <string name="card_section_over_average_headline">Moyenne de %1$d km/h. Ralentissez.</string>
     <string name="card_section_over_average_body">La limite est de %2$d km/h.</string>
+    <!-- 음성 질문에 대한 답 -->
+    <string name="card_answer_school_zone_kicker">Zone scolaire</string>
+    <string name="card_answer_school_zone_headline">Ralentissez jusqu\'à la limite indiquée.</string>
+    <string name="card_answer_school_zone_body">Arrêtez-vous avant les passages sans feux.</string>
+    <string name="card_answer_bus_lane_kicker">Voie de bus</string>
+    <string name="card_answer_bus_lane_headline">Restez hors de la voie bleue.</string>
+    <string name="card_answer_bus_lane_body">Vérifiez les horaires sur le panneau.</string>
+    <string name="card_answer_section_kicker">Contrôle de vitesse moyenne</string>
+    <string name="card_answer_section_headline">Ne dépassez pas la limite sur toute la section.</string>
+    <string name="card_answer_section_body">La vitesse au début, à la fin et la moyenne sont contrôlées.</string>
+    <string name="card_answer_speed_limit_kicker">Limite de vitesse</string>
+    <string name="card_answer_speed_limit_headline">%1$d km/h sur cette route.</string>
+    <string name="card_answer_speed_limit_body">Selon la carte de navigation.</string>
+    <string name="card_answer_speed_limit_unknown_kicker">Limite de vitesse</string>
+    <string name="card_answer_speed_limit_unknown_headline">Indisponible pour le moment.</string>
+    <string name="card_answer_speed_limit_unknown_body">Suivez les panneaux.</string>
+    <string name="card_answer_help_kicker">Demandez à RoadMate</string>
+    <string name="card_answer_help_headline">Posez une question sur le code de la route.</string>
+    <string name="card_answer_help_body">Virage à droite, à gauche, zone scolaire, voie de bus, contrôle de vitesse, limite.</string>
+    <string name="card_answer_not_heard_kicker">Demandez à RoadMate</string>
+    <string name="card_answer_not_heard_headline">Désolé, je n\'ai pas compris.</string>
+    <string name="card_answer_not_heard_body">Touchez le micro et reposez votre question.</string>
 </resources>

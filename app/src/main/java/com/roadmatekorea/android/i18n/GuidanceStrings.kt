@@ -30,6 +30,13 @@ object GuidanceStrings {
         GuidanceId.SECTION_OVER_AVERAGE -> R.string.guidance_section_over_average
         GuidanceId.SCHOOL_ZONE_OVER_SPEED -> R.string.guidance_school_zone_over_speed
         GuidanceId.ARRIVED -> R.string.guidance_arrived
+        GuidanceId.ANSWER_SCHOOL_ZONE -> R.string.guidance_answer_school_zone
+        GuidanceId.ANSWER_BUS_LANE -> R.string.guidance_answer_bus_lane
+        GuidanceId.ANSWER_SECTION -> R.string.guidance_answer_section
+        GuidanceId.ANSWER_SPEED_LIMIT -> R.string.guidance_answer_speed_limit
+        GuidanceId.ANSWER_SPEED_LIMIT_UNKNOWN -> R.string.guidance_answer_speed_limit_unknown
+        GuidanceId.ANSWER_HELP -> R.string.guidance_answer_help
+        GuidanceId.ANSWER_NOT_HEARD -> R.string.guidance_answer_not_heard
     }
 
     /** [resources]는 프로필 언어로 맞춘 Context의 것을 넘긴다(시스템 언어가 아니라). */

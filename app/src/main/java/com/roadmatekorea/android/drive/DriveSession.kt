@@ -6,6 +6,8 @@ import com.roadmatekorea.android.rules.DriveEvent
 import com.roadmatekorea.android.rules.Guidance
 import com.roadmatekorea.android.rules.GuidanceEngine
 import com.roadmatekorea.android.rules.GuidanceId
+import com.roadmatekorea.android.rules.QuestionAnswers
+import com.roadmatekorea.android.rules.QuestionMatcher
 import com.roadmatekorea.android.voice.GuidanceSpeaker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,6 +45,23 @@ class DriveSession(
     /** 차량 속도(km/h). 읽을 수 없으면 null. */
     val speedKmh: StateFlow<Int?> = _speedKmh.asStateFlow()
 
+    /** 마지막으로 낸 주행 안내(질문에 대한 답 제외). "다시 말해 줘"에 쓴다. */
+    private var lastDrivingGuidance: Guidance? = null
+
+    /**
+     * 음성 질문에 답한다. [question]이 비었으면(못 알아들음) 다시 물어 달라고 답한다.
+     * 운전자가 직접 물었으므로 엔진의 쿨다운을 거치지 않는다. 답한 안내를 돌려준다.
+     */
+    fun ask(question: String?): Guidance {
+        val answer = if (question.isNullOrBlank()) {
+            QuestionAnswers.notHeard
+        } else {
+            QuestionAnswers.answer(QuestionMatcher.match(question), _speedLimitKmh.value, lastDrivingGuidance)
+        }
+        speak(answer)
+        return answer
+    }
+
     /** START 직후처럼 바로 시작 안내를 낼 때 부른다. 주행 시작(기어 D) 때는 엔진이 알아서 낸다. */
     fun announceStart() = onEvent(DriveEvent.SessionStarted)
 
@@ -63,10 +82,15 @@ class DriveSession(
             speaker.refreshQueued(overSpeed, textOf(overSpeed))
         }
         out.forEach { guidance ->
-            val text = textOf(guidance)
-            speaker.say(guidance, text, locale)
-            _history.update { (listOf(text) + it).take(HISTORY_SIZE) }
+            lastDrivingGuidance = guidance
+            speak(guidance)
         }
+    }
+
+    private fun speak(guidance: Guidance) {
+        val text = textOf(guidance)
+        speaker.say(guidance, text, locale)
+        _history.update { (listOf(text) + it).take(HISTORY_SIZE) }
     }
 
     companion object {

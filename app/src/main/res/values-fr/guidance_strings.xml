@@ -19,6 +19,14 @@
 
     <string name="guidance_arrived">Vous êtes arrivé à destination. Merci d\'avoir conduit prudemment en Corée.</string>
     <string name="guidance_bus_lane_ahead">Voie de bus dans %1$d mètres. Ne roulez pas dans la voie de bus bleue pendant les horaires indiqués sur le panneau.</string>
-    <string name="guidance_section_start">Début du contrôle de vitesse moyenne. Gardez une vitesse moyenne de %1$d kilomètres par heure au maximum jusqu\'à la fin de la section.</string>
+    <string name="guidance_section_start">Début du contrôle de vitesse moyenne. Votre vitesse est contrôlée au début, à la fin et en moyenne. Ne dépassez pas %1$d kilomètres par heure jusqu\'à la fin de la section.</string>
     <string name="guidance_section_over_average">Votre vitesse moyenne est de %1$d, au-dessus de la limite de %2$d. Ralentissez.</string>
+    <!-- 음성 질문에 대한 답 -->
+    <string name="guidance_answer_school_zone">Dans les zones scolaires, respectez la limite de vitesse indiquée par les panneaux et faites attention aux enfants. Arrêtez-vous toujours avant un passage piéton sans feux, même si personne ne traverse.</string>
+    <string name="guidance_answer_bus_lane">Ne roulez pas dans la voie de bus bleue pendant les horaires indiqués sur le panneau. Certaines voies sont réservées aux bus toute la journée, vérifiez donc toujours le panneau.</string>
+    <string name="guidance_answer_section">Lors d\'un contrôle de vitesse moyenne, des caméras mesurent votre vitesse au début, à la fin et en moyenne sur la section. Ne dépassez pas la limite indiquée sur toute la section.</string>
+    <string name="guidance_answer_speed_limit">La limite de vitesse sur cette route est de %1$d kilomètres par heure.</string>
+    <string name="guidance_answer_speed_limit_unknown">Je n\'ai pas la limite de vitesse de cette route pour le moment. Suivez les panneaux.</string>
+    <string name="guidance_answer_help">Vous pouvez me poser des questions sur les virages à droite, les virages à gauche, les zones scolaires, les voies de bus, les contrôles de vitesse moyenne ou la limite de vitesse ici.</string>
+    <string name="guidance_answer_not_heard">Désolé, je n\'ai pas compris. Touchez le micro et posez votre question à nouveau.</string>
 </resources>

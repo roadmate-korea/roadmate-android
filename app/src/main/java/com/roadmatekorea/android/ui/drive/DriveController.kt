@@ -103,6 +103,9 @@ class DriveController(
     private val _question = MutableStateFlow(QuestionUi())
     private var listenTimeout: Job? = null
 
+    /** 지금 듣고 있는 질문의 표시. null이면 듣고 있지 않다. */
+    private var question: Any? = null
+
     /** 마지막으로 받은 저장된 프로필. 시연이 끝나면 이 프로필의 실제 세션으로 돌아간다. */
     private var savedProfile: DriverProfile? = null
 
@@ -252,38 +255,43 @@ class DriveController(
             return
         }
         if (!speaker.hold(onSafetyInterrupt = ::cancelQuestion)) return
+        // 질문마다 새 표시를 둔다. 앞 질문에서 늦게 온 신호가 이 질문의 화면, 제한 시간, 답을 바꾸지 못하게
+        val q = Any()
+        question = q
         _question.value = QuestionUi(listening = true)
         // 엔진이 준비될 때까지 넉넉히 기다리고, 실제로 듣기 시작하면 그때부터 제한 시간을 잰다
-        startListenTimeout(s, input, listenTimeoutMs * 2)
+        startListenTimeout(q, s, input, listenTimeoutMs * 2)
         input.listen(
             AppLocales.localeOf(s.profile.language),
             object : SpeechInput.Listener {
                 override fun onListening() {
-                    if (_question.value.listening) startListenTimeout(s, input, listenTimeoutMs)
+                    if (question === q) startListenTimeout(q, s, input, listenTimeoutMs)
                 }
 
                 override fun onPartial(text: String) {
-                    if (_question.value.listening) _question.update { it.copy(partial = text) }
+                    if (question === q) _question.update { it.copy(partial = text) }
                 }
 
-                override fun onFinal(text: String) = finishQuestion(s, text)
-                override fun onError() = finishQuestion(s, null)
+                override fun onFinal(text: String) = finishQuestion(q, s, text)
+                override fun onError() = finishQuestion(q, s, null)
             },
             audio,
         )
     }
 
-    private fun startListenTimeout(asked: DriveSession, input: SpeechInput, timeoutMs: Long) {
+    private fun startListenTimeout(q: Any, asked: DriveSession, input: SpeechInput, timeoutMs: Long) {
         listenTimeout?.cancel()
         listenTimeout = scope.launch {
             delay(timeoutMs)
+            if (question !== q) return@launch
             input.stop()
-            finishQuestion(asked, null)
+            finishQuestion(q, asked, null)
         }
     }
 
-    private fun finishQuestion(asked: DriveSession, text: String?) {
-        if (!_question.value.listening) return
+    private fun finishQuestion(q: Any, asked: DriveSession, text: String?) {
+        if (question !== q) return
+        question = null
         listenTimeout?.cancel()
         listenTimeout = null
         _question.value = QuestionUi()
@@ -302,7 +310,9 @@ class DriveController(
     private fun cancelQuestion() {
         listenTimeout?.cancel()
         listenTimeout = null
-        if (_question.value.listening) speechInput?.stop()
+        // 듣는 중이었는지는 화면 상태가 아니라 질문 표시로 판단한다
+        if (question != null) speechInput?.stop()
+        question = null
         _question.value = QuestionUi()
         speaker.resume()
     }

@@ -258,6 +258,31 @@ class GuidanceSpeakerTest {
     }
 
     @Test
+    fun hold_isRefused_whileASafetyWarningIsWaitingBehindOtherGuidance() = runTest {
+        val engine = FakeEngine()
+        val s = speaker(engine)
+        s.say(g(GuidanceId.WELCOME_FIRST_TIME), "welcome", en)
+        s.say(g(GuidanceId.SCHOOL_ZONE_CROSSWALK), "school", en)
+        advanceTimeBy(6_000)
+        // 일반 안내를 끊고 기다리는 경고까지 미루면, 듣는 동안 경고의 유효 시간(15초)이 지나 사라진다
+        assertFalse(s.hold {})
+        assertEquals(0, engine.stops)
+        engine.complete()
+        assertEquals(listOf("welcome", "school"), engine.spoken)
+    }
+
+    @Test
+    fun hold_isRefused_whileASafetyWarningWaitsForTheEngineToStart() = runTest {
+        val engine = FakeEngine()
+        val clock = Clock { testScheduler.currentTime }
+        val s = GuidanceSpeaker(engine, backgroundScope, clock).also { it.start() }
+        s.say(g(GuidanceId.SCHOOL_ZONE_CROSSWALK), "school", en)
+        assertFalse(s.hold {})
+        engine.finishInit()
+        assertEquals(listOf("school"), engine.spoken)
+    }
+
+    @Test
     fun safetyWarningDuringHold_endsTheHold_andIsSpokenAtOnce() = runTest {
         val engine = FakeEngine()
         val s = speaker(engine)

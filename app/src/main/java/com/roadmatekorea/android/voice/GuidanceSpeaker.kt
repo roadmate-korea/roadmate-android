@@ -91,11 +91,12 @@ class GuidanceSpeaker(
 
     /**
      * 음성 질문을 듣는 동안 말하기를 멈춘다. 지금 말하던 안내(안전 경고가 아닌 것)는 그만두고, 새 안내는 쌓아 둔다.
-     * 안전 경고를 말하는 중이면 멈추지 않고 false를 돌려준다(경고를 끊고 질문을 받지 않는다).
+     * 안전 경고를 말하는 중이거나 기다리는 중이면 멈추지 않고 false를 돌려준다(경고를 끊거나 미뤄 질문을 받지 않는다.
+     * 기다리는 경고를 미루면 듣는 동안 유효 시간이 지나 사라질 수 있다).
      * 듣는 중에 안전 경고가 들어오면 [onSafetyInterrupt]를 부르고 바로 경고를 말한다.
      */
     fun hold(onSafetyInterrupt: () -> Unit): Boolean {
-        if (playing?.guidance?.priority == Priority.SAFETY) return false
+        if (playing?.guidance?.priority == Priority.SAFETY || queue.hasPending(Priority.SAFETY)) return false
         holdInterrupt = onSafetyInterrupt
         timer?.cancel()
         if (playing != null && _current.value?.voiced == true) engine.stop()

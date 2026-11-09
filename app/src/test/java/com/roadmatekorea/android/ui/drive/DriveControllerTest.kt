@@ -70,9 +70,11 @@ class DriveControllerTest {
         override fun prepare() {
             prepared++
         }
+        val all = mutableListOf<SpeechInput.Listener>()
         override fun listen(locale: Locale, listener: SpeechInput.Listener, audio: ByteArray?) {
             this.locale = locale
             this.listener = listener
+            all += listener
             listener.onListening()
         }
         override fun stop() {
@@ -339,6 +341,66 @@ class DriveControllerTest {
         val r = rig()
         runCurrent()
         assertEquals(1, r.speech.prepared)
+    }
+
+    @Test
+    fun lateSignalsFromACancelledQuestion_doNotTouchTheNextQuestion() = runTest(dispatcher) {
+        val r = rig()
+        drivingCarlos(r)
+        r.tts.spoken.clear()
+        r.vm.toggleQuestion()
+        r.vm.toggleQuestion() // 취소
+        r.vm.toggleQuestion() // 다시 질문
+        runCurrent()
+        val (old, new) = r.speech.all
+        // 앞 질문의 늦은 신호
+        old.onPartial("¿puedo")
+        old.onFinal("¿hay carril bus?")
+        runCurrent()
+        assertTrue("새 질문은 계속 듣는 중", r.vm.uiState.value.question.listening)
+        assertEquals("", r.vm.uiState.value.question.partial)
+        assertEquals(emptyList<String>(), r.tts.spoken)
+        // 앞 질문의 늦은 시작 신호가 새 질문의 제한 시간을 바꾸지 않는다
+        advanceTimeBy(5_000)
+        old.onListening()
+        advanceTimeBy(5_001)
+        runCurrent()
+        assertTrue("새 질문은 자기 제한 시간(10초)에 끝남", r.tts.spoken.contains("ES:ANSWER_NOT_HEARD"))
+        assertFalse(r.vm.uiState.value.question.listening)
+        new.onFinal("¿puedo girar a la derecha?") // 이미 끝난 질문의 결과도 무시
+        runCurrent()
+        assertFalse(r.tts.spoken.contains("ES:RIGHT_TURN_RULE"))
+    }
+
+    @Test
+    fun micIsRefused_whileASafetyWarningIsWaiting() = runTest(dispatcher) {
+        val upstream = MutableSharedFlow<RawSignal>()
+        val hub = DriveSignalHub(DriveSignalSource { upstream }, backgroundScope).also { it.start() }
+        // 말을 끝내지 않는 TTS: 첫 안내가 재생 중인 동안 안전 경고가 뒤에서 기다린다
+        val tts = object : TtsEngine {
+            val spoken = mutableListOf<String>()
+            override fun initialize(onResult: (ready: Boolean) -> Unit) = onResult(true)
+            override fun setListener(listener: TtsEngine.Listener?) = Unit
+            override fun speak(text: String, locale: Locale) { spoken += text }
+            override fun stop() = Unit
+            override fun release() = Unit
+        }
+        val speech = FakeSpeech()
+        val vm = DriveController(
+            hub, tts, { profile -> { g -> (listOf("${profile.language}:${g.id.name}") + g.args).joinToString(":") } }, backgroundScope,
+            speechInput = speech, micPermission = MutableStateFlow(true),
+        )
+        runCurrent()
+        upstream.emit(RawSignal.Vehicle.Gear(VehicleGear.GEAR_PARK))
+        runCurrent()
+        vm.ensureSession(Personas.CARLOS)
+        upstream.emit(RawSignal.Vehicle.Gear(VehicleGear.GEAR_DRIVE)) // 시작 인사 재생 중
+        upstream.emit(schoolZone("sz")) // 경고는 대기
+        runCurrent()
+        vm.toggleQuestion()
+        runCurrent()
+        assertFalse(vm.uiState.value.question.listening)
+        assertEquals(0, speech.all.size)
     }
 
     @Test

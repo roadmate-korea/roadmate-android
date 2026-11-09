@@ -11,12 +11,18 @@ import com.roadmatekorea.android.rules.CameraKind
 import com.roadmatekorea.android.rules.CautionKind
 import com.roadmatekorea.android.rules.CautionPoint
 import com.roadmatekorea.android.rules.DriveEvent
+import com.roadmatekorea.android.rules.FakeClock
 import com.roadmatekorea.android.rules.Gear
+import com.roadmatekorea.android.rules.GuidanceEngine
+import com.roadmatekorea.android.rules.GuidanceId
 import com.roadmatekorea.android.rules.TurnDirection
 import com.roadmatekorea.android.rules.TurnInstruction
 import com.roadmatekorea.android.rules.TurnSignal
+import com.roadmatekorea.android.profile.model.Personas
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import ai.pleos.playground.navi.data.CameraAlert as SdkCameraAlert
 import ai.pleos.playground.navi.data.CautionPoint as SdkCautionPoint
@@ -85,29 +91,47 @@ class SignalMapperTest {
     }
 
     @Test
-    fun tbt_isSortedByDistance_andDirectionsMapped() {
-        // SDK가 가까운 순으로 주지 않는 경우
+    fun tbt_keepsRouteOrder_andAccumulatesSegmentDistances() {
+        // 에뮬레이터 실측(강릉 경로) 앞부분: 거리는 앞 안내 지점부터의 구간 거리다
         val event = SignalMapper.map(
             RawSignal.Navi.Tbt(
                 listOf(
-                    TBTInfo(TurnType.TURN_LEFT, 900.4, "a"),
-                    TBTInfo(TurnType.TURN_SHARP_R, 120.6, "b"),
-                    TBTInfo(TurnType.TURN_STRAIGHT, 1500.0, "c"),
-                    TBTInfo(TurnType.TURN_SHARP_L, 40.0, "d"),
+                    TBTInfo(TurnType.TURN_LEFT, 80.0, "a"),
+                    TBTInfo(TurnType.TURN_LEFT, 390.0, "b"),
+                    TBTInfo(TurnType.TURN_KEEP_R, 1000.0, "c"),
+                    TBTInfo(TurnType.TURN_RIGHT, 70.0, "d"),
+                    TBTInfo(TurnType.TURN_SHARP_R, 120.6, "e"),
                 ),
             ),
         )
         assertEquals(
             DriveEvent.TurnInstructionsUpdated(
                 listOf(
-                    TurnInstruction(TurnDirection.LEFT, 40),
-                    TurnInstruction(TurnDirection.RIGHT, 121),
-                    TurnInstruction(TurnDirection.LEFT, 900),
-                    TurnInstruction(TurnDirection.OTHER, 1500),
+                    TurnInstruction(TurnDirection.LEFT, 80),
+                    TurnInstruction(TurnDirection.LEFT, 470),
+                    TurnInstruction(TurnDirection.OTHER, 1470),
+                    // 구간 거리 70m지만 실제로는 1.5km 앞의 우회전
+                    TurnInstruction(TurnDirection.RIGHT, 1540),
+                    TurnInstruction(TurnDirection.RIGHT, 1661),
                 ),
             ),
             event,
         )
+    }
+
+    @Test
+    fun realRouteTbt_rightTurnFarAhead_isNotAnnouncedUntilItIsNear() {
+        val engine = GuidanceEngine(Personas.CARLOS, FakeClock())
+        engine.onEvent(DriveEvent.SessionStarted)
+        engine.onEvent(DriveEvent.GearChanged(Gear.DRIVE))
+        fun tbt(vararg turns: Pair<TurnType, Double>) =
+            engine.onEvent(SignalMapper.map(RawSignal.Navi.Tbt(turns.map { TBTInfo(it.first, it.second, "x") }))!!).map { it.id }
+        // 우회전의 구간 거리는 70m지만 실제로는 1,540m 앞이다
+        val far = tbt(TurnType.TURN_LEFT to 80.0, TurnType.TURN_LEFT to 390.0, TurnType.TURN_KEEP_R to 1000.0, TurnType.TURN_RIGHT to 70.0)
+        assertFalse(far.contains(GuidanceId.RIGHT_TURN_RULE))
+        // 앞의 안내 지점을 지나 우회전이 첫 항목으로 가까워지면 그때 안내한다
+        val near = tbt(TurnType.TURN_RIGHT to 100.0, TurnType.TURN_LEFT to 2000.0)
+        assertTrue(near.contains(GuidanceId.RIGHT_TURN_RULE))
     }
 
     @Test

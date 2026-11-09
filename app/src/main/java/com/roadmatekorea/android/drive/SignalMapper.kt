@@ -39,10 +39,15 @@ object SignalMapper {
                 .map { CameraAlert(it.id, cameraKind(it.type), it.speedLimit, it.remainDistance, it.sectionAvrSpeed) },
         )
         is RawSignal.Navi.Tbt -> DriveEvent.TurnInstructionsUpdated(
-            // SDK 목록은 가까운 순이 아닐 수 있어 거리순으로 정렬한다
-            signal.turns
-                .map { TurnInstruction(turnDirection(it.type), it.distance.roundToInt()) }
-                .sortedBy { it.distanceMeters },
+            // SDK 목록은 경로 순서이고, distance는 바로 앞 안내 지점(첫 항목은 현재 위치)부터의 구간 거리다.
+            // 2026-11-09 에뮬레이터: 강릉 경로 27건의 합 186.9km ≈ 경로 192km. 그래서 순서를 지키며 누적한다.
+            run {
+                var total = 0.0
+                signal.turns.map { turn ->
+                    total += turn.distance.coerceAtLeast(0.0)
+                    TurnInstruction(turnDirection(turn.type), total.roundToInt())
+                }
+            },
         )
         RawSignal.Navi.Arrived -> DriveEvent.DestinationArrived
         is RawSignal.Navi.Unavailable -> null

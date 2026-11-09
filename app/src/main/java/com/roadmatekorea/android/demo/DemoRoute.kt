@@ -68,7 +68,7 @@ object DemoRoute {
         DemoStep(2_000, listOf(turnSignal(TurnSignalValue.LEFT))),
         DemoStep(3_000, listOf(turnSignal(TurnSignalValue.OFF))),
         // 120m 앞 우회전 (SDK처럼 가까운 순이 아닌 목록) + 우측 깜빡이
-        DemoStep(2_000, listOf(speed(25), tbt(TurnType.TURN_LEFT to 900.0, TurnType.TURN_RIGHT to 120.0))),
+        DemoStep(2_000, listOf(speed(25), tbt(TurnType.TURN_RIGHT to 120.0, TurnType.TURN_LEFT to 780.0))),
         DemoStep(1_000, listOf(turnSignal(TurnSignalValue.RIGHT))),
         DemoStep(3_000, listOf(turnSignal(TurnSignalValue.OFF))),
         // 120m 앞 좌회전 + 좌측 깜빡이

@@ -22,7 +22,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8은 개인정보 로그 제거에만 쓴다(proguard-rules.pro). 이름 바꾸기·코드 줄이기는 하지 않는다
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

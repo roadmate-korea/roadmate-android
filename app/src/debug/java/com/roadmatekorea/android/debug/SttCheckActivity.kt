@@ -27,6 +27,7 @@ class SttCheckActivity : Activity() {
     private lateinit var stt: SpeechToText
     private lateinit var status: TextView
     private val main = Handler(Looper.getMainLooper())
+    private var rmsCount = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,7 +47,7 @@ class SttCheckActivity : Activity() {
             override fun onEndedRecognition() = log("onEndedRecognition")
             override fun onError(error: ErrorType) = log("onError $error RESULT=FAIL")
             override fun onReady() = log("onReady")
-            override fun onUpdatedRms(rms: Double) = Unit
+            override fun onUpdatedRms(rms: Double) { rmsCount++; if (rmsCount == 1 || rmsCount % 20 == 0) log("rms #$rmsCount $rms") }
         })
         runCatching {
             stt.initialize(object : OnInitializeListener {

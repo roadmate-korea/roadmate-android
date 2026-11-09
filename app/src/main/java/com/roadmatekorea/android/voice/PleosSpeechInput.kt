@@ -10,6 +10,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
+import com.roadmatekorea.android.BuildConfig
 import java.util.Locale
 
 /**
@@ -28,6 +29,8 @@ import java.util.Locale
  * - **도중에 멈추면(취소, 시간 초과, 오류) [SETTLE_MS] 동안 다음 질문을 시작하지 않고 그 사이 신호를 버린다.** 도중 stop 뒤에는
  *   "인식 끝"이 오지 않고 약 2.2초 뒤 늦은 신호가 왔다(에뮬레이터 실측). 그동안 화면은 "잠시만요"를 보여 주고, 실제로 듣기
  *   시작하면 [SpeechInput.Listener.onListening]으로 알린다.
+ * - **"듣는 중"은 마이크가 실제로 열린 뒤에 알린다.** `request()`는 작업을 예약만 하고 돌아온다. 마이크 경로에서는 약 2.6초 뒤
+ *   `onReady`가 오고 이어서 입력 음량(RMS)이 온다(에뮬레이터 실측). 지금 질문의 `onReady` 또는 첫 음량 값을 받으면 한 번 알린다.
  * - 인식한 문장은 로그에 남기지 않는다(SDK 자체 로그는 release 빌드에서 제거한다. proguard-rules.pro).
  */
 class PleosSpeechInput(context: Context) : SpeechInput {
@@ -71,10 +74,14 @@ class PleosSpeechInput(context: Context) : SpeechInput {
                 }
             }
 
+            override fun onReady() {
+                debug("onReady")
+                micOpened(this@Engine)
+            }
+
+            override fun onUpdatedRms(rms: Double) = micOpened(this@Engine)
             override fun onUpdatedEpdData(start: Long, end: Long) = Unit
             override fun onEndedRecognition() = Unit
-            override fun onReady() = Unit
-            override fun onUpdatedRms(rms: Double) = Unit
         }
     }
 
@@ -88,6 +95,10 @@ class PleosSpeechInput(context: Context) : SpeechInput {
     /** 지금 듣는 질문(엔진에서 실제로 듣기 시작한 것). */
     @Volatile
     private var listening: SpeechInput.Listener? = null
+
+    /** 지금 질문에 "듣는 중"을 알렸는지(마이크가 열린 뒤 한 번). */
+    @Volatile
+    private var announced = false
 
     /** 지금 질문의 "인식 시작" 신호를 받았는지. 받기 전의 결과는 앞 질문의 늦은 결과로 보고 버린다. */
     @Volatile
@@ -166,6 +177,9 @@ class PleosSpeechInput(context: Context) : SpeechInput {
     private fun begin(engine: Engine, next: Pending) {
         active = engine
         heardStart = false
+        announced = false
+        beganAt = SystemClock.elapsedRealtime()
+        debug("begin")
         listening = next.listener
         runCatching {
             engine.stt.setLocale(next.locale)
@@ -184,13 +198,20 @@ class PleosSpeechInput(context: Context) : SpeechInput {
                     }.onFailure { Log.w(TAG, "stt sendAudio failed", it) }
                 }.start()
             }
-            // 요청이 엔진에 들어갔다. 이제부터 말하면 된다(앞의 기다림이 끝났다)
-            next.listener.onListening()
+            // "듣는 중"은 마이크가 실제로 열린 뒤(onReady 또는 첫 음량 값) 알린다
         }.onFailure {
             Log.w(TAG, "stt start failed", it)
             end(stopEngine = true, settle = true)
             next.listener.onError()
         }
+    }
+
+    /** 마이크가 열렸다는 신호. 지금 엔진의 지금 질문에 한 번만 "듣는 중"을 알린다. */
+    private fun micOpened(source: Engine) {
+        val owner = listening?.takeIf { source === active && !announced } ?: return
+        announced = true
+        debug("mic opened")
+        onMain { if (listening === owner) owner.onListening() }
     }
 
     /** 지금 엔진에서 지금 질문을 듣고 있고, 그 질문의 인식이 시작된 뒤일 때만 그 질문을 돌려준다. */
@@ -228,6 +249,13 @@ class PleosSpeechInput(context: Context) : SpeechInput {
             runCatching { e.stt.release() }
         }
         engine = null
+    }
+
+    private var beganAt = 0L
+
+    /** 디버그 빌드에서만 신호 이름과 질문 시작 뒤 경과 시간을 남긴다(인식한 문장은 남기지 않는다). */
+    private fun debug(event: String) {
+        if (BuildConfig.DEBUG) Log.d(TAG, "$event +${SystemClock.elapsedRealtime() - beganAt}ms")
     }
 
     /** SDK 콜백은 메인 스레드로 온다. 혹시 다른 스레드면 메인으로 넘긴다. */

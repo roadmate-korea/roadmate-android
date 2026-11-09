@@ -11,7 +11,7 @@ import java.util.Locale
 interface SpeechInput {
 
     interface Listener {
-        /** 요청이 엔진에 들어가 이제 말하면 된다(처음 초기화나 앞 질문 정리로 기다릴 수 있다). */
+        /** 마이크가 실제로 열려 이제 말하면 된다. 엔진 초기화, 앞 질문 정리, 마이크 준비(약 2.6초) 뒤에 온다. */
         fun onListening() {}
 
         /** 듣는 중의 중간 결과(화면 표시용). */

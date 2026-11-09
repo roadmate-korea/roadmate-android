@@ -67,8 +67,8 @@ object DemoRoute {
         // 근처에 좌회전이 없는데 좌측 깜빡이 → 차선 변경
         DemoStep(2_000, listOf(turnSignal(TurnSignalValue.LEFT))),
         DemoStep(3_000, listOf(turnSignal(TurnSignalValue.OFF))),
-        // 120m 앞 우회전 (SDK처럼 가까운 순이 아닌 목록) + 우측 깜빡이
-        DemoStep(2_000, listOf(speed(25), tbt(TurnType.TURN_LEFT to 900.0, TurnType.TURN_RIGHT to 120.0))),
+        // 120m 앞 우회전, 그 뒤 780m 더 가서 좌회전(SDK처럼 경로 순서, 구간 거리) + 우측 깜빡이
+        DemoStep(2_000, listOf(speed(25), tbt(TurnType.TURN_RIGHT to 120.0, TurnType.TURN_LEFT to 780.0))),
         DemoStep(1_000, listOf(turnSignal(TurnSignalValue.RIGHT))),
         DemoStep(3_000, listOf(turnSignal(TurnSignalValue.OFF))),
         // 120m 앞 좌회전 + 좌측 깜빡이

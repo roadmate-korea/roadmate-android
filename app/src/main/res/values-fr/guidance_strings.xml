@@ -13,6 +13,7 @@
     <string name="guidance_left_turn_rule">Virage à gauche. Aux feux en Corée, tournez à gauche uniquement avec la flèche verte. Là où un panneau de virage à gauche non protégé est installé, vous pouvez aussi tourner au feu vert, après avoir cédé le passage aux véhicules en face et aux piétons.</string>
 
     <string name="guidance_school_zone_ahead">Zone scolaire dans %1$d mètres. Ralentissez et faites attention aux enfants.</string>
+    <string name="guidance_school_zone_nearby">Zone scolaire à proximité. Ralentissez et faites attention aux enfants.</string>
     <string name="guidance_school_zone_speed_limit">Zone scolaire. La vitesse est limitée à %1$d kilomètres par heure.</string>
     <string name="guidance_school_zone_crosswalk">Dans les zones scolaires, arrêtez-vous toujours avant un passage piéton sans feu, même si personne ne traverse.</string>
     <string name="guidance_school_zone_over_speed">Zone scolaire. Vous roulez à %1$d kilomètres par heure, au-dessus de la limite de %2$d. Ralentissez maintenant.</string>

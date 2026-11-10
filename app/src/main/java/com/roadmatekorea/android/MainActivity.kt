@@ -26,6 +26,7 @@ class MainActivity : ComponentActivity() {
     private val requestPermissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
         if (result[RoadMateApplication.CAR_SPEED] == true) app.speedPermissionGranted.value = true
         if (result[Manifest.permission.RECORD_AUDIO] == true) app.micPermissionGranted.value = true
+        if (result[RoadMateApplication.FUSED_LOCATION] == true) app.locationPermissionGranted.value = true
         // 알림을 허용했으면 서비스 알림을 다시 올린다(거부 상태에서 올린 알림은 보이지 않았다)
         if (result[Manifest.permission.POST_NOTIFICATIONS] == true) DriveGuidanceService.start(this)
     }
@@ -54,12 +55,13 @@ class MainActivity : ComponentActivity() {
         // 시스템 설정에서 바꾸고 돌아온 경우
         if (app.hasSpeedPermission()) app.speedPermissionGranted.value = true
         if (app.hasMicPermission()) app.micPermissionGranted.value = true
+        if (app.hasLocationPermission()) app.locationPermissionGranted.value = true
     }
 
     /**
-     * 차량 속도 권한, 마이크 권한(음성 질문), 알림 권한(Android 13 이상)은 정차(P)가 정상적으로 확인되고 화면이 앞에 있을 때 한 번만 묻는다.
+     * 차량 속도 권한, 마이크 권한(음성 질문), 위치 권한(공공데이터 어린이보호구역), 알림 권한(Android 13 이상)은 정차(P)가 정상적으로 확인되고 화면이 앞에 있을 때 한 번만 묻는다.
      * 주행 중이나 기어 오류 뒤에는 띄우지 않는다. 화면이 다시 만들어지면 대기를 다시 시작하고, 실제로 띄웠는지는 앱 범위에서 기억한다.
-     * 거부해도 속도에 따른 안내, 음성 질문, 알림만 빠지고 나머지는 그대로 동작한다.
+     * 거부해도 속도에 따른 안내, 음성 질문, 위치 기반 어린이보호구역 알림, 알림만 빠지고 나머지는 그대로 동작한다.
      */
     private fun askPermissionsWhenParked() {
         lifecycleScope.launch {
@@ -79,6 +81,7 @@ class MainActivity : ComponentActivity() {
     private fun missingPermissions(): List<String> = buildList {
         if (!app.hasSpeedPermission()) add(RoadMateApplication.CAR_SPEED)
         if (!app.hasMicPermission()) add(Manifest.permission.RECORD_AUDIO)
+        if (!app.hasLocationPermission()) add(RoadMateApplication.FUSED_LOCATION)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {

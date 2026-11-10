@@ -13,6 +13,7 @@
     <string name="guidance_left_turn_rule">좌회전합니다. 한국의 신호 교차로에서는 녹색 좌회전 화살표가 켜졌을 때만 좌회전합니다. 비보호 좌회전 표지가 있는 곳에서는 녹색 신호에도 좌회전할 수 있지만, 마주 오는 차와 보행자에게 먼저 양보하세요.</string>
 
     <string name="guidance_school_zone_ahead">%1$d미터 앞 어린이보호구역입니다. 속도를 줄이고 어린이를 살피세요.</string>
+    <string name="guidance_school_zone_nearby">근처에 어린이보호구역이 있습니다. 속도를 줄이고 어린이를 살피세요.</string>
     <string name="guidance_school_zone_speed_limit">어린이보호구역입니다. 제한 속도는 시속 %1$d킬로미터입니다.</string>
     <string name="guidance_school_zone_crosswalk">어린이보호구역에서는 신호등 없는 횡단보도 앞에서 건너는 사람이 없어도 반드시 일시정지하세요.</string>
     <string name="guidance_school_zone_over_speed">어린이보호구역이에요. 지금 시속 %1$d킬로미터로 제한 속도 %2$d보다 빨라요. 속도를 줄이세요.</string>

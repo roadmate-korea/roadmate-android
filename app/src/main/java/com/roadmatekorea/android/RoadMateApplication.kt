@@ -2,6 +2,7 @@ package com.roadmatekorea.android
 
 import android.app.Application
 import android.content.pm.PackageManager
+import android.util.Log
 import com.roadmatekorea.android.drive.DriveSignalHub
 import com.roadmatekorea.android.drive.RealDriveSignalSource
 import com.roadmatekorea.android.drive.SavedSessionRestorer
@@ -14,9 +15,12 @@ import com.roadmatekorea.android.interpreter.InterpreterVoice
 import com.roadmatekorea.android.interpreter.NoTranslationClient
 import com.roadmatekorea.android.interpreter.Phrases
 import com.roadmatekorea.android.interpreter.TranslationClient
+import com.roadmatekorea.android.location.LocationSignalSource
+import com.roadmatekorea.android.location.SchoolZoneAsset
 import com.roadmatekorea.android.navi.NaviSignalSource
 import com.roadmatekorea.android.profile.ProfileRepository
 import com.roadmatekorea.android.profile.model.AppLanguage
+import com.roadmatekorea.android.rules.SchoolZoneMap
 import com.roadmatekorea.android.ui.drive.DriveController
 import com.roadmatekorea.android.ui.drive.createDriveController
 import com.roadmatekorea.android.vehicle.VehicleSignalSource
@@ -27,6 +31,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
@@ -54,16 +60,47 @@ class RoadMateApplication : Application() {
 
     fun hasMicPermission(): Boolean = checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
 
+    /** 위치 권한(공공데이터 어린이보호구역 알림). 거부해도 내비 이벤트로 하는 안내는 그대로다. */
+    val locationPermissionGranted: MutableStateFlow<Boolean> by lazy { MutableStateFlow(hasLocationPermission()) }
+
+    fun hasLocationPermission(): Boolean = checkSelfPermission(FUSED_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+    private val _schoolZones = MutableStateFlow(SchoolZoneMap.EMPTY)
+
+    /** 어린이보호구역 시설 좌표. 읽어 들이는 동안(앱 시작 직후 잠깐)은 빈 지도다. */
+    val schoolZones: StateFlow<SchoolZoneMap> = _schoolZones.asStateFlow()
+
+    private var schoolZonesLoading = false
+
+    /** 여러 번 불러도 한 번만 읽는다. */
+    fun loadSchoolZones() {
+        if (schoolZonesLoading) return
+        schoolZonesLoading = true
+        appScope.launch(Dispatchers.IO) {
+            runCatching { SchoolZoneAsset.load(this@RoadMateApplication) }
+                .onSuccess { _schoolZones.value = it }
+                .onFailure { Log.w("RoadMateZones", "school zones not loaded", it) }
+        }
+    }
+
     /** 실제 Vehicle·NaviHelper 신호. 처음 쓸 때 한 번 시작하고 프로세스가 끝날 때까지 수집한다. */
     val signalHub: DriveSignalHub by lazy {
         DriveSignalHub(
-            RealDriveSignalSource(VehicleSignalSource(this), NaviSignalSource(this), VehicleSpeedSource(this, speedPermissionGranted)),
+            RealDriveSignalSource(
+                VehicleSignalSource(this),
+                NaviSignalSource(this),
+                VehicleSpeedSource(this, speedPermissionGranted),
+                LocationSignalSource(this, locationPermissionGranted),
+            ),
             appScope,
         ).also { it.start() }
     }
 
     /** 안내 세션(판단, 음성). 화면과 상관없이 프로세스 수명 동안 하나. */
-    val driveController: DriveController by lazy { createDriveController(this) }
+    val driveController: DriveController by lazy {
+        loadSchoolZones()
+        createDriveController(this)
+    }
 
     /** 음성 인식 엔진(앱에 하나). 인식 서비스는 결과를 마지막으로 만든 엔진에만 보내므로 음성 질문과 통역이 같이 쓴다. */
     val speechInput: SpeechInput by lazy { PleosSpeechInput(this) }
@@ -120,5 +157,8 @@ class RoadMateApplication : Application() {
     companion object {
         /** Android Automotive 차량 속도 권한. Pleos 권한이 아닌 표준 권한이라 문자열로 둔다. */
         const val CAR_SPEED = "android.car.permission.CAR_SPEED"
+
+        /** Pleos FusedLocation 권한(사용자 허용이 필요한 권한). */
+        const val FUSED_LOCATION = "pleos.car.permission.FUSED_LOCATION"
     }
 }

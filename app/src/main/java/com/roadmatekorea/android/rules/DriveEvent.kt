@@ -31,6 +31,14 @@ sealed interface DriveEvent {
     data class TurnInstructionsUpdated(val turns: List<TurnInstruction>) : DriveEvent
 
     data object DestinationArrived : DriveEvent
+
+    /**
+     * 차 위치(FusedLocation). 공공데이터 어린이보호구역 시설과 견주는 데만 쓴다. 기기 밖으로 보내지 않는다.
+     */
+    data class LocationChanged(val lat: Double, val lon: Double) : DriveEvent {
+        // 로그에 좌표가 찍히지 않게 한다
+        override fun toString() = "LocationChanged"
+    }
 }
 
 enum class Gear {

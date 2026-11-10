@@ -40,6 +40,7 @@ object GuidanceCards {
             GuidanceId.RIGHT_TURN_RULE -> card(R.string.card_right_turn_rule_kicker, R.string.card_right_turn_rule_headline, R.string.card_right_turn_rule_body, R.drawable.ic_rm_turn_right, SceneKind.RIGHT_TURN_RED, safety)
             GuidanceId.LEFT_TURN_RULE -> card(R.string.card_left_turn_rule_kicker, R.string.card_left_turn_rule_headline, R.string.card_left_turn_rule_body, R.drawable.ic_rm_turn_left, SceneKind.LEFT_TURN_ARROW, safety)
             GuidanceId.SCHOOL_ZONE_AHEAD -> card(R.string.card_school_zone_ahead_kicker, R.string.card_school_zone_ahead_headline, R.string.card_school_zone_ahead_body, R.drawable.ic_rm_children, SceneKind.SCHOOL_ZONE, safety)
+            GuidanceId.SCHOOL_ZONE_NEARBY -> card(R.string.card_school_zone_nearby_kicker, R.string.card_school_zone_nearby_headline, R.string.card_school_zone_nearby_body, R.drawable.ic_rm_children, SceneKind.SCHOOL_ZONE, safety)
             GuidanceId.SCHOOL_ZONE_SPEED_LIMIT -> card(R.string.card_school_zone_speed_limit_kicker, R.string.card_school_zone_speed_limit_headline, R.string.card_school_zone_speed_limit_body, R.drawable.ic_rm_children, SceneKind.SCHOOL_ZONE, safety).copy(sceneSpeedArg = 0)
             GuidanceId.SCHOOL_ZONE_CROSSWALK -> card(R.string.card_school_zone_crosswalk_kicker, R.string.card_school_zone_crosswalk_headline, R.string.card_school_zone_crosswalk_body, R.drawable.ic_rm_children, SceneKind.SCHOOL_ZONE, safety)
             // 그림의 숫자는 제한 속도(두 번째 인자). 지금 속도는 제목에 쓴다.

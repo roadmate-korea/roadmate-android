@@ -23,6 +23,7 @@ object GuidanceStrings {
         GuidanceId.RIGHT_TURN_RULE -> R.string.guidance_right_turn_rule
         GuidanceId.LEFT_TURN_RULE -> R.string.guidance_left_turn_rule
         GuidanceId.SCHOOL_ZONE_AHEAD -> R.string.guidance_school_zone_ahead
+        GuidanceId.SCHOOL_ZONE_NEARBY -> R.string.guidance_school_zone_nearby
         GuidanceId.SCHOOL_ZONE_SPEED_LIMIT -> R.string.guidance_school_zone_speed_limit
         GuidanceId.SCHOOL_ZONE_CROSSWALK -> R.string.guidance_school_zone_crosswalk
         GuidanceId.BUS_LANE_AHEAD -> R.string.guidance_bus_lane_ahead

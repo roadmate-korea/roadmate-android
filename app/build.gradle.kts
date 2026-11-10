@@ -65,12 +65,12 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.coroutines.android)
 
-    // Pleos Connect SDK. FusedLocation과 SpeechToText(2단계 통역)는 1차 MVP에서 쓰지 않아 뺐다.
-    // 버전은 gradle/libs.versions.toml에 남겨 두었다.
+    // Pleos Connect SDK. FusedLocation은 공공데이터 어린이보호구역 알림에 쓴다(위치는 기기 안에서만).
     implementation(libs.pleos.vehicle)
     implementation(libs.pleos.navihelper)
     implementation(libs.pleos.tts)
     implementation(libs.pleos.stt)
+    implementation(libs.pleos.fusedlocation)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

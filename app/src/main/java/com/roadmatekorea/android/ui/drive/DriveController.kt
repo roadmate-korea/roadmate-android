@@ -10,6 +10,7 @@ import com.roadmatekorea.android.profile.model.AppLanguage
 import com.roadmatekorea.android.profile.model.DriverProfile
 import com.roadmatekorea.android.rules.Guidance
 import com.roadmatekorea.android.rules.GuidanceId
+import com.roadmatekorea.android.rules.SchoolZoneMap
 import com.roadmatekorea.android.voice.GuidanceSpeaker
 import com.roadmatekorea.android.voice.SpeechInput
 import com.roadmatekorea.android.voice.TtsEngine
@@ -87,6 +88,8 @@ class DriveController(
     private val speechInput: SpeechInput? = null,
     micPermission: StateFlow<Boolean> = MutableStateFlow(false),
     private val listenTimeoutMs: Long = LISTEN_TIMEOUT_MS,
+    /** 공공데이터 어린이보호구역 시설(앱이 읽어 들이는 중이면 빈 지도). 실제 세션과 시연이 같이 쓴다. */
+    private val schoolZones: () -> SchoolZoneMap = { SchoolZoneMap.EMPTY },
 ) {
 
     private val speaker = GuidanceSpeaker(ttsEngine, scope).also { it.start() }
@@ -239,6 +242,7 @@ class DriveController(
         speaker = speaker,
         textOf = textFor(profile),
         locale = AppLocales.localeOf(profile.language),
+        schoolZones = schoolZones,
     )
 
     /**

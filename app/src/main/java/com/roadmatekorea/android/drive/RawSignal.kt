@@ -1,5 +1,6 @@
 package com.roadmatekorea.android.drive
 
+import ai.pleos.playground.location.fused.model.LocationData
 import ai.pleos.playground.navi.data.CameraAlert
 import ai.pleos.playground.navi.data.CautionPoint
 import ai.pleos.playground.navi.data.TBTInfo
@@ -55,5 +56,17 @@ sealed interface RawSignal {
 
         /** NaviHelper를 쓸 수 없음. 판단 로직에는 들어가지 않는다. */
         data class Unavailable(val reason: String) : Navi
+    }
+
+    /** FusedLocation. 위치는 기기 안에서 공공데이터 어린이보호구역과 견주는 데만 쓰고, 밖으로 보내거나 기록하지 않는다. */
+    sealed interface Location : RawSignal {
+        /** `FusedLocationListener.onChanged` */
+        data class Fix(val value: LocationData) : Location {
+            // 로그나 화면에 좌표가 찍히지 않게 한다
+            override fun toString() = "Location.Fix"
+        }
+
+        /** FusedLocation을 쓸 수 없음(지원 안 함, 초기화 실패, 오류). 판단 로직에는 들어가지 않는다. */
+        data class Unavailable(val reason: String) : Location
     }
 }

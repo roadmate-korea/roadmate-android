@@ -55,6 +55,10 @@ object SignalMapper {
         )
         RawSignal.Navi.Arrived -> DriveEvent.DestinationArrived
         is RawSignal.Navi.Unavailable -> null
+        is RawSignal.Location.Fix -> signal.value
+            .takeIf { it.latitude.isFinite() && it.longitude.isFinite() }
+            ?.let { DriveEvent.LocationChanged(it.latitude, it.longitude) }
+        is RawSignal.Location.Unavailable -> null
     }
 
     fun gear(value: VehicleGear): Gear = when (value) {

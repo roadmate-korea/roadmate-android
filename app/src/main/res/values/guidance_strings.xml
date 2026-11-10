@@ -17,6 +17,7 @@
     <string name="guidance_left_turn_rule">Turning left. At traffic lights in Korea, turn left only on a green left arrow. Where an unprotected left turn sign is posted, you may also turn on a green light, after giving way to oncoming traffic and pedestrians.</string>
 
     <string name="guidance_school_zone_ahead">School zone in %1$d meters. Slow down and watch for children.</string>
+    <string name="guidance_school_zone_nearby">School zone nearby. Slow down and watch for children.</string>
     <string name="guidance_school_zone_speed_limit">School zone. The speed limit is %1$d kilometers per hour.</string>
     <string name="guidance_school_zone_crosswalk">In school zones, always stop before a crosswalk without traffic lights, even if no one is crossing.</string>
     <string name="guidance_school_zone_over_speed">School zone. You are going %1$d kilometers per hour, over the limit of %2$d. Slow down now.</string>

@@ -14,8 +14,8 @@ android {
         applicationId = "com.roadmatekorea.android"
         minSdk = 28
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.1.0"
+        versionCode = 4
+        versionName = "1.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // 서버(서버·AI 팀) 주소. gradle.properties나 -Proadmate.serverUrl=로 넣는다. 비어 있으면 서버 기능 없이 동작한다.

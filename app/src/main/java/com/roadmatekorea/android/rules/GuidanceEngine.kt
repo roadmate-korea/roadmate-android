@@ -242,7 +242,11 @@ class GuidanceEngine(
         if (zone?.entry == Entry.ROAD) return emptyList()
         // 이미 같은 제한으로 감시 중이다. 다른 카메라라도 같은 구역으로 보고 다시 말하지 않는다
         // (그 카메라는 완료 처리하지 않아, 구역이 끝난 뒤 다시 오면 새 구역으로 안내한다).
-        if (zone?.zoneLimitKmh == nearest.speedLimitKmh) return emptyList()
+        // 다가오는 거리는 갱신해서 구역 앞 과속을 다시 판단한다(멀리서 받은 카메라가 300m 안으로 들어오는 순간 등).
+        if (zone?.zoneLimitKmh == nearest.speedLimitKmh) {
+            schoolZone = zone.copy(cameraRemainMeters = nearest.remainMeters, cameraSeenMs = clock.nowMillis())
+            return checkApproachFast()
+        }
         val limit = nearest.speedLimitKmh
         schoolZone = (zone ?: SchoolZoneContext(clock.nowMillis(), currentSpeedLimit)).copy(
             zoneLimitKmh = limit,
@@ -251,10 +255,13 @@ class GuidanceEngine(
             // 도로 제한을 알면 그 값이 확인해 줄 때까지 기다리고(앞쪽 카메라일 수 있다), 모르면 카메라 값으로 추정한다
             entry = entryFor(limit),
             overSpeedWarned = false,
+            cameraRemainMeters = nearest.remainMeters,
+            cameraSeenMs = clock.nowMillis(),
+            approachWarned = false,
         )
         if (nearest.id in announcedCameraIds) {
             // 이미 안내한 카메라(같은 구역 재진입 등): 다시 말하지 않고 그 제한으로 감시하며 지금 속도로 판단한다
-            return checkOverSpeed()
+            return checkOverSpeed() + checkApproachFast()
         }
         announcedCameraIds += nearest.id
         return listOf(schoolZoneLimit(limit))
@@ -394,8 +401,9 @@ class GuidanceEngine(
         }
         // 아직 구역 앞(앞쪽 카메라가 제한을 먼저 알려 줌)인데 이미 그보다 빠르다: 제한과 지금 속도를 함께 말한다(기획서 장면).
         // 제한보다 느리면 제한 속도만 말한다. 구역 안의 과속 경고는 진입이 확인된 뒤에만 한다.
-        if (zone != null && zone.entry == Entry.NONE && speed != null && !isParked && isOver(speed, limit)) {
-            return Guidance(GuidanceId.SCHOOL_ZONE_APPROACH_FAST, listOf(speed, limit))
+        approachFastNow()?.let { warning ->
+            schoolZone = schoolZone?.copy(approachWarned = true)
+            return warning
         }
         return Guidance(GuidanceId.SCHOOL_ZONE_SPEED_LIMIT, listOf(limit))
     }
@@ -403,7 +411,34 @@ class GuidanceEngine(
     private fun onVehicleSpeed(speed: Int?): List<Guidance> {
         // 읽을 수 없게 되면 지난 값을 쓰지 않는다
         vehicleSpeed = speed?.coerceAtLeast(0)
-        return checkOverSpeed()
+        return checkOverSpeed() + checkApproachFast()
+    }
+
+    /**
+     * 구역 앞 과속(rules-v5 school_zone_approach): 앞쪽 카메라가 알려 준 구역 제한보다 이미 빠르고, 그 카메라가
+     * [APPROACH_MIN_METERS]~[SCHOOL_ZONE_AHEAD_METERS] 앞이며 방금([CAMERA_FRESH_MS] 안) 받은 값일 때. 구역마다 한 번.
+     * 속도·카메라가 바뀔 때마다 다시 판단한다(어느 쪽이 먼저 오든, 나중에 가속하든).
+     */
+    private fun checkApproachFast(): List<Guidance> {
+        val warning = approachFastNow() ?: return emptyList()
+        if (schoolZone?.approachWarned == true) return emptyList()
+        schoolZone = schoolZone?.copy(approachWarned = true)
+        return listOf(warning)
+    }
+
+    /**
+     * 지금 구역 앞 과속이면 지금 값으로 만든 경고, 아니면 null(이미 말했는지와 상관없는 상태 조회).
+     * DriveSession이 아직 말하지 않은 경고를 버리거나 지금 속도로 바꾸는 데 쓴다(감속, 진입 확인, P, 속도 모름이면 버린다).
+     */
+    fun approachFastNow(): Guidance? {
+        val zone = activeSchoolZone() ?: return null
+        val limit = zone.zoneLimitKmh ?: return null
+        val speed = vehicleSpeed ?: return null
+        val remain = zone.cameraRemainMeters ?: return null
+        if (zone.entry != Entry.NONE || isParked || !isOver(speed, limit)) return null
+        if (clock.nowMillis() - zone.cameraSeenMs > CAMERA_FRESH_MS) return null
+        if (remain !in APPROACH_MIN_METERS..SCHOOL_ZONE_AHEAD_METERS) return null
+        return Guidance(GuidanceId.SCHOOL_ZONE_APPROACH_FAST, listOf(speed, limit))
     }
 
     /**
@@ -490,6 +525,11 @@ class GuidanceEngine(
         /** 지금 제한을 넘은 상태로 이미 경고했는지. 제한 아래로 내려오면 false로 돌아간다. */
         val overSpeedWarned: Boolean = false,
         val lastOverWarnMs: Long = 0,
+        /** 구역 제한을 알려 준 카메라까지 남은 거리와 받은 시각(구역 앞 과속 판단). */
+        val cameraRemainMeters: Int? = null,
+        val cameraSeenMs: Long = 0,
+        /** 이 구역에서 구역 앞 과속을 이미 말했는지. */
+        val approachWarned: Boolean = false,
     )
 
     companion object {
@@ -510,6 +550,12 @@ class GuidanceEngine(
 
         /** 위치가 이 시간 넘게 끊기면 근처 상태를 버리고 새로 판단한다. */
         const val LOCATION_GAP_MS = 30_000L
+
+        /** 구역 앞 과속은 카메라가 이 거리보다 가까우면 늦었다고 보고 말하지 않는다(서버 rules-v5와 같은 30m). */
+        const val APPROACH_MIN_METERS = 30
+
+        /** 카메라 신호가 이 시간 넘게 오지 않으면 그 거리를 믿지 않는다(서버 freshness 5초). */
+        const val CAMERA_FRESH_MS = 5_000L
 
         /** 요금소 안내 거리. */
         const val TOLL_NEAR_METERS = 500

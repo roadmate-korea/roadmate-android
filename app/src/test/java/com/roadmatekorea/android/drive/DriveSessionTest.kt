@@ -1,5 +1,6 @@
 package com.roadmatekorea.android.drive
 
+import ai.pleos.playground.navi.constants.CameraType
 import ai.pleos.playground.navi.constants.CautionPointType
 import ai.pleos.playground.vehicle.constant.area.TurnSignalValue
 import ai.pleos.playground.vehicle.constant.control.VehicleGear
@@ -17,6 +18,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import ai.pleos.playground.navi.data.CameraAlert as SdkCameraAlert
 import java.util.Locale
 import ai.pleos.playground.navi.data.CautionPoint as SdkCautionPoint
 
@@ -104,6 +106,39 @@ class DriveSessionTest {
         repeat(8) { tts.finish() }
         val over = tts.spoken.filter { it.startsWith("SCHOOL_ZONE_OVER_SPEED") }
         assertEquals(listOf("SCHOOL_ZONE_OVER_SPEED:43:30"), over)
+    }
+
+    private fun schoolCamera(limit: Int, remain: Int) =
+        RawSignal.Navi.CameraAlerts(listOf(SdkCameraAlert("cam", CameraType.SPEED_CAMERA_SCHOOL_ZONE, true, limit, remain, 0, false, false)))
+
+    @Test
+    fun pendingApproachWarning_isDroppedWhenSlowingDown_andReplacedByTheInZoneWarningOnEntry() = runTest {
+        // 기다리는 동안 감속·진입하면 옛 "곧 어린이보호구역, 지금 45"를 말하지 않는다
+        val tts = HoldTts()
+        val clock = Clock { testScheduler.currentTime }
+        val speaker = GuidanceSpeaker(tts, backgroundScope, clock).also { it.start() }
+        val s = DriveSession(Personas.CARLOS, speaker, { g -> (listOf(g.id.name) + g.args).joinToString(":") }, Locale.US, clock)
+        fun kmh(v: Int) = RawSignal.Vehicle.Speed(v / 3.6f)
+        s.onSignal(RawSignal.Vehicle.Gear(VehicleGear.GEAR_DRIVE)) // 시작 인사가 재생 중(끝나지 않음)
+        s.onSignal(RawSignal.Navi.SpeedLimit(50))
+        s.onSignal(kmh(45))
+        s.onSignal(schoolCamera(30, 250)) // "곧 어린이보호구역, 45/30"이 대기열에
+        s.onSignal(kmh(25)) // 말하기 전에 감속
+        repeat(6) { tts.finish() }
+        assertTrue("감속하면 버림", tts.spoken.none { it.startsWith("SCHOOL_ZONE_APPROACH_FAST") })
+
+        val tts2 = HoldTts()
+        val speaker2 = GuidanceSpeaker(tts2, backgroundScope, clock).also { it.start() }
+        val s2 = DriveSession(Personas.CARLOS, speaker2, { g -> (listOf(g.id.name) + g.args).joinToString(":") }, Locale.US, clock)
+        s2.onSignal(RawSignal.Vehicle.Gear(VehicleGear.GEAR_DRIVE))
+        s2.onSignal(RawSignal.Navi.SpeedLimit(50))
+        s2.onSignal(kmh(45))
+        s2.onSignal(schoolCamera(30, 250))
+        s2.onSignal(kmh(43))
+        s2.onSignal(RawSignal.Navi.SpeedLimit(30)) // 말하기 전에 구역 진입이 확인됨
+        repeat(8) { tts2.finish() }
+        assertTrue("진입하면 구역 앞 경고는 버림", tts2.spoken.none { it.startsWith("SCHOOL_ZONE_APPROACH_FAST") })
+        assertTrue("구역 안 과속 경고로 넘어감", tts2.spoken.contains("SCHOOL_ZONE_OVER_SPEED:43:30"))
     }
 
     @Test

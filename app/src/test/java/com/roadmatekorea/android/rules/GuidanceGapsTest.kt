@@ -55,6 +55,50 @@ class GuidanceGapsTest {
     }
 
     @Test
+    fun farCamera_saysTheLimit_thenWarnsOnceWhenItComesWithin300m() {
+        // 2km 앞 카메라에서 바로 "곧 어린이보호구역"이라고 하지 않는다
+        val e = engine()
+        e.send(DriveEvent.SpeedLimitChanged(50), DriveEvent.VehicleSpeedChanged(45))
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), e.send(schoolCamera(30, remain = 2_000)))
+        assertEquals(emptyList<Guidance>(), e.send(schoolCamera(30, remain = 800)))
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_APPROACH_FAST, listOf(45, 30))), e.send(schoolCamera(30, remain = 280)))
+        assertEquals("구역마다 한 번", emptyList<Guidance>(), e.send(schoolCamera(30, remain = 200), DriveEvent.VehicleSpeedChanged(47)))
+    }
+
+    @Test
+    fun speedArrivingAfterTheCamera_orSpeedingUpLater_stillWarns() {
+        // 카메라가 먼저 오고 속도가 나중에 와도
+        val late = engine()
+        late.send(DriveEvent.SpeedLimitChanged(50))
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), late.send(schoolCamera(30)))
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_APPROACH_FAST, listOf(45, 30))), late.send(DriveEvent.VehicleSpeedChanged(45)))
+
+        val faster = engine()
+        faster.send(DriveEvent.SpeedLimitChanged(50), DriveEvent.VehicleSpeedChanged(25))
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), faster.send(schoolCamera(30)))
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_APPROACH_FAST, listOf(40, 30))), faster.send(DriveEvent.VehicleSpeedChanged(40)))
+    }
+
+    @Test
+    fun tooCloseOrStaleCamera_orParkedWhenTheCameraCame_isJudgedByTheLatestState() {
+        val close = engine()
+        close.send(DriveEvent.SpeedLimitChanged(50), DriveEvent.VehicleSpeedChanged(45))
+        assertEquals("30m 안은 늦음", listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), close.send(schoolCamera(30, remain = 20)))
+
+        val stale = engine()
+        stale.send(DriveEvent.SpeedLimitChanged(50))
+        stale.send(schoolCamera(30))
+        clock.advanceSeconds(6)
+        assertEquals("카메라 신호가 끊긴 뒤에는 거리를 믿지 않음", emptyList<Guidance>(), stale.send(DriveEvent.VehicleSpeedChanged(45)))
+
+        val parked = engine()
+        parked.send(DriveEvent.SpeedLimitChanged(50), DriveEvent.GearChanged(Gear.PARK), DriveEvent.VehicleSpeedChanged(45))
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), parked.send(schoolCamera(30)))
+        parked.send(DriveEvent.GearChanged(Gear.DRIVE))
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_APPROACH_FAST, listOf(45, 30))), parked.send(DriveEvent.VehicleSpeedChanged(45)))
+    }
+
+    @Test
     fun tollAhead_onceWhenApproaching_forDetailedDrivers() {
         val e = engine()
         assertEquals(emptyList<Guidance>(), e.send(toll(900)))

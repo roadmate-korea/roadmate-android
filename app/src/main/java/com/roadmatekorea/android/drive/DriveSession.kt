@@ -83,6 +83,13 @@ class DriveSession(
         } else {
             speaker.refreshQueued(overSpeed, textOf(overSpeed))
         }
+        // 구역 앞 과속도 같다: 감속, 진입 확인(구역 안 과속 경고로 넘어감), P, 속도 모름이면 버리고, 계속 빠르면 지금 속도로
+        val approachFast = engine.approachFastNow()
+        if (approachFast == null) {
+            speaker.drop(GuidanceId.SCHOOL_ZONE_APPROACH_FAST)
+        } else {
+            speaker.refreshQueued(approachFast, textOf(approachFast))
+        }
         out.forEach { guidance ->
             lastDrivingGuidance = guidance
             speak(guidance)

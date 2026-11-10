@@ -35,9 +35,11 @@ import kotlinx.coroutines.flow.take
  * - 차량 서비스에는 연결 상태 리스너를 붙여 연결한다. 리스너 없이 연결하면 서비스가 끊길 때 플랫폼이 앱 프로세스를 끝낸다
  *   (AOSP Car.java finishClient). 끊기면 속도를 지우고, 다시 연결되면 다시 등록한다.
  * - 기어 오류와 달리 화면을 잠그지 않는다.
- * - 차량 서비스 연결·등록은 전용 스레드에서 한다. 등록(`registerCallback`)은 차량 서비스에 동기 호출을 하는데, 서비스가
+ * - 차량 서비스 연결·관리자 획득·등록은 전용 스레드에서 한다. 등록(`registerCallback`)은 차량 서비스에 동기 호출을 하는데, 서비스가
  *   멈추면 응답이 오지 않는다. 메인 스레드에서 부르면 앱이 ANR로 죽는다(2026-11-10 에뮬레이터 차량 속성 서비스가 멈췄을 때
  *   DriveGuidanceService ANR, 시스템 UI도 같은 호출에서 ANR). 전용 스레드가 막혀도 속도만 빠지고 나머지 안내는 그대로다.
+ *   남는 위험: 플랫폼이 서비스 연결 알림(ServiceConnection)을 메인에서 처리하며 Car 내부 잠금을 잡는다. 그 순간 전용 스레드가
+ *   같은 잠금을 잡은 채 멈춘 차량 서비스를 기다리고 있으면 메인도 기다린다. android.car 라이브러리 구조라 앱에서 피할 수 없다.
  *
  * 센서는 초당 여러 번 값을 준다. km/h 정수가 바뀌거나 마지막으로 보낸 지 [HEARTBEAT_MS]가 지나면 보낸다.
  * 같은 속도라도 주기적으로 보내야 엔진이 쿨다운이 끝난 뒤 과속을 다시 판단할 수 있다.
@@ -117,29 +119,37 @@ class VehicleSpeedSource(
             if (ok) manager = m else Log.w(TAG, "speed not registered")
         }
 
-        val car = try {
-            // Car는 연결 상태 콜백을 넘긴 handler와 상관없이 메인 스레드로 보낸다(AOSP Car.dispatchCarReadyToMainThread).
-            // 콜백에서는 전용 스레드로 넘기기만 한다
-            Car.createCar(appContext, worker, Car.CAR_WAIT_TIMEOUT_DO_NOT_WAIT) { car, ready ->
-                worker.post { onCarLifecycle(car, ready) }
+        var car: Car? = null
+
+        // 연결(createCar)도 전용 스레드에서 한다. 메인에서 연결하면 연결 중의 Car 내부 잠금(mLock)과 전용 스레드의
+        // 관리자 획득(getCarManager, 잠금을 잡은 채 차량 서비스에 동기 호출)이 겹쳐 메인이 다시 막힐 수 있다.
+        // 같은 스레드에서 연결이 끝난 뒤에 관리자를 얻는다.
+        worker.post {
+            if (closed) return@post
+            car = try {
+                // Car는 연결 상태 콜백을 넘긴 handler와 상관없이 메인 스레드로 보낸다(AOSP Car.dispatchCarReadyToMainThread).
+                // 콜백에서는 전용 스레드로 넘기기만 한다
+                Car.createCar(appContext, worker, Car.CAR_WAIT_TIMEOUT_DO_NOT_WAIT) { c, ready ->
+                    worker.post { onCarLifecycle(c, ready) }
+                }
+            } catch (e: RuntimeException) {
+                Log.w(TAG, "Car service unavailable", e)
+                null
+            } catch (e: NoClassDefFoundError) {
+                Log.w(TAG, "android.car library missing", e)
+                null
             }
-        } catch (e: RuntimeException) {
-            Log.w(TAG, "Car service unavailable", e)
-            null
-        } catch (e: NoClassDefFoundError) {
-            Log.w(TAG, "android.car library missing", e)
-            null
-        }
-        if (car == null) {
-            thread.quitSafely()
-            close()
-            return@callbackFlow
+            if (car == null) {
+                closed = true
+                thread.quitSafely()
+                close()
+            }
         }
         awaitClose {
             worker.post {
                 closed = true
                 unregister()
-                runCatching { car.disconnect() }
+                car?.let { runCatching { it.disconnect() } }
                 thread.quitSafely()
             }
         }

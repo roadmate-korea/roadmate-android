@@ -8,7 +8,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
-import android.os.Looper
+import android.os.HandlerThread
 import android.os.SystemClock
 import android.util.Log
 import com.roadmatekorea.android.drive.DriveSignalSource
@@ -35,6 +35,9 @@ import kotlinx.coroutines.flow.take
  * - 차량 서비스에는 연결 상태 리스너를 붙여 연결한다. 리스너 없이 연결하면 서비스가 끊길 때 플랫폼이 앱 프로세스를 끝낸다
  *   (AOSP Car.java finishClient). 끊기면 속도를 지우고, 다시 연결되면 다시 등록한다.
  * - 기어 오류와 달리 화면을 잠그지 않는다.
+ * - 차량 서비스 연결·등록은 전용 스레드에서 한다. 등록(`registerCallback`)은 차량 서비스에 동기 호출을 하는데, 서비스가
+ *   멈추면 응답이 오지 않는다. 메인 스레드에서 부르면 앱이 ANR로 죽는다(2026-11-10 에뮬레이터 차량 속성 서비스가 멈췄을 때
+ *   DriveGuidanceService ANR, 시스템 UI도 같은 호출에서 ANR). 전용 스레드가 막혀도 속도만 빠지고 나머지 안내는 그대로다.
  *
  * 센서는 초당 여러 번 값을 준다. km/h 정수가 바뀌거나 마지막으로 보낸 지 [HEARTBEAT_MS]가 지나면 보낸다.
  * 같은 속도라도 주기적으로 보내야 엔진이 쿨다운이 끝난 뒤 과속을 다시 판단할 수 있다.
@@ -57,7 +60,9 @@ class VehicleSpeedSource(
             appContext.packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
 
     private fun speed(): Flow<RawSignal> = callbackFlow {
-        val main = Handler(Looper.getMainLooper())
+        // 연결 상태 콜백, 속도 콜백, 등록·해제를 모두 이 스레드에서 처리한다(메인 스레드를 막지 않게)
+        val thread = HandlerThread("RoadMateSpeed").apply { start() }
+        val worker = Handler(thread.looper)
         var lastKmh: Int? = null
         var lastSentAt = 0L
 
@@ -87,7 +92,7 @@ class VehicleSpeedSource(
             }
         }
 
-        // 연결 상태 콜백과 종료(awaitClose)는 모두 메인 스레드에서 돈다
+        // 아래 상태는 전용 스레드에서만 읽고 쓴다(속도 콜백, 등록·해제, 종료)
         var manager: CarPropertyManager? = null
         var closed = false
 
@@ -96,21 +101,27 @@ class VehicleSpeedSource(
             manager = null
         }
 
+        fun onCarLifecycle(car: Car, ready: Boolean) {
+            if (closed) return
+            unregister()
+            if (!ready) {
+                Log.w(TAG, "car service disconnected")
+                lastKmh = null
+                trySend(RawSignal.Vehicle.SpeedUnavailable)
+                return
+            }
+            val m = car.getCarManager(Car.PROPERTY_SERVICE) as? CarPropertyManager ?: return
+            val ok = runCatching {
+                m.registerCallback(callback, VehiclePropertyIds.PERF_VEHICLE_SPEED, CarPropertyManager.SENSOR_RATE_NORMAL)
+            }.onFailure { e -> Log.w(TAG, "speed register failed", e) }.getOrDefault(false)
+            if (ok) manager = m else Log.w(TAG, "speed not registered")
+        }
+
         val car = try {
-            Car.createCar(appContext, main, Car.CAR_WAIT_TIMEOUT_DO_NOT_WAIT) { car, ready ->
-                if (closed) return@createCar
-                unregister()
-                if (!ready) {
-                    Log.w(TAG, "car service disconnected")
-                    lastKmh = null
-                    trySend(RawSignal.Vehicle.SpeedUnavailable)
-                    return@createCar
-                }
-                val m = car.getCarManager(Car.PROPERTY_SERVICE) as? CarPropertyManager ?: return@createCar
-                val ok = runCatching {
-                    m.registerCallback(callback, VehiclePropertyIds.PERF_VEHICLE_SPEED, CarPropertyManager.SENSOR_RATE_NORMAL)
-                }.onFailure { e -> Log.w(TAG, "speed register failed", e) }.getOrDefault(false)
-                if (ok) manager = m else Log.w(TAG, "speed not registered")
+            // Car는 연결 상태 콜백을 넘긴 handler와 상관없이 메인 스레드로 보낸다(AOSP Car.dispatchCarReadyToMainThread).
+            // 콜백에서는 전용 스레드로 넘기기만 한다
+            Car.createCar(appContext, worker, Car.CAR_WAIT_TIMEOUT_DO_NOT_WAIT) { car, ready ->
+                worker.post { onCarLifecycle(car, ready) }
             }
         } catch (e: RuntimeException) {
             Log.w(TAG, "Car service unavailable", e)
@@ -120,14 +131,16 @@ class VehicleSpeedSource(
             null
         }
         if (car == null) {
+            thread.quitSafely()
             close()
             return@callbackFlow
         }
         awaitClose {
-            main.post {
+            worker.post {
                 closed = true
                 unregister()
                 runCatching { car.disconnect() }
+                thread.quitSafely()
             }
         }
     }.buffer(capacity = 16, onBufferOverflow = BufferOverflow.DROP_OLDEST)

@@ -41,13 +41,13 @@ class SchoolZoneSpeedTest {
     }
 
     @Test
-    fun cameraAhead_saysLimitOnly_thenWarnsWhenTheRoadLimitConfirmsEntry() {
+    fun cameraAhead_tooFast_saysZoneAhead_thenWarnsWhenTheRoadLimitConfirmsEntry() {
         val e = engine()
         e.speed(41)
         e.enterZone()
-        // 지금 도로는 아직 50이라 "지금 41, 제한 30"은 틀린 말이다. 앞쪽 제한만 알린다.
+        // 지금 도로는 아직 50이라 과속 경고("지금 41, 제한 30")는 틀린 말이다. "곧 어린이보호구역, 제한 30, 지금 41"로 알린다(기획서 장면)
         val out = e.onEvent(DriveEvent.CameraAlertsUpdated(listOf(CameraAlert("c", CameraKind.SCHOOL_ZONE, 30, 100))))
-        assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), out)
+        assertEquals(listOf(Guidance(GuidanceId.SCHOOL_ZONE_APPROACH_FAST, listOf(41, 30))), out)
         // 도로 제한이 30이 되는 순간(진입) 지금 속도로 판단
         assertEquals(listOf(Guidance(SCHOOL_ZONE_OVER_SPEED, listOf(41, 30))), e.onEvent(DriveEvent.SpeedLimitChanged(30)))
     }

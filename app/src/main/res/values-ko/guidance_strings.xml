@@ -17,10 +17,12 @@
     <string name="guidance_school_zone_speed_limit">어린이보호구역입니다. 제한 속도는 시속 %1$d킬로미터입니다.</string>
     <string name="guidance_school_zone_crosswalk">어린이보호구역에서는 신호등 없는 횡단보도 앞에서 건너는 사람이 없어도 반드시 일시정지하세요.</string>
     <string name="guidance_school_zone_over_speed">어린이보호구역이에요. 지금 시속 %1$d킬로미터로 제한 속도 %2$d보다 빨라요. 속도를 줄이세요.</string>
+    <string name="guidance_school_zone_approach_fast">곧 어린이보호구역입니다. 제한속도 시속 %2$d킬로미터, 지금 시속 %1$d킬로미터입니다. 속도를 줄이세요.</string>
 
     <string name="guidance_arrived">목적지에 도착했습니다. 안전 운전해 주셔서 감사합니다.</string>
     <string name="guidance_bus_lane_ahead">%1$d미터 앞 버스전용차로예요. 표지판에 적힌 시간에는 파란 버스전용차로로 다니지 마세요.</string>
     <string name="guidance_section_start">구간 단속이 시작돼요. 시작과 끝 지점 속도와 평균 속도를 모두 재요. 구간이 끝날 때까지 시속 %1$d킬로미터 이하로 달리세요.</string>
+    <string name="guidance_toll_ahead">%1$d미터 앞 요금소입니다. 하이패스 차로는 단말기가 있는 차만 이용합니다. 잘 모르면 일반 차로로 가세요.</string>
     <string name="guidance_section_over_average">평균 속도가 %1$d로 제한 속도 %2$d보다 높아요. 속도를 줄이세요.</string>
     <!-- 음성 질문에 대한 답 -->
     <string name="guidance_answer_school_zone">어린이보호구역에서는 표지판의 제한 속도 이하로 달리고 아이들을 살피세요. 신호등 없는 횡단보도 앞에서는 건너는 사람이 없어도 반드시 멈추세요.</string>

@@ -40,6 +40,9 @@
     <string name="card_school_zone_over_speed_kicker">School zone</string>
     <string name="card_school_zone_over_speed_headline">You are at %1$d km/h. Slow down.</string>
     <string name="card_school_zone_over_speed_body">The limit here is %2$d km/h.</string>
+    <string name="card_school_zone_approach_fast_kicker">School zone ahead</string>
+    <string name="card_school_zone_approach_fast_headline">You are at %1$d km/h. The limit is %2$d.</string>
+    <string name="card_school_zone_approach_fast_body">Slow down before you enter the zone.</string>
     <string name="card_arrived_kicker">Arrived</string>
     <string name="card_arrived_headline">You have arrived.</string>
     <string name="card_arrived_body">Thank you for driving safely in Korea.</string>
@@ -49,6 +52,9 @@
     <string name="card_section_start_kicker">Average speed check</string>
     <string name="card_section_start_headline">Stay at or below %1$d km/h.</string>
     <string name="card_section_start_body">Start, end, and average speeds are all checked.</string>
+    <string name="card_toll_ahead_kicker">Toll gate in %1$d m</string>
+    <string name="card_toll_ahead_headline">Hi-Pass lanes need a device.</string>
+    <string name="card_toll_ahead_body">Not sure? Use a regular toll lane.</string>
     <string name="card_section_over_average_kicker">Average speed check</string>
     <string name="card_section_over_average_headline">Average %1$d km/h. Slow down.</string>
     <string name="card_section_over_average_body">The limit is %2$d km/h.</string>

@@ -35,11 +35,20 @@ enum class GuidanceId(val priority: Priority, val preemptible: Boolean = false) 
     /** args: [지금 속도(km/h), 제한 속도(km/h)]. 어린이보호구역에서 제한보다 빠를 때. 모든 사용자. */
     SCHOOL_ZONE_OVER_SPEED(Priority.SAFETY),
 
+    /**
+     * args: [지금 속도(km/h), 제한 속도(km/h)]. 앞쪽 어린이보호구역(카메라)의 제한을 알았는데 이미 그보다 빠를 때.
+     * 기획서 장면 "곧 어린이보호구역입니다. 제한 속도 30km, 지금 45km입니다". 모든 사용자.
+     */
+    SCHOOL_ZONE_APPROACH_FAST(Priority.SAFETY),
+
     /** args: [남은 거리(m)]. 상세 안내 대상만. */
     BUS_LANE_AHEAD(Priority.RULE),
 
     /** args: [구간 제한 속도(km/h)]. 상세 안내 대상만. */
     SECTION_START(Priority.RULE),
+
+    /** args: [남은 거리(m)]. 요금소 앞 하이패스 차로 안내. 상세 안내 대상만. */
+    TOLL_AHEAD(Priority.RULE),
 
     /** args: [평균 속도, 제한 속도]. 과속이라 모든 사용자. */
     SECTION_OVER_AVERAGE(Priority.SAFETY),

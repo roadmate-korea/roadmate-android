@@ -43,7 +43,7 @@ object DemoRoute {
     private fun tbt(vararg turns: Pair<TurnType, Double>) =
         RawSignal.Navi.Tbt(turns.map { TBTInfo(it.first, it.second, "demo") })
 
-    /** 출발 → 어린이보호구역 300m 전 → 제한 속도 30(이때 시속 45라 과속 경고) → 감속 → 버스전용차로 → 차선 변경 → 우회전 → 좌회전 → 구간 단속 → 학교 근처(공공데이터) → 도착 */
+    /** 출발 → 어린이보호구역 300m 전 → 제한 속도 30(이때 시속 45라 과속 경고) → 감속 → 버스전용차로 → 차선 변경 → 우회전 → 좌회전 → 구간 단속 → 요금소 → 학교 근처(공공데이터) → 도착 */
     val DEFAULT: List<DemoStep> = listOf(
         // 출발: 기어 D. 시작 안내
         DemoStep(0, listOf(gear(VehicleGear.GEAR_DRIVE))),
@@ -97,6 +97,9 @@ object DemoRoute {
             ),
         ),
         DemoStep(3_000, listOf(RawSignal.Navi.CameraAlerts(emptyList()), RawSignal.Navi.SpeedLimit(50))),
+        // 400m 앞 요금소(상세 안내 대상: 하이패스 차로 안내)
+        DemoStep(2_000, listOf(tbt(TurnType.TURN_TOLL to 400.0))),
+        DemoStep(3_000, listOf(tbt())),
         // 경로 안내 정보 없이 학교 쪽으로(내비 주의 지점 없음): 공공데이터 시설 위치로 어린이보호구역을 알린다
         DemoStep(2_000, listOf(speed(40), southOfDemoSchool(600))),
         DemoStep(1_000, listOf(southOfDemoSchool(450))),

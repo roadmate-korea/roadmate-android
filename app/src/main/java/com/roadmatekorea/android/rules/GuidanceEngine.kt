@@ -32,6 +32,7 @@ class GuidanceEngine(
     private var turns: List<TurnInstruction> = emptyList()
     private var rightTurnNear = false
     private var leftTurnNear = false
+    private var tollNear = false
 
     private val announcedCautionIds = mutableSetOf<String>()
     private val announcedCameraIds = mutableSetOf<String>()
@@ -121,6 +122,7 @@ class GuidanceEngine(
             // 정차 중에 받은 근접 회전은 안내하지 않은 것으로 두어, 출발 뒤 다음 갱신에서 다시 판단한다.
             rightTurnNear = false
             leftTurnNear = false
+            tollNear = false
             return emptyList()
         }
         val rightNear = hasNearTurn(TurnDirection.RIGHT)
@@ -130,9 +132,16 @@ class GuidanceEngine(
         val enteredLeft = leftNear && !leftTurnNear
         rightTurnNear = rightNear
         leftTurnNear = leftNear
+        // 요금소: 다가오는 순간 한 번(상세 안내 대상, 하이패스 차로 설명)
+        val toll = newTurns.filter { it.direction == TurnDirection.TOLL && it.distanceMeters in 1..TOLL_NEAR_METERS }.minByOrNull { it.distanceMeters }
+        val enteredToll = toll != null && !tollNear
+        tollNear = toll != null
         return buildList {
             if (enteredRight) addAll(turn(TurnDirection.RIGHT))
             if (enteredLeft) addAll(turn(TurnDirection.LEFT))
+            if (enteredToll && scope.detail == DetailLevel.DETAILED && cooldown.tryAcquire(GuidanceId.TOLL_AHEAD)) {
+                add(Guidance(GuidanceId.TOLL_AHEAD, listOf(roundDistance(toll!!.distanceMeters))))
+            }
         }
     }
 
@@ -148,7 +157,7 @@ class GuidanceEngine(
                 if (scope.rightSideAdaptation) addIfAllowed(GuidanceId.RIGHT_SIDE_LEFT_TURN)
                 if (scope.leftHandDriveAdaptation) addIfAllowed(GuidanceId.LHD_MIRROR_CHECK)
             }
-            TurnDirection.OTHER -> Unit
+            TurnDirection.TOLL, TurnDirection.OTHER -> Unit
         }
     }
 
@@ -371,8 +380,8 @@ class GuidanceEngine(
     }
 
     /**
-     * 어린이보호구역 제한 속도를 알게 된 순간의 안내. 구역 안이고 이미 제한보다 빠르면 "지금 몇 km, 제한 몇"으로 바꿔 말하고,
-     * 아니면 제한 속도만 말한다(앞쪽 카메라의 사전 안내는 늘 제한 속도만). 제한 속도 자체는 항상 NaviHelper 값이다.
+     * 어린이보호구역 제한 속도를 알게 된 순간의 안내. 이미 제한보다 빠르면 구역 안은 과속 경고, 구역 앞(앞쪽 카메라)은
+     * "곧 어린이보호구역, 제한 몇, 지금 몇"으로 말하고, 느리면 제한 속도만 말한다. 제한 속도 자체는 항상 NaviHelper 값이다.
      */
     private fun schoolZoneLimit(limit: Int): Guidance {
         val zone = schoolZone
@@ -382,6 +391,11 @@ class GuidanceEngine(
         ) {
             schoolZone = zone.copy(overSpeedWarned = true, lastOverWarnMs = clock.nowMillis())
             return Guidance(GuidanceId.SCHOOL_ZONE_OVER_SPEED, listOf(speed, limit))
+        }
+        // 아직 구역 앞(앞쪽 카메라가 제한을 먼저 알려 줌)인데 이미 그보다 빠르다: 제한과 지금 속도를 함께 말한다(기획서 장면).
+        // 제한보다 느리면 제한 속도만 말한다. 구역 안의 과속 경고는 진입이 확인된 뒤에만 한다.
+        if (zone != null && zone.entry == Entry.NONE && speed != null && !isParked && isOver(speed, limit)) {
+            return Guidance(GuidanceId.SCHOOL_ZONE_APPROACH_FAST, listOf(speed, limit))
         }
         return Guidance(GuidanceId.SCHOOL_ZONE_SPEED_LIMIT, listOf(limit))
     }
@@ -496,6 +510,9 @@ class GuidanceEngine(
 
         /** 위치가 이 시간 넘게 끊기면 근처 상태를 버리고 새로 판단한다. */
         const val LOCATION_GAP_MS = 30_000L
+
+        /** 요금소 안내 거리. */
+        const val TOLL_NEAR_METERS = 500
 
         /** 버스전용차로 안내 거리. */
         const val BUS_LANE_AHEAD_METERS = 300

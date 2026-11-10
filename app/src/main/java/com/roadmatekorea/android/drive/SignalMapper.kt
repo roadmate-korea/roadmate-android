@@ -98,6 +98,7 @@ object SignalMapper {
     fun turnDirection(type: TurnType): TurnDirection = when (type) {
         TurnType.TURN_RIGHT, TurnType.TURN_SHARP_R -> TurnDirection.RIGHT
         TurnType.TURN_LEFT, TurnType.TURN_SHARP_L -> TurnDirection.LEFT
+        TurnType.TURN_TOLL -> TurnDirection.TOLL
         else -> TurnDirection.OTHER
     }
 }

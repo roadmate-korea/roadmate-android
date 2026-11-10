@@ -68,7 +68,7 @@ class HttpTranslationClient(
 ) : TranslationClient {
 
     override fun availability(from: Locale, to: Locale): TranslationAvailability =
-        if (from.toLanguageTag() in SUPPORTED && to.toLanguageTag() in SUPPORTED) {
+        if (supportedPair(from.toLanguageTag(), to.toLanguageTag())) {
             TranslationAvailability.READY
         } else {
             TranslationAvailability.LANGUAGE_NOT_SUPPORTED
@@ -161,6 +161,15 @@ class HttpTranslationClient(
     companion object {
         /** roadmate-AI가 받는 언어(docs/openapi.json AppTranslateRequest). 그 밖의 언어는 422라 보내지 않는다. */
         val SUPPORTED = setOf("ko-KR", "en-US", "es-US", "es-MX")
+
+        /**
+         * roadmate-AI가 번역하는 언어 쌍: 둘 다 받는 언어이고, 서로 다르며, 정확히 한쪽이 한국어(schemas.py
+         * TranslateRequest._locales_differ). 한국어 → 한국어(한국어 프로필), 영어 → 스페인어는 422다.
+         */
+        fun supportedPair(from: String, to: String): Boolean =
+            from in SUPPORTED && to in SUPPORTED && from != to && ((from == KOREAN) != (to == KOREAN))
+
+        private const val KOREAN = "ko-KR"
     }
 }
 

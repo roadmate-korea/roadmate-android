@@ -75,14 +75,14 @@ class HttpTranslationClientTest {
         var received: JSONObject? = null
         respond { body, send ->
             received = JSONObject(body)
-            send(200, """{"text":"Vous payez par carte ?"}""".toByteArray())
+            send(200, """{"text":"¿Va a pagar con tarjeta?"}""".toByteArray())
         }
-        val result = HttpTranslationClient(url).translate("카드로 결제하시겠어요?", Locale.KOREA, Locale.CANADA_FRENCH, Situation.GAS_STATION).text
-        assertEquals("Vous payez par carte ?", result)
+        val result = HttpTranslationClient(url).translate("카드로 결제하시겠어요?", Locale.KOREA, Locale("es", "US"), Situation.GAS_STATION).text
+        assertEquals("¿Va a pagar con tarjeta?", result)
         val sent = received!!
         assertEquals("카드로 결제하시겠어요?", sent.getString("text"))
         assertEquals("ko-KR", sent.getString("from"))
-        assertEquals("fr-CA", sent.getString("to"))
+        assertEquals("es-US", sent.getString("to"))
         assertEquals("gas_station", sent.getString("situation"))
         assertEquals("문장, 언어, 상황만 보낸다", setOf("text", "from", "to", "situation"), sent.keySet())
     }
@@ -97,12 +97,18 @@ class HttpTranslationClientTest {
     }
 
     @Test
-    fun availability_followsTheLanguagesTheAiServerAccepts() {
+    fun availability_followsThePairsTheAiServerTranslates() {
         val client = HttpTranslationClient(url)
-        assertEquals(TranslationAvailability.READY, client.availability(Locale.US, Locale.KOREA))
-        assertEquals(TranslationAvailability.READY, client.availability(Locale.KOREA, Locale("es", "US")))
-        assertEquals(TranslationAvailability.READY, client.availability(Locale("es", "MX"), Locale.KOREA))
-        assertEquals("fr-CA는 서버가 422", TranslationAvailability.LANGUAGE_NOT_SUPPORTED, client.availability(Locale.CANADA_FRENCH, Locale.KOREA))
+        val others = listOf(Locale.US, Locale("es", "US"), Locale("es", "MX"))
+        // 한국어 ↔ 영어·스페인어 6방향
+        for (other in others) {
+            assertEquals(TranslationAvailability.READY, client.availability(other, Locale.KOREA))
+            assertEquals(TranslationAvailability.READY, client.availability(Locale.KOREA, other))
+        }
+        val rejected = TranslationAvailability.LANGUAGE_NOT_SUPPORTED
+        assertEquals("fr-CA는 서버가 422", rejected, client.availability(Locale.CANADA_FRENCH, Locale.KOREA))
+        assertEquals("같은 언어(한국어 프로필)는 서버가 422", rejected, client.availability(Locale.KOREA, Locale.KOREA))
+        assertEquals("한국어가 없는 쌍은 서버가 422", rejected, client.availability(Locale.US, Locale("es", "US")))
         assertEquals(TranslationAvailability.NO_SERVER, NoTranslationClient.availability(Locale.US, Locale.KOREA))
     }
 

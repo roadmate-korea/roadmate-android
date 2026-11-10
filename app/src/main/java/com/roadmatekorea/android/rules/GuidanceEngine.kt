@@ -49,14 +49,6 @@ class GuidanceEngine(
     private var lastFix: SchoolZoneMap.LatLon? = null
     private var lastFixMs = 0L
 
-    /** 위치로 마지막에 알린 시설, 알린 시각, 그 시설에 다가가는 중인지(내비 경고 중복 판단). */
-    private var warnedFacility: SchoolZoneMap.LatLon? = null
-    private var warnedFacilityMs = 0L
-    private var approachingWarned = false
-
-    /** 내비가 어린이보호구역을 알린 곳(그때의 차 위치와 남은 거리). 위치 경고 중복 판단에 쓴다. */
-    private var naviWarning: NaviWarning? = null
-
     private val isParked get() = gear == Gear.PARK
 
     /**
@@ -200,9 +192,6 @@ class GuidanceEngine(
         val now = clock.nowMillis()
         schoolZone = activeSchoolZone()?.copy(cautionId = nearest.id, lastEvidenceMs = now)
             ?: SchoolZoneContext(lastEvidenceMs = now, speedLimitBefore = currentSpeedLimit, cautionId = nearest.id)
-        // 방금 위치(공공데이터)로 알린 시설에 다가가는 중이다: 같은 구역으로 보고 감시만 이어 간다
-        if (approachingLocationWarned(now)) return emptyList()
-        rememberNaviWarning(nearest.remainMeters, now)
         return buildList {
             add(Guidance(GuidanceId.SCHOOL_ZONE_AHEAD, listOf(roundDistance(nearest.remainMeters))))
             if (scope.detail == DetailLevel.DETAILED) addIfAllowed(GuidanceId.SCHOOL_ZONE_CROSSWALK)
@@ -259,7 +248,6 @@ class GuidanceEngine(
             return checkOverSpeed()
         }
         announcedCameraIds += nearest.id
-        rememberNaviWarning(nearest.remainMeters, clock.nowMillis())
         return listOf(schoolZoneLimit(limit))
     }
 
@@ -267,7 +255,8 @@ class GuidanceEngine(
     //
     // 시설 [NEARBY_METERS] 안에 들어오는 순간 한 번 알린다. 같은 묶음([CLUSTER_METERS])의 시설 근처([NEARBY_EXIT_METERS])에
     // 머무는 동안은 다시 말하지 않는다(위치 흔들림, 붙어 있는 학교·유치원). 거리는 시설까지라 말하지 않는다.
-    // 내비와 겹침: 같은 구역이라고 위치로 확인될 때만 한쪽을 생략한다. 확실하지 않으면 둘 다 말한다(빠뜨리는 것보다 낫다).
+    // 내비 경고와는 서로 생략하지 않는다. 내비 주의 지점에는 좌표가 없어 같은 구역인지 확인할 수 없다.
+    // 같은 구역을 두 번 알릴 수는 있지만 다른 구역의 필수 경고를 빠뜨리지 않는다.
     // 제한 속도는 여전히 내비 값만 쓴다(공공데이터에는 없다).
 
     private fun onLocation(lat: Double, lon: Double): List<Guidance> {
@@ -278,7 +267,6 @@ class GuidanceEngine(
         if (previous == null) nearAnchor = null
         lastFix = here
         lastFixMs = now
-        warnedFacility?.let { approachingWarned = previous != null && isApproaching(previous, here, it) }
 
         val map = schoolZones()
         val near = map.nearest(lat, lon, NEARBY_EXIT_METERS)
@@ -290,8 +278,10 @@ class GuidanceEngine(
         val zone = activeSchoolZone()
         val anchor = nearAnchor
         if (anchor != null && distance(anchor, facility) <= CLUSTER_METERS) {
-            // 같은 묶음 근처에 머무는 중: 살아 있는 구역의 근거만 더한다
+            // 같은 묶음 근처에 머무는 중: 살아 있는 구역의 근거만 더한다. 이 시설도 안내한 것으로 둔다
+            // (위치가 끊겼다가 같은 곳에서 다시 들어와도 다시 말하지 않게)
             nearAnchor = facility
+            announcedFacilities += facility
             if (zone != null) schoolZone = revive(zone)
             return emptyList()
         }
@@ -301,51 +291,18 @@ class GuidanceEngine(
             return emptyList()
         }
         nearAnchor = facility
-        val silent = facility in announcedFacilities || naviWarnedSameZone(facility, now)
+        val silent = facility in announcedFacilities
         announcedFacilities += facility
         schoolZone = zone?.let(::revive) ?: SchoolZoneContext(lastEvidenceMs = now, speedLimitBefore = currentSpeedLimit)
         if (silent) return emptyList()
-        warnedFacility = facility
-        warnedFacilityMs = now
-        approachingWarned = previous != null && isApproaching(previous, here, facility)
         return buildList {
             add(Guidance(GuidanceId.SCHOOL_ZONE_NEARBY))
             if (scope.detail == DetailLevel.DETAILED) addIfAllowed(GuidanceId.SCHOOL_ZONE_CROSSWALK)
         }
     }
 
-    /**
-     * 내비가 알린 구역과 같은 곳인지: 내비가 알릴 때 차 위치에서 (남은 거리 + [SAME_ZONE_EXTRA_METERS]) 안의 시설이면
-     * 그 구역의 시설로 본다(구역은 시설 둘레 약 300m). 그때 위치를 몰랐으면 같다고 보지 않는다.
-     */
-    private fun naviWarnedSameZone(facility: SchoolZoneMap.LatLon, now: Long): Boolean {
-        val w = naviWarning ?: return false
-        return now - w.ms <= NAVI_SAME_ZONE_MS && distance(w.at, facility) <= w.remainMeters + SAME_ZONE_EXTRA_METERS
-    }
-
-    /**
-     * 위치로 알린 시설에 지금 다가가는 중인지. 그렇다면 앞에 있다는 내비 구역은 그 시설의 구역이다.
-     * 멀어지는 중이거나 멈춰 있으면(어느 구역인지 모름) 내비 경고를 그대로 낸다.
-     */
-    private fun approachingLocationWarned(now: Long): Boolean {
-        val facility = warnedFacility ?: return false
-        val here = lastFix ?: return false
-        return approachingWarned && now - warnedFacilityMs <= LOCATION_FIRST_MS && now - lastFixMs <= LOCATION_GAP_MS &&
-            distance(here, facility) <= NEARBY_EXIT_METERS
-    }
-
-    private fun rememberNaviWarning(remainMeters: Int, now: Long) {
-        val here = lastFix?.takeIf { now - lastFixMs <= LOCATION_GAP_MS }
-        naviWarning = here?.let { NaviWarning(it, remainMeters, now) }
-    }
-
-    private fun isApproaching(from: SchoolZoneMap.LatLon, to: SchoolZoneMap.LatLon, facility: SchoolZoneMap.LatLon) =
-        distance(to, facility) < distance(from, facility) - APPROACH_MIN_METERS
-
     private fun distance(a: SchoolZoneMap.LatLon, b: SchoolZoneMap.LatLon) =
         SchoolZoneMap.distanceMeters(a.lat, a.lon, b.lat, b.lon)
-
-    private data class NaviWarning(val at: SchoolZoneMap.LatLon, val remainMeters: Int, val ms: Long)
 
     // ---- 구간 단속: 시작 설명(상세 안내 대상), 평균 속도 초과(모든 사용자) ----
 
@@ -538,18 +495,6 @@ class GuidanceEngine(
 
         /** 위치가 이 시간 넘게 끊기면 근처 상태를 버리고 새로 판단한다. */
         const val LOCATION_GAP_MS = 30_000L
-
-        /** 내비가 알린 구역: 알린 위치에서 남은 거리 + 이 거리 안의 시설은 같은 구역으로 본다(구역 반경 300m + 여유). */
-        const val SAME_ZONE_EXTRA_METERS = 600
-
-        /** 내비가 알린 뒤 이 시간 안에 만난 시설만 같은 구역 후보로 본다. */
-        const val NAVI_SAME_ZONE_MS = 180_000L
-
-        /** 위치로 알린 뒤 이 시간 안의 내비 경고만 같은 구역 후보로 본다. */
-        const val LOCATION_FIRST_MS = 60_000L
-
-        /** 위치 흔들림을 다가가는 것으로 보지 않게, 이만큼 넘게 가까워져야 다가가는 중으로 본다. */
-        const val APPROACH_MIN_METERS = 5.0
 
         /** 버스전용차로 안내 거리. */
         const val BUS_LANE_AHEAD_METERS = 300

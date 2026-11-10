@@ -87,12 +87,23 @@ class SchoolZoneLocationTest {
     }
 
     @Test
-    fun naviWarnedFirst_forTheSameZone_locationStaysSilent() {
+    fun naviAndLocation_doNotSilenceEachOther_becauseNaviPointsHaveNoCoordinates() {
+        // 같은 구역인지 확인할 수 없으므로 둘 다 말한다(필수 경고를 빠뜨리지 않는다)
         val e = engine(experienced)
         e.send(at(-700))
         assertEquals(listOf(SCHOOL_ZONE_AHEAD), e.send(schoolCaution("sz", 300)))
         clock.advanceSeconds(30)
-        assertEquals(emptyList<GuidanceId>(), e.send(at(-400), at(-250)))
+        assertEquals(listOf(SCHOOL_ZONE_NEARBY), e.send(at(-400), at(-250)))
+    }
+
+    @Test
+    fun naviWarnedForA_thenTurningTowardsNearbyB_warnsForB() {
+        // 재현: A/B 사이에서 내비가 A를 알린 뒤 북쪽 B로 감
+        val e = engine(experienced)
+        e.send(at(600))
+        assertEquals(listOf(SCHOOL_ZONE_AHEAD), e.send(schoolCaution("A", 300)))
+        clock.advanceSeconds(45)
+        assertEquals(listOf(SCHOOL_ZONE_NEARBY), e.send(at(750)))
     }
 
     @Test
@@ -114,13 +125,13 @@ class SchoolZoneLocationTest {
     }
 
     @Test
-    fun locationWarnedFirst_whileApproaching_naviStaysSilent_andTheSpeedLimitStillFollows() {
+    fun locationWarnedFirst_naviStillWarns_andTheSpeedLimitFollows() {
         val e = engine(experienced)
         e.onEvent(DriveEvent.SpeedLimitChanged(50))
         assertEquals(listOf(SCHOOL_ZONE_NEARBY), e.send(at(-400), at(-250)))
         clock.advanceSeconds(5)
         e.send(at(-200))
-        assertEquals(emptyList<GuidanceId>(), e.send(schoolCaution("sz", 150)))
+        assertEquals(listOf(SCHOOL_ZONE_AHEAD), e.send(schoolCaution("sz", 150)))
         // 제한 속도는 내비 값으로 이어진다
         assertEquals(listOf(SCHOOL_ZONE_SPEED_LIMIT), e.send(DriveEvent.SpeedLimitChanged(30)))
     }
@@ -157,6 +168,19 @@ class SchoolZoneLocationTest {
         val e = engine(experienced, SchoolZoneMap(listOf(schoolA, near)))
         assertEquals(listOf(SCHOOL_ZONE_NEARBY), e.send(at(-250)))
         assertEquals(emptyList<GuidanceId>(), e.send(at(0), at(250), at(500), at(700)))
+    }
+
+    @Test
+    fun clusterNeighbourPassedSilently_thenAGap_thenTheSameNeighbour_staysSilent() {
+        val neighbour = SchoolZoneMap.LatLon(schoolA.lat + 500 * meterLat, schoolA.lon)
+        val e = engine(experienced, SchoolZoneMap(listOf(schoolA, neighbour, schoolB)))
+        assertEquals(listOf(SCHOOL_ZONE_NEARBY), e.send(at(0)))
+        clock.advanceSeconds(20)
+        assertEquals(emptyList<GuidanceId>(), e.send(at(500)))
+        clock.advanceSeconds(31)
+        assertEquals("같은 이웃 시설", emptyList<GuidanceId>(), e.send(at(500)))
+        clock.advanceSeconds(60)
+        assertEquals("멀리 떨어진 새 시설은 알림", listOf(SCHOOL_ZONE_NEARBY), e.send(at(1_000)))
     }
 
     @Test

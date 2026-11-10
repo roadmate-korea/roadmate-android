@@ -16,6 +16,8 @@
     <string name="interp_no_connection">No connection. Tap a phrase below instead.</string>
     <string name="interp_staff_needs_connection">Translating staff speech needs a connection.</string>
     <string name="interp_not_heard">Sorry, I didn\'t catch that. Try again.</string>
+    <string name="interp_language_not_supported">Voice interpreting doesn\'t support your language yet. Tap a phrase below instead.</string>
+    <string name="interp_say_again">Please say it again in a shorter, simpler way.</string>
     <string name="interp_hint_mine">Tap the button and speak. RoadMate will say it in Korean.</string>
     <string name="interp_hint_staff">Hand the button to the staff member to answer in Korean.</string>
     <string name="help_interpreter">Interpreter</string>

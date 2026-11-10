@@ -8,7 +8,7 @@ import java.util.Locale
  *
  * - 운전자 말: 미리 번역해 둔 문장([phraseTexts]: 운전자 언어 문장 → 한국어)과 같으면 그 한국어
  * - 직원 말: 아래 시연 대화 몇 개
- * 그 밖의 문장은 실패(null)로 돌려준다. 실제 번역은 서버가 한다.
+ * 그 밖의 문장은 실패로 돌려준다. 실제 번역은 서버가 한다.
  *
  * 악센트·대소문자·문장부호·공백을 무시하고 같아야 한다. 단, Pleos STT가 끝 글자를 빠뜨리는 일이 있어(에뮬레이터:
  * "s'il vous plaî", "결제하시겠어") 끝에서 [MAX_DROPPED_TAIL]글자까지 빠진 것은 같은 문장으로 본다.
@@ -16,7 +16,10 @@ import java.util.Locale
  */
 class DemoTranslationClient(private val phraseTexts: Map<String, String>) : TranslationClient {
 
-    override suspend fun translate(text: String, from: Locale, to: Locale, situation: Situation): String? {
+    override suspend fun translate(text: String, from: Locale, to: Locale, situation: Situation): TranslationResult =
+        TranslationResult.of(lookup(text, to))
+
+    private fun lookup(text: String, to: Locale): String? {
         val key = normalize(text)
         if (to.language == "ko") return phraseTexts.entries.closest(key) { it.key }?.value
         val row = STAFF.closest(key) { it.korean } ?: return null

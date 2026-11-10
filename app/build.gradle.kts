@@ -18,9 +18,12 @@ android {
         versionName = "1.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        // 서버(서버·AI 팀) 주소. gradle.properties나 -Proadmate.serverUrl=로 넣는다. 비어 있으면 서버 기능 없이 동작한다.
-        // 서버를 쓸 때는 매니페스트에 INTERNET 권한도 넣어야 한다(서버가 아직 없어 지금은 넣지 않았다)
-        buildConfigField("String", "SERVER_URL", "\"${(project.findProperty("roadmate.serverUrl") as String?) ?: ""}\"")
+        // 통역 번역 서버(roadmate-AI) 주소. gradle.properties나 -Proadmate.serverUrl=로 넣는다. 비어 있으면 서버 없이 동작한다.
+        // 같은 PC에서 AI 서버(127.0.0.1:8000)와 에뮬레이터를 함께 돌리면 http://10.0.2.2:8000
+        val serverUrl = (project.findProperty("roadmate.serverUrl") as String?)?.trim().orEmpty()
+        buildConfigField("String", "SERVER_URL", "\"$serverUrl\"")
+        // AI 서버는 http다. 주소가 http일 때만 암호화하지 않은 연결을 허용한다(주소가 없거나 https면 막아 둔다)
+        manifestPlaceholders["usesCleartextTraffic"] = serverUrl.startsWith("http://").toString()
     }
 
     buildTypes {

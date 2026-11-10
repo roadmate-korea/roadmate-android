@@ -17,7 +17,17 @@ import java.util.Locale
 enum class Side { DRIVER, STAFF }
 
 /** 화면에 알릴 상황. */
-enum class InterpreterNotice { NO_CONNECTION, STAFF_NEEDS_CONNECTION, NOT_HEARD }
+enum class InterpreterNotice {
+    NO_CONNECTION,
+    STAFF_NEEDS_CONNECTION,
+    NOT_HEARD,
+
+    /** 번역 서버가 운전자 언어를 지원하지 않는다(문장 카드를 쓴다). */
+    LANGUAGE_NOT_SUPPORTED,
+
+    /** 서버가 뜻을 정하지 못했다. 더 짧게 다시 말해 달라고 한다. */
+    SAY_AGAIN,
+}
 
 /** 한 사람이 한 말과 번역. 번역 중이거나 실패하면 [translated]는 null. */
 data class Exchange(val original: String, val translated: String?)
@@ -115,6 +125,13 @@ class InterpreterController(
         }
         stopListening()
         if (!voice.parked()) return
+        // 번역할 수 없으면 듣기 전에 알린다(말하게 해 놓고 실패하지 않게)
+        val from = if (side == Side.DRIVER) driverLocale() else KOREAN
+        val to = if (side == Side.DRIVER) KOREAN else driverLocale()
+        unavailableNotice(side, client.availability(from, to))?.let { notice ->
+            _state.update { it.copy(notice = notice) }
+            return
+        }
         voice.stopOthers()
         // 안전 경고를 말하거나 기다리는 중이면 듣지 않는다(음성 질문과 같은 규칙)
         if (!voice.hold(onSafetyInterrupt = ::stopListening)) return
@@ -204,7 +221,8 @@ class InterpreterController(
         val situation = _state.value.situation
         // 작업을 먼저 등록하고 시작한다(바로 끝나는 번역도 자기 자리를 확인할 수 있게)
         val job = scope.launch(start = CoroutineStart.LAZY) {
-            val translated = client.translate(text, from, to, situation)
+            val result = client.translate(text, from, to, situation)
+            val translated = result.text
             ensureActive()
             if (translations[side] !== coroutineContext[Job]) return@launch
             translations.remove(side)
@@ -212,6 +230,7 @@ class InterpreterController(
                 val exchange = Exchange(text, translated)
                 val notice = when {
                     translated != null -> null
+                    result == TranslationResult.AskAgain -> InterpreterNotice.SAY_AGAIN
                     side == Side.DRIVER -> InterpreterNotice.NO_CONNECTION
                     else -> InterpreterNotice.STAFF_NEEDS_CONNECTION
                 }
@@ -228,6 +247,13 @@ class InterpreterController(
         translations.remove(side)?.cancel()
         translations[side] = job
         job.start()
+    }
+
+    private fun unavailableNotice(side: Side, availability: TranslationAvailability): InterpreterNotice? = when (availability) {
+        TranslationAvailability.READY -> null
+        TranslationAvailability.LANGUAGE_NOT_SUPPORTED -> InterpreterNotice.LANGUAGE_NOT_SUPPORTED
+        TranslationAvailability.NO_SERVER ->
+            if (side == Side.DRIVER) InterpreterNotice.NO_CONNECTION else InterpreterNotice.STAFF_NEEDS_CONNECTION
     }
 
     companion object {

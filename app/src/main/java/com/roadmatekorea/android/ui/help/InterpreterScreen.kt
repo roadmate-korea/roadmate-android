@@ -145,6 +145,8 @@ private fun NoticeLine(notice: InterpreterNotice) {
             InterpreterNotice.NO_CONNECTION -> R.string.interp_no_connection
             InterpreterNotice.STAFF_NEEDS_CONNECTION -> R.string.interp_staff_needs_connection
             InterpreterNotice.NOT_HEARD -> R.string.interp_not_heard
+            InterpreterNotice.LANGUAGE_NOT_SUPPORTED -> R.string.interp_language_not_supported
+            InterpreterNotice.SAY_AGAIN -> R.string.interp_say_again
         },
     )
     Text(

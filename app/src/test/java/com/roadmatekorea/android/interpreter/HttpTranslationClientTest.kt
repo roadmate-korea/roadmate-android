@@ -77,7 +77,7 @@ class HttpTranslationClientTest {
             received = JSONObject(body)
             send(200, """{"text":"Vous payez par carte ?"}""".toByteArray())
         }
-        val result = HttpTranslationClient(url).translate("카드로 결제하시겠어요?", Locale.KOREA, Locale.CANADA_FRENCH, Situation.GAS_STATION)
+        val result = HttpTranslationClient(url).translate("카드로 결제하시겠어요?", Locale.KOREA, Locale.CANADA_FRENCH, Situation.GAS_STATION).text
         assertEquals("Vous payez par carte ?", result)
         val sent = received!!
         assertEquals("카드로 결제하시겠어요?", sent.getString("text"))
@@ -88,10 +88,29 @@ class HttpTranslationClientTest {
     }
 
     @Test
+    fun aClarificationReply_meansAskAgain() = runBlocking {
+        respond { _, send -> send(200, """{"clarification":"어느 쪽 말씀이세요?","clarification_locale":"ko-KR"}""".toByteArray()) }
+        assertEquals(
+            TranslationResult.AskAgain,
+            HttpTranslationClient(url).translate("그거요", Locale.KOREA, Locale.US, Situation.PARKING),
+        )
+    }
+
+    @Test
+    fun availability_followsTheLanguagesTheAiServerAccepts() {
+        val client = HttpTranslationClient(url)
+        assertEquals(TranslationAvailability.READY, client.availability(Locale.US, Locale.KOREA))
+        assertEquals(TranslationAvailability.READY, client.availability(Locale.KOREA, Locale("es", "US")))
+        assertEquals(TranslationAvailability.READY, client.availability(Locale("es", "MX"), Locale.KOREA))
+        assertEquals("fr-CA는 서버가 422", TranslationAvailability.LANGUAGE_NOT_SUPPORTED, client.availability(Locale.CANADA_FRENCH, Locale.KOREA))
+        assertEquals(TranslationAvailability.NO_SERVER, NoTranslationClient.availability(Locale.US, Locale.KOREA))
+    }
+
+    @Test
     fun serverErrors_andUnreachableServers_fail() = runBlocking {
         respond { _, send -> send(500, ByteArray(0)) }
-        assertNull(HttpTranslationClient(url).translate("a", Locale.KOREA, Locale.US, Situation.PARKING))
-        assertNull(HttpTranslationClient("http://127.0.0.1:1").translate("a", Locale.KOREA, Locale.US, Situation.PARKING))
+        assertNull(HttpTranslationClient(url).translate("a", Locale.KOREA, Locale.US, Situation.PARKING).text)
+        assertNull(HttpTranslationClient("http://127.0.0.1:1").translate("a", Locale.KOREA, Locale.US, Situation.PARKING).text)
     }
 
     @Test
@@ -106,7 +125,7 @@ class HttpTranslationClientTest {
             }
         }
         val started = System.nanoTime()
-        val result = HttpTranslationClient(url, timeoutMs = 500).translate("a", Locale.KOREA, Locale.US, Situation.PARKING)
+        val result = HttpTranslationClient(url, timeoutMs = 500).translate("a", Locale.KOREA, Locale.US, Situation.PARKING).text
         val elapsedMs = (System.nanoTime() - started) / 1_000_000
         assertNull(result)
         assertTrue("전체 기한 안에 끝남: ${elapsedMs}ms", elapsedMs < 1_500)
@@ -129,7 +148,7 @@ class HttpTranslationClientTest {
             }
         }
         val call = async(Dispatchers.Default) {
-            HttpTranslationClient(url, timeoutMs = 10_000).translate("a", Locale.KOREA, Locale.US, Situation.PARKING)
+            HttpTranslationClient(url, timeoutMs = 10_000).translate("a", Locale.KOREA, Locale.US, Situation.PARKING).text
         }
         delay(300)
         call.cancel()
@@ -140,7 +159,7 @@ class HttpTranslationClientTest {
     @Test
     fun anOversizedResponse_fails() = runBlocking {
         respond { _, send -> send(200, ("""{"text":"""" + "a".repeat(100_000) + """"}""").toByteArray()) }
-        assertNull(HttpTranslationClient(url, maxResponseBytes = 1_024).translate("a", Locale.KOREA, Locale.US, Situation.PARKING))
+        assertNull(HttpTranslationClient(url, maxResponseBytes = 1_024).translate("a", Locale.KOREA, Locale.US, Situation.PARKING).text)
     }
 
     /** 테스트가 [runAll]을 부를 때까지 작업을 쌓아 두는 실행기(입출력 작업이 늦게 시작되는 상황). */
@@ -157,7 +176,7 @@ class HttpTranslationClientTest {
         respond { _, send -> send(200, """{"text":"x"}""".toByteArray()) }
         val held = HeldExecutor()
         val call = async(Dispatchers.Default) {
-            HttpTranslationClient(url, executor = held).translate("a", Locale.KOREA, Locale.US, Situation.PARKING)
+            HttpTranslationClient(url, executor = held).translate("a", Locale.KOREA, Locale.US, Situation.PARKING).text
         }
         delay(100)
         call.cancel()
@@ -171,7 +190,7 @@ class HttpTranslationClientTest {
     fun deadlinePassedBeforeTheWorkStarts_neverConnects() = runBlocking {
         respond { _, send -> send(200, """{"text":"x"}""".toByteArray()) }
         val held = HeldExecutor()
-        val result = HttpTranslationClient(url, timeoutMs = 100, executor = held).translate("a", Locale.KOREA, Locale.US, Situation.PARKING)
+        val result = HttpTranslationClient(url, timeoutMs = 100, executor = held).translate("a", Locale.KOREA, Locale.US, Situation.PARKING).text
         assertNull(result)
         held.runAll()
         delay(200)

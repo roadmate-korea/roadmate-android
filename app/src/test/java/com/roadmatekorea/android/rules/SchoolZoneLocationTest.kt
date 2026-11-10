@@ -184,6 +184,23 @@ class SchoolZoneLocationTest {
     }
 
     @Test
+    fun anotherFacilitysLocation_doesNotKeepAnOldNaviSpeedLimitAlive() {
+        // 재현: A 카메라(제한 30) 뒤 1.2km 떨어진 B 위치만 계속 들어옴
+        val far = SchoolZoneMap.LatLon(schoolA.lat + 1_200 * meterLat, schoolA.lon)
+        val e = engine(experienced, SchoolZoneMap(listOf(schoolA, far)))
+        e.send(at(0), DriveEvent.VehicleSpeedChanged(25))
+        e.send(DriveEvent.CameraAlertsUpdated(listOf(CameraAlert("camA", CameraKind.SCHOOL_ZONE, 30, 100))))
+        e.send(DriveEvent.CameraAlertsUpdated(emptyList()))
+        clock.advanceSeconds(60)
+        assertEquals(listOf(SCHOOL_ZONE_NEARBY), e.send(at(1_200)))
+        for (i in 1..5) {
+            clock.advanceSeconds(20)
+            e.send(at(1_200))
+        }
+        assertEquals("지난 구역의 제한으로 과속 경고하지 않음", emptyList<GuidanceId>(), e.send(DriveEvent.VehicleSpeedChanged(40)))
+    }
+
+    @Test
     fun locationAlone_speedLimitDropInsideTheZone_isAnnounced() {
         val e = engine(experienced)
         e.onEvent(DriveEvent.SpeedLimitChanged(50))

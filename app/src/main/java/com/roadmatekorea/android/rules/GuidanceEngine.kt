@@ -255,6 +255,7 @@ class GuidanceEngine(
     //
     // 시설 [NEARBY_METERS] 안에 들어오는 순간 한 번 알린다. 같은 묶음([CLUSTER_METERS])의 시설 근처([NEARBY_EXIT_METERS])에
     // 머무는 동안은 다시 말하지 않는다(위치 흔들림, 붙어 있는 학교·유치원). 거리는 시설까지라 말하지 않는다.
+    // 위치는 구역 근거(제한 속도의 수명)를 늘리지 않는다. 제한 속도와 진입 판단은 내비 값으로만 한다.
     // 내비 경고와는 서로 생략하지 않는다. 내비 주의 지점에는 좌표가 없어 같은 구역인지 확인할 수 없다.
     // 같은 구역을 두 번 알릴 수는 있지만 다른 구역의 필수 경고를 빠뜨리지 않는다.
     // 제한 속도는 여전히 내비 값만 쓴다(공공데이터에는 없다).
@@ -278,11 +279,9 @@ class GuidanceEngine(
         val zone = activeSchoolZone()
         val anchor = nearAnchor
         if (anchor != null && distance(anchor, facility) <= CLUSTER_METERS) {
-            // 같은 묶음 근처에 머무는 중: 살아 있는 구역의 근거만 더한다. 이 시설도 안내한 것으로 둔다
-            // (위치가 끊겼다가 같은 곳에서 다시 들어와도 다시 말하지 않게)
+            // 같은 묶음 근처에 머무는 중. 이 시설도 안내한 것으로 둔다(위치가 끊겼다가 같은 곳에서 다시 들어와도 다시 말하지 않게)
             nearAnchor = facility
             announcedFacilities += facility
-            if (zone != null) schoolZone = revive(zone)
             return emptyList()
         }
         // 아직 바깥으로 본다(들어오는 반경은 더 좁다). 정차 중이면 출발한 뒤 다음 위치에서 판단한다.
@@ -293,7 +292,9 @@ class GuidanceEngine(
         nearAnchor = facility
         val silent = facility in announcedFacilities
         announcedFacilities += facility
-        schoolZone = zone?.let(::revive) ?: SchoolZoneContext(lastEvidenceMs = now, speedLimitBefore = currentSpeedLimit)
+        // 살아 있는 구역(내비 근거)은 건드리지 않는다: 같은 구역인지 모르므로 그 제한 속도의 수명을 위치로 늘리지 않는다
+        // 구역이 없을 때만 새로 감시를 시작해, 이어서 도로 제한이 내려오면 그 값을 안내한다.
+        if (zone == null) schoolZone = SchoolZoneContext(lastEvidenceMs = now, speedLimitBefore = currentSpeedLimit)
         if (silent) return emptyList()
         return buildList {
             add(Guidance(GuidanceId.SCHOOL_ZONE_NEARBY))

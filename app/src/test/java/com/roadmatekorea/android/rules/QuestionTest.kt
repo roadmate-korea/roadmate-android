@@ -94,6 +94,10 @@ class QuestionTest {
         val last = Guidance(GuidanceId.SCHOOL_ZONE_AHEAD, listOf(300))
         assertEquals(last, QuestionAnswers.answer(REPEAT, null, last))
         assertEquals(Guidance(GuidanceId.ANSWER_HELP), QuestionAnswers.answer(REPEAT, null, null))
+        // 그 순간의 속도로 만든 경고는 숫자를 다시 읽지 않고 어린이보호구역 안내로
+        for (momentary in listOf(Guidance(GuidanceId.SCHOOL_ZONE_APPROACH_FAST, listOf(45, 30)), Guidance(GuidanceId.SCHOOL_ZONE_OVER_SPEED, listOf(45, 30)))) {
+            assertEquals(Guidance(GuidanceId.ANSWER_SCHOOL_ZONE), QuestionAnswers.answer(REPEAT, null, momentary))
+        }
         assertEquals(Guidance(GuidanceId.ANSWER_HELP), QuestionAnswers.answer(UNKNOWN, 50, last))
     }
 

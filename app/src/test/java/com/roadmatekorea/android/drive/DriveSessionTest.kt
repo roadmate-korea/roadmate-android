@@ -165,6 +165,26 @@ class DriveSessionTest {
     }
 
     @Test
+    fun repeatAfterAnApproachWarning_answersAboutSchoolZones_insteadOfStaleNumbers_orSilence() = runTest {
+        // 감속한 뒤 "다시 말해 줘"가 재생 직전 확인에 버려져 아무 말도 없던 문제
+        val tts = HoldTts()
+        val clock = Clock { testScheduler.currentTime }
+        val speaker = GuidanceSpeaker(tts, backgroundScope, clock).also { it.start() }
+        val s = DriveSession(Personas.CARLOS, speaker, { g -> (listOf(g.id.name) + g.args).joinToString(":") }, Locale.US, clock)
+        fun kmh(v: Int) = RawSignal.Vehicle.Speed(v / 3.6f)
+        s.onSignal(RawSignal.Vehicle.Gear(VehicleGear.GEAR_DRIVE))
+        tts.finish() // 시작 인사 끝
+        s.onSignal(RawSignal.Navi.SpeedLimit(50))
+        s.onSignal(kmh(45))
+        s.onSignal(schoolCamera(30, 250))
+        tts.finish() // 구역 앞 과속 경고 끝
+        s.onSignal(kmh(25))
+        s.ask("¿Puedes repetir?")
+        repeat(2) { tts.finish() }
+        assertEquals(listOf("SCHOOL_ZONE_APPROACH_FAST:45:30", "ANSWER_SCHOOL_ZONE"), tts.spoken.filter { it.startsWith("SCHOOL_ZONE_APPROACH") || it.startsWith("ANSWER") })
+    }
+
+    @Test
     fun approachWarning_isRecheckedRightBeforePlaying_evenWithoutNewSignals() = runTest {
         // 신호가 끊긴 채 6초 뒤에 차례가 오면 낡은 카메라 거리로 말하지 않는다
         val tts = HoldTts()

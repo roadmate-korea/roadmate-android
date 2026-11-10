@@ -122,9 +122,17 @@ object QuestionAnswers {
             } else {
                 Guidance(GuidanceId.ANSWER_SPEED_LIMIT_UNKNOWN)
             }
-        QuestionTopic.REPEAT -> lastGuidance ?: Guidance(GuidanceId.ANSWER_HELP)
+        // 지금 속도가 들어간 경고는 지나면 숫자가 맞지 않는다. 다시 읽지 않고 어린이보호구역 안내로 답한다
+        QuestionTopic.REPEAT -> when {
+            lastGuidance == null -> Guidance(GuidanceId.ANSWER_HELP)
+            lastGuidance.id in MOMENTARY -> Guidance(GuidanceId.ANSWER_SCHOOL_ZONE)
+            else -> lastGuidance
+        }
         QuestionTopic.UNKNOWN -> Guidance(GuidanceId.ANSWER_HELP)
     }
+
+    /** 그 순간의 속도로 만든 경고. "다시 말해 줘"로 같은 숫자를 다시 읽지 않는다. */
+    private val MOMENTARY = setOf(GuidanceId.SCHOOL_ZONE_APPROACH_FAST, GuidanceId.SCHOOL_ZONE_OVER_SPEED)
 
     /** 인식 결과가 없거나 오류일 때. */
     val notHeard = Guidance(GuidanceId.ANSWER_NOT_HEARD)

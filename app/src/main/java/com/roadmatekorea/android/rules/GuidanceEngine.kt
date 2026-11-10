@@ -228,7 +228,11 @@ class GuidanceEngine(
      */
     private fun schoolZoneCamera(cameras: List<CameraAlert>): List<Guidance> {
         val schoolCameras = cameras.filter { it.kind == CameraKind.SCHOOL_ZONE && it.speedLimitKmh > 0 }
-        val nearest = schoolCameras.minByOrNull { it.remainMeters } ?: return emptyList()
+        val nearest = schoolCameras.minByOrNull { it.remainMeters } ?: run {
+            // 학교 카메라가 사라짐(지나감, 비활성): 구역 앞 과속 판단에 쓰던 거리는 버린다. 구역 제한 자체는 그대로 둔다
+            schoolZone = schoolZone?.copy(cameraRemainMeters = null)
+            return emptyList()
+        }
         schoolZone?.let { zone ->
             val active = activeSchoolZone() != null
             // 지금 구역과 같은 제한의 카메라는 구역 근거다. 만료된 구역은 같은 카메라가 다시 올 때만 말없이 되살린다.
@@ -257,7 +261,7 @@ class GuidanceEngine(
             overSpeedWarned = false,
             cameraRemainMeters = nearest.remainMeters,
             cameraSeenMs = clock.nowMillis(),
-            approachWarned = false,
+            approachSpoken = false,
         )
         if (nearest.id in announcedCameraIds) {
             // 이미 안내한 카메라(같은 구역 재진입 등): 다시 말하지 않고 그 제한으로 감시하며 지금 속도로 판단한다
@@ -401,10 +405,7 @@ class GuidanceEngine(
         }
         // 아직 구역 앞(앞쪽 카메라가 제한을 먼저 알려 줌)인데 이미 그보다 빠르다: 제한과 지금 속도를 함께 말한다(기획서 장면).
         // 제한보다 느리면 제한 속도만 말한다. 구역 안의 과속 경고는 진입이 확인된 뒤에만 한다.
-        approachFastNow()?.let { warning ->
-            schoolZone = schoolZone?.copy(approachWarned = true)
-            return warning
-        }
+        if (schoolZone?.approachSpoken != true) approachFastNow()?.let { return it }
         return Guidance(GuidanceId.SCHOOL_ZONE_SPEED_LIMIT, listOf(limit))
     }
 
@@ -418,12 +419,19 @@ class GuidanceEngine(
      * 구역 앞 과속(rules-v5 school_zone_approach): 앞쪽 카메라가 알려 준 구역 제한보다 이미 빠르고, 그 카메라가
      * [APPROACH_MIN_METERS]~[SCHOOL_ZONE_AHEAD_METERS] 앞이며 방금([CAMERA_FRESH_MS] 안) 받은 값일 때. 구역마다 한 번.
      * 속도·카메라가 바뀔 때마다 다시 판단한다(어느 쪽이 먼저 오든, 나중에 가속하든).
+     * 실제로 말할 때까지([markApproachSpoken]) 조건이 맞을 때마다 돌려준다. 기다리는 것과 겹치지 않게 하는 것은 DriveSession이다.
      */
     private fun checkApproachFast(): List<Guidance> {
-        val warning = approachFastNow() ?: return emptyList()
-        if (schoolZone?.approachWarned == true) return emptyList()
-        schoolZone = schoolZone?.copy(approachWarned = true)
-        return listOf(warning)
+        if (schoolZone?.approachSpoken == true) return emptyList()
+        return listOfNotNull(approachFastNow())
+    }
+
+    /**
+     * 구역 앞 과속 경고를 실제로 내보냈다(음성 출력부가 재생을 시작함). 이 구역에서는 다시 말하지 않는다.
+     * 기다리다 버려진 경고는 말하지 않은 것이므로 조건이 다시 맞으면 다시 만든다.
+     */
+    fun markApproachSpoken() {
+        schoolZone = schoolZone?.copy(approachSpoken = true)
     }
 
     /**
@@ -528,8 +536,8 @@ class GuidanceEngine(
         /** 구역 제한을 알려 준 카메라까지 남은 거리와 받은 시각(구역 앞 과속 판단). */
         val cameraRemainMeters: Int? = null,
         val cameraSeenMs: Long = 0,
-        /** 이 구역에서 구역 앞 과속을 이미 말했는지. */
-        val approachWarned: Boolean = false,
+        /** 이 구역에서 구역 앞 과속을 실제로 말했는지. */
+        val approachSpoken: Boolean = false,
     )
 
     companion object {

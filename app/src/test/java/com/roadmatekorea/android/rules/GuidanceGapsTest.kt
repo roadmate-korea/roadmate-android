@@ -62,7 +62,30 @@ class GuidanceGapsTest {
         assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), e.send(schoolCamera(30, remain = 2_000)))
         assertEquals(emptyList<Guidance>(), e.send(schoolCamera(30, remain = 800)))
         assertEquals(listOf(Guidance(SCHOOL_ZONE_APPROACH_FAST, listOf(45, 30))), e.send(schoolCamera(30, remain = 280)))
-        assertEquals("구역마다 한 번", emptyList<Guidance>(), e.send(schoolCamera(30, remain = 200), DriveEvent.VehicleSpeedChanged(47)))
+        e.markApproachSpoken()
+        assertEquals("말한 뒤에는 구역마다 한 번", emptyList<Guidance>(), e.send(schoolCamera(30, remain = 200), DriveEvent.VehicleSpeedChanged(47)))
+    }
+
+    @Test
+    fun untilItIsActuallySpoken_theWarningKeepsComingWithTheLatestSpeed() {
+        // 기다리다 버려진 경고는 말하지 않은 것이므로 다시 만든다
+        val e = engine()
+        e.send(DriveEvent.SpeedLimitChanged(50), DriveEvent.VehicleSpeedChanged(45))
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_APPROACH_FAST, listOf(45, 30))), e.send(schoolCamera(30)))
+        assertEquals(emptyList<Guidance>(), e.send(DriveEvent.VehicleSpeedChanged(25)))
+        assertEquals(listOf(Guidance(SCHOOL_ZONE_APPROACH_FAST, listOf(44, 30))), e.send(DriveEvent.VehicleSpeedChanged(44)))
+    }
+
+    @Test
+    fun aCameraThatDisappears_isNoLongerUsedForTheApproachWarning() {
+        // 비활성(빈 목록)으로 바뀐 카메라의 옛 거리로 경고하지 않는다
+        val e = engine()
+        e.send(DriveEvent.SpeedLimitChanged(50), DriveEvent.VehicleSpeedChanged(25))
+        e.send(schoolCamera(30))
+        clock.advanceSeconds(1)
+        e.send(DriveEvent.CameraAlertsUpdated(emptyList()))
+        assertEquals(emptyList<Guidance>(), e.send(DriveEvent.VehicleSpeedChanged(45)))
+        assertEquals(null, e.approachFastNow())
     }
 
     @Test

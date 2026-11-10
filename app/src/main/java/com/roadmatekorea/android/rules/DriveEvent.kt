@@ -53,7 +53,14 @@ enum class Gear {
 
 enum class TurnSignal { OFF, LEFT, RIGHT }
 
-enum class TurnDirection { LEFT, RIGHT, OTHER }
+enum class TurnDirection {
+    LEFT,
+    RIGHT,
+
+    /** 요금소(NaviHelper TurnType.TURN_TOLL). 회전이 아니라 깜빡이 판단에는 쓰지 않는다. */
+    TOLL,
+    OTHER,
+}
 
 enum class CautionKind {
     SCHOOL_ZONE,

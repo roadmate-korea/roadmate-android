@@ -40,6 +40,9 @@
     <string name="card_school_zone_over_speed_kicker">Zone scolaire</string>
     <string name="card_school_zone_over_speed_headline">Vous êtes à %1$d km/h. Ralentissez.</string>
     <string name="card_school_zone_over_speed_body">La limite ici est de %2$d km/h.</string>
+    <string name="card_school_zone_approach_fast_kicker">Zone scolaire à venir</string>
+    <string name="card_school_zone_approach_fast_headline">Vous roulez à %1$d km/h. Limite %2$d.</string>
+    <string name="card_school_zone_approach_fast_body">Ralentissez avant d\'entrer dans la zone.</string>
     <string name="card_arrived_kicker">Arrivée</string>
     <string name="card_arrived_headline">Vous êtes arrivé.</string>
     <string name="card_arrived_body">Merci d\'avoir conduit prudemment en Corée.</string>
@@ -49,6 +52,9 @@
     <string name="card_section_start_kicker">Contrôle de vitesse moyenne</string>
     <string name="card_section_start_headline">Pas plus de %1$d km/h.</string>
     <string name="card_section_start_body">La vitesse au début, à la fin et la moyenne sont contrôlées.</string>
+    <string name="card_toll_ahead_kicker">Péage dans %1$d m</string>
+    <string name="card_toll_ahead_headline">Les voies Hi-Pass exigent un appareil.</string>
+    <string name="card_toll_ahead_body">En cas de doute, prenez une voie ordinaire.</string>
     <string name="card_section_over_average_kicker">Contrôle de vitesse moyenne</string>
     <string name="card_section_over_average_headline">Moyenne de %1$d km/h. Ralentissez.</string>
     <string name="card_section_over_average_body">La limite est de %2$d km/h.</string>

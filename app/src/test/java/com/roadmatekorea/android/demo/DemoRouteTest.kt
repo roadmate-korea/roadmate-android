@@ -105,6 +105,7 @@ class DemoRouteTest {
         "RIGHT_TURN_RULE",
         "LEFT_TURN_RULE", "RIGHT_SIDE_LEFT_TURN",
         "SECTION_START:80",
+        "TOLL_AHEAD:400",
         "SCHOOL_ZONE_NEARBY", "SCHOOL_ZONE_CROSSWALK",
         "ARRIVED",
     )
@@ -117,6 +118,7 @@ class DemoRouteTest {
         "RIGHT_TURN_RULE",
         "LEFT_TURN_RULE",
         "SECTION_START:80",
+        "TOLL_AHEAD:400",
         "SCHOOL_ZONE_NEARBY", "SCHOOL_ZONE_CROSSWALK",
         "ARRIVED",
     )

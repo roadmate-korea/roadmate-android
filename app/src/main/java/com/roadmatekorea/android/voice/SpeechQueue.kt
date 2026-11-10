@@ -64,6 +64,12 @@ class SpeechQueue(private val clock: Clock) {
         if (i >= 0) items[i] = items[i].copy(guidance = guidance, text = text)
     }
 
+    /** 아직 말하지 않은(만료되지 않은) [id] 안내가 있는지. */
+    fun contains(id: GuidanceId): Boolean {
+        dropExpired()
+        return items.any { it.guidance.id == id }
+    }
+
     /** 아직 말하지 않은 [id] 안내를 버린다(상황이 풀려 더는 맞지 않을 때). */
     fun remove(id: GuidanceId) {
         items.removeAll { it.guidance.id == id }

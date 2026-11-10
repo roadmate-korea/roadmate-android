@@ -28,8 +28,10 @@ object GuidanceStrings {
         GuidanceId.SCHOOL_ZONE_CROSSWALK -> R.string.guidance_school_zone_crosswalk
         GuidanceId.BUS_LANE_AHEAD -> R.string.guidance_bus_lane_ahead
         GuidanceId.SECTION_START -> R.string.guidance_section_start
+        GuidanceId.TOLL_AHEAD -> R.string.guidance_toll_ahead
         GuidanceId.SECTION_OVER_AVERAGE -> R.string.guidance_section_over_average
         GuidanceId.SCHOOL_ZONE_OVER_SPEED -> R.string.guidance_school_zone_over_speed
+        GuidanceId.SCHOOL_ZONE_APPROACH_FAST -> R.string.guidance_school_zone_approach_fast
         GuidanceId.ARRIVED -> R.string.guidance_arrived
         GuidanceId.ANSWER_SCHOOL_ZONE -> R.string.guidance_answer_school_zone
         GuidanceId.ANSWER_BUS_LANE -> R.string.guidance_answer_bus_lane

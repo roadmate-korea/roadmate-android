@@ -1,5 +1,6 @@
 package com.roadmatekorea.android.drive
 
+import ai.pleos.playground.navi.constants.CameraType
 import ai.pleos.playground.navi.constants.CautionPointType
 import ai.pleos.playground.vehicle.constant.area.TurnSignalValue
 import ai.pleos.playground.vehicle.constant.control.VehicleGear
@@ -11,12 +12,14 @@ import com.roadmatekorea.android.voice.GuidanceSpeaker
 import com.roadmatekorea.android.voice.TtsEngine
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import ai.pleos.playground.navi.data.CameraAlert as SdkCameraAlert
 import java.util.Locale
 import ai.pleos.playground.navi.data.CautionPoint as SdkCautionPoint
 
@@ -104,6 +107,115 @@ class DriveSessionTest {
         repeat(8) { tts.finish() }
         val over = tts.spoken.filter { it.startsWith("SCHOOL_ZONE_OVER_SPEED") }
         assertEquals(listOf("SCHOOL_ZONE_OVER_SPEED:43:30"), over)
+    }
+
+    private fun schoolCamera(limit: Int, remain: Int) =
+        RawSignal.Navi.CameraAlerts(listOf(SdkCameraAlert("cam", CameraType.SPEED_CAMERA_SCHOOL_ZONE, true, limit, remain, 0, false, false)))
+
+    @Test
+    fun pendingApproachWarning_isDroppedWhenSlowingDown_andReplacedByTheInZoneWarningOnEntry() = runTest {
+        // 기다리는 동안 감속·진입하면 옛 "곧 어린이보호구역, 지금 45"를 말하지 않는다
+        val tts = HoldTts()
+        val clock = Clock { testScheduler.currentTime }
+        val speaker = GuidanceSpeaker(tts, backgroundScope, clock).also { it.start() }
+        val s = DriveSession(Personas.CARLOS, speaker, { g -> (listOf(g.id.name) + g.args).joinToString(":") }, Locale.US, clock)
+        fun kmh(v: Int) = RawSignal.Vehicle.Speed(v / 3.6f)
+        s.onSignal(RawSignal.Vehicle.Gear(VehicleGear.GEAR_DRIVE)) // 시작 인사가 재생 중(끝나지 않음)
+        s.onSignal(RawSignal.Navi.SpeedLimit(50))
+        s.onSignal(kmh(45))
+        s.onSignal(schoolCamera(30, 250)) // "곧 어린이보호구역, 45/30"이 대기열에
+        s.onSignal(kmh(25)) // 말하기 전에 감속
+        repeat(6) { tts.finish() }
+        assertTrue("감속하면 버림", tts.spoken.none { it.startsWith("SCHOOL_ZONE_APPROACH_FAST") })
+
+        val tts2 = HoldTts()
+        val speaker2 = GuidanceSpeaker(tts2, backgroundScope, clock).also { it.start() }
+        val s2 = DriveSession(Personas.CARLOS, speaker2, { g -> (listOf(g.id.name) + g.args).joinToString(":") }, Locale.US, clock)
+        s2.onSignal(RawSignal.Vehicle.Gear(VehicleGear.GEAR_DRIVE))
+        s2.onSignal(RawSignal.Navi.SpeedLimit(50))
+        s2.onSignal(kmh(45))
+        s2.onSignal(schoolCamera(30, 250))
+        s2.onSignal(kmh(43))
+        s2.onSignal(RawSignal.Navi.SpeedLimit(30)) // 말하기 전에 구역 진입이 확인됨
+        repeat(8) { tts2.finish() }
+        assertTrue("진입하면 구역 앞 경고는 버림", tts2.spoken.none { it.startsWith("SCHOOL_ZONE_APPROACH_FAST") })
+        assertTrue("구역 안 과속 경고로 넘어감", tts2.spoken.contains("SCHOOL_ZONE_OVER_SPEED:43:30"))
+    }
+
+    @Test
+    fun approachWarning_droppedWhileWaiting_comesBackWhenTheDriverSpeedsUpAgain_andIsSpokenOnce() = runTest {
+        val tts = HoldTts()
+        val clock = Clock { testScheduler.currentTime }
+        val speaker = GuidanceSpeaker(tts, backgroundScope, clock).also { it.start() }
+        val s = DriveSession(Personas.CARLOS, speaker, { g -> (listOf(g.id.name) + g.args).joinToString(":") }, Locale.US, clock)
+        fun kmh(v: Int) = RawSignal.Vehicle.Speed(v / 3.6f)
+        s.onSignal(RawSignal.Vehicle.Gear(VehicleGear.GEAR_DRIVE)) // 시작 인사가 재생 중
+        s.onSignal(RawSignal.Navi.SpeedLimit(50))
+        s.onSignal(kmh(45))
+        s.onSignal(schoolCamera(30, 250))
+        s.onSignal(kmh(25)) // 기다리는 중에 감속: 버림
+        s.onSignal(kmh(46)) // 다시 가속: 다시 기다림
+        s.onSignal(schoolCamera(30, 200))
+        repeat(6) { tts.finish() }
+        assertEquals(listOf("SCHOOL_ZONE_APPROACH_FAST:46:30"), tts.spoken.filter { it.startsWith("SCHOOL_ZONE_APPROACH_FAST") })
+        s.onSignal(kmh(47))
+        s.onSignal(schoolCamera(30, 150))
+        repeat(3) { tts.finish() }
+        assertEquals("말한 뒤에는 다시 말하지 않음", 1, tts.spoken.count { it.startsWith("SCHOOL_ZONE_APPROACH_FAST") })
+    }
+
+    @Test
+    fun repeatAfterAnApproachWarning_answersAboutSchoolZones_insteadOfStaleNumbers_orSilence() = runTest {
+        // 감속한 뒤 "다시 말해 줘"가 재생 직전 확인에 버려져 아무 말도 없던 문제
+        val tts = HoldTts()
+        val clock = Clock { testScheduler.currentTime }
+        val speaker = GuidanceSpeaker(tts, backgroundScope, clock).also { it.start() }
+        val s = DriveSession(Personas.CARLOS, speaker, { g -> (listOf(g.id.name) + g.args).joinToString(":") }, Locale.US, clock)
+        fun kmh(v: Int) = RawSignal.Vehicle.Speed(v / 3.6f)
+        s.onSignal(RawSignal.Vehicle.Gear(VehicleGear.GEAR_DRIVE))
+        tts.finish() // 시작 인사 끝
+        s.onSignal(RawSignal.Navi.SpeedLimit(50))
+        s.onSignal(kmh(45))
+        s.onSignal(schoolCamera(30, 250))
+        tts.finish() // 구역 앞 과속 경고 끝
+        s.onSignal(kmh(25))
+        s.ask("¿Puedes repetir?")
+        repeat(2) { tts.finish() }
+        assertEquals(listOf("SCHOOL_ZONE_APPROACH_FAST:45:30", "ANSWER_SCHOOL_ZONE"), tts.spoken.filter { it.startsWith("SCHOOL_ZONE_APPROACH") || it.startsWith("ANSWER") })
+    }
+
+    @Test
+    fun approachWarning_isRecheckedRightBeforePlaying_evenWithoutNewSignals() = runTest {
+        // 신호가 끊긴 채 6초 뒤에 차례가 오면 낡은 카메라 거리로 말하지 않는다
+        val tts = HoldTts()
+        val clock = Clock { testScheduler.currentTime }
+        val speaker = GuidanceSpeaker(tts, backgroundScope, clock).also { it.start() }
+        val s = DriveSession(Personas.CARLOS, speaker, { g -> (listOf(g.id.name) + g.args).joinToString(":") }, Locale.US, clock)
+        fun kmh(v: Int) = RawSignal.Vehicle.Speed(v / 3.6f)
+        s.onSignal(RawSignal.Vehicle.Gear(VehicleGear.GEAR_DRIVE))
+        s.onSignal(RawSignal.Navi.SpeedLimit(50))
+        s.onSignal(kmh(45))
+        s.onSignal(schoolCamera(30, 250))
+        advanceTimeBy(6_000)
+        repeat(6) { tts.finish() }
+        assertTrue(tts.spoken.none { it.startsWith("SCHOOL_ZONE_APPROACH_FAST") })
+    }
+
+    @Test
+    fun approachWarning_waitingWhenTheCameraDisappears_isDropped() = runTest {
+        val tts = HoldTts()
+        val clock = Clock { testScheduler.currentTime }
+        val speaker = GuidanceSpeaker(tts, backgroundScope, clock).also { it.start() }
+        val s = DriveSession(Personas.CARLOS, speaker, { g -> (listOf(g.id.name) + g.args).joinToString(":") }, Locale.US, clock)
+        fun kmh(v: Int) = RawSignal.Vehicle.Speed(v / 3.6f)
+        s.onSignal(RawSignal.Vehicle.Gear(VehicleGear.GEAR_DRIVE))
+        s.onSignal(RawSignal.Navi.SpeedLimit(50))
+        s.onSignal(kmh(45))
+        s.onSignal(schoolCamera(30, 250))
+        s.onSignal(RawSignal.Navi.CameraAlerts(emptyList()))
+        s.onSignal(kmh(46))
+        repeat(6) { tts.finish() }
+        assertTrue(tts.spoken.none { it.startsWith("SCHOOL_ZONE_APPROACH_FAST") })
     }
 
     @Test

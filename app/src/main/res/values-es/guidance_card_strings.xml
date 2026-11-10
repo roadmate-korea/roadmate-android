@@ -40,6 +40,9 @@
     <string name="card_school_zone_over_speed_kicker">Zona escolar</string>
     <string name="card_school_zone_over_speed_headline">Vas a %1$d km/h. Reduce la velocidad.</string>
     <string name="card_school_zone_over_speed_body">El límite aquí es de %2$d km/h.</string>
+    <string name="card_school_zone_approach_fast_kicker">Zona escolar más adelante</string>
+    <string name="card_school_zone_approach_fast_headline">Vas a %1$d km/h. Límite %2$d.</string>
+    <string name="card_school_zone_approach_fast_body">Reduce la velocidad antes de entrar en la zona.</string>
     <string name="card_arrived_kicker">Llegada</string>
     <string name="card_arrived_headline">Has llegado.</string>
     <string name="card_arrived_body">Gracias por conducir con prudencia en Corea.</string>
@@ -49,6 +52,9 @@
     <string name="card_section_start_kicker">Control de velocidad media</string>
     <string name="card_section_start_headline">Máximo %1$d km/h.</string>
     <string name="card_section_start_body">Se controlan la velocidad al inicio, al final y la media.</string>
+    <string name="card_toll_ahead_kicker">Peaje a %1$d m</string>
+    <string name="card_toll_ahead_headline">Los carriles Hi-Pass requieren dispositivo.</string>
+    <string name="card_toll_ahead_body">¿No estás seguro? Usa un carril normal.</string>
     <string name="card_section_over_average_kicker">Control de velocidad media</string>
     <string name="card_section_over_average_headline">Media de %1$d km/h. Reduce la velocidad.</string>
     <string name="card_section_over_average_body">El límite es de %2$d km/h.</string>

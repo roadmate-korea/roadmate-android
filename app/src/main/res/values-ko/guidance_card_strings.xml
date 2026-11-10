@@ -40,6 +40,9 @@
     <string name="card_school_zone_over_speed_kicker">어린이보호구역</string>
     <string name="card_school_zone_over_speed_headline">지금 시속 %1$dkm예요. 속도를 줄이세요.</string>
     <string name="card_school_zone_over_speed_body">이곳 제한 속도는 시속 %2$dkm예요.</string>
+    <string name="card_school_zone_approach_fast_kicker">곧 어린이보호구역</string>
+    <string name="card_school_zone_approach_fast_headline">지금 시속 %1$dkm, 제한 %2$dkm예요.</string>
+    <string name="card_school_zone_approach_fast_body">구역에 들어가기 전에 속도를 줄이세요.</string>
     <string name="card_arrived_kicker">도착</string>
     <string name="card_arrived_headline">도착했어요.</string>
     <string name="card_arrived_body">한국에서 안전하게 운전해 주셔서 고마워요.</string>
@@ -49,6 +52,9 @@
     <string name="card_section_start_kicker">구간 단속</string>
     <string name="card_section_start_headline">시속 %1$dkm 이하로 달리세요.</string>
     <string name="card_section_start_body">시작, 끝, 평균 속도를 모두 재요.</string>
+    <string name="card_toll_ahead_kicker">요금소 %1$dm 앞</string>
+    <string name="card_toll_ahead_headline">하이패스 차로는 단말기가 필요해요.</string>
+    <string name="card_toll_ahead_body">잘 모르면 일반 차로로 가세요.</string>
     <string name="card_section_over_average_kicker">구간 단속</string>
     <string name="card_section_over_average_headline">평균 시속 %1$dkm예요. 속도를 줄이세요.</string>
     <string name="card_section_over_average_body">제한 속도는 시속 %2$dkm예요.</string>

@@ -20,10 +20,12 @@
     <string name="guidance_school_zone_speed_limit">Zona escolar. El límite de velocidad es de %1$d kilómetros por hora.</string>
     <string name="guidance_school_zone_crosswalk">En las zonas escolares, detente siempre antes de un paso peatonal sin semáforo, aunque nadie esté cruzando.</string>
     <string name="guidance_school_zone_over_speed">Zona escolar. Vas a %1$d kilómetros por hora, por encima del límite de %2$d. Reduce la velocidad ya.</string>
+    <string name="guidance_school_zone_approach_fast">Zona escolar más adelante. El límite es de %2$d kilómetros por hora y vas a %1$d. Reduce la velocidad.</string>
 
     <string name="guidance_arrived">Has llegado a tu destino. Gracias por conducir con precaución en Corea.</string>
     <string name="guidance_bus_lane_ahead">Carril bus a %1$d metros. No circules por el carril bus azul durante el horario indicado en la señal.</string>
     <string name="guidance_section_start">Empieza el control de velocidad media. Se controla tu velocidad al inicio, al final y la media. No superes %1$d kilómetros por hora hasta el final del tramo.</string>
+    <string name="guidance_toll_ahead">Peaje a %1$d metros. Los carriles Hi-Pass son solo para autos con dispositivo Hi-Pass. Si no estás seguro, usa un carril de peaje normal.</string>
     <string name="guidance_section_over_average">Tu velocidad media es de %1$d, por encima del límite de %2$d. Reduce la velocidad.</string>
     <!-- 음성 질문에 대한 답 -->
     <string name="guidance_answer_school_zone">En las zonas escolares, respeta el límite de velocidad de las señales y presta atención a los niños. Detente siempre antes de un paso de peatones sin semáforo, aunque nadie esté cruzando.</string>

@@ -59,6 +59,18 @@ class GuidanceSpeaker(
     private var playingStarted = false
     private var timer: Job? = null
 
+    /**
+     * 재생 직전에 안내를 다시 확인한다. 바꿀 안내와 문장을 돌려주거나, 더는 맞지 않으면 null(버리고 다음 것으로).
+     * 상황에 따라 낡는 경고(어린이보호구역 앞 과속)를 기다리는 동안 새 신호가 없어도 맞는지 보려는 것이다. null이면 확인하지 않는다.
+     */
+    var revalidate: ((Guidance, String) -> Pair<Guidance, String>?)? = null
+
+    /** 안내를 실제로 내보내기 시작할 때(음성 또는 자막). 엔진이 "말했다"고 기록하는 데 쓴다. */
+    var onPlay: ((Guidance) -> Unit)? = null
+
+    /** 기다리는(아직 말하지 않은) [id] 안내가 있는지. */
+    fun isQueued(id: GuidanceId): Boolean = queue.contains(id)
+
     /** 음성 질문을 듣는 중. null이 아니면 말하지 않고 쌓아 둔다. 안전 경고가 오면 이것을 불러 듣기를 끝낸다. */
     private var holdInterrupt: (() -> Unit)? = null
 
@@ -172,6 +184,16 @@ class GuidanceSpeaker(
 
     // ---- 내부 ----
 
+    /** 다음 안내를 꺼내되 [revalidate]가 버린 것은 건너뛰고, 바꾼 것은 바꾼 내용으로. */
+    private fun nextValid(): SpeechQueue.Item? {
+        while (true) {
+            val item = queue.poll() ?: return null
+            val check = revalidate ?: return item
+            val (guidance, text) = check(item.guidance, item.text) ?: continue
+            return item.copy(guidance = guidance, text = text)
+        }
+    }
+
     private fun playNext() {
         timer?.cancel()
         if (holdInterrupt != null) {
@@ -180,7 +202,7 @@ class GuidanceSpeaker(
             _idle.value = queue.size == 0
             return
         }
-        val item = queue.poll()
+        val item = nextValid()
         playing = item
         playingStarted = false
         if (item == null) {
@@ -189,6 +211,7 @@ class GuidanceSpeaker(
             return
         }
         _idle.value = false
+        onPlay?.invoke(item.guidance)
         val canSpeak = engineState == EngineState.READY && item.locale !in _unavailableLocales.value
         if (canSpeak) {
             _current.value = Caption(item.guidance, item.text, voiced = true)

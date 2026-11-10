@@ -46,6 +46,8 @@ object GuidanceCards {
             // 그림의 숫자는 제한 속도(두 번째 인자). 지금 속도는 제목에 쓴다.
             GuidanceId.SCHOOL_ZONE_OVER_SPEED -> card(R.string.card_school_zone_over_speed_kicker, R.string.card_school_zone_over_speed_headline, R.string.card_school_zone_over_speed_body, R.drawable.ic_rm_children, SceneKind.SCHOOL_ZONE, safety).copy(sceneSpeedArg = 1)
             GuidanceId.BUS_LANE_AHEAD -> card(R.string.card_bus_lane_ahead_kicker, R.string.card_bus_lane_ahead_headline, R.string.card_bus_lane_ahead_body, R.drawable.ic_rm_bus, SceneKind.BUS_LANE, safety)
+            GuidanceId.SCHOOL_ZONE_APPROACH_FAST -> card(R.string.card_school_zone_approach_fast_kicker, R.string.card_school_zone_approach_fast_headline, R.string.card_school_zone_approach_fast_body, R.drawable.ic_rm_children, SceneKind.SCHOOL_ZONE, safety).copy(sceneSpeedArg = 1)
+            GuidanceId.TOLL_AHEAD -> card(R.string.card_toll_ahead_kicker, R.string.card_toll_ahead_headline, R.string.card_toll_ahead_body, R.drawable.ic_rm_route, null, safety)
             GuidanceId.SECTION_START -> card(R.string.card_section_start_kicker, R.string.card_section_start_headline, R.string.card_section_start_body, R.drawable.ic_rm_camera, SceneKind.SECTION_CHECK, safety)
             GuidanceId.SECTION_OVER_AVERAGE -> card(R.string.card_section_over_average_kicker, R.string.card_section_over_average_headline, R.string.card_section_over_average_body, R.drawable.ic_rm_camera, SceneKind.SECTION_CHECK, safety)
             GuidanceId.ARRIVED -> card(R.string.card_arrived_kicker, R.string.card_arrived_headline, R.string.card_arrived_body, R.drawable.ic_rm_flag, null, safety)

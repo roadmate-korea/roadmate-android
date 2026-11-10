@@ -32,6 +32,11 @@ import ai.pleos.playground.navi.data.CautionPoint as SdkCautionPoint
 class SignalMapperTest {
 
     @Test
+    fun tollGate_isItsOwnDirection() {
+        assertEquals(TurnDirection.TOLL, SignalMapper.turnDirection(TurnType.TURN_TOLL))
+    }
+
+    @Test
     fun location_becomesCoordinatesOnly_andNeverPrintsThem() {
         val fix = RawSignal.Location.Fix(LocationData(37.4907, 127.0154, 12.0, 90f, 5f, 1L))
         assertEquals(DriveEvent.LocationChanged(37.4907, 127.0154), SignalMapper.map(fix))

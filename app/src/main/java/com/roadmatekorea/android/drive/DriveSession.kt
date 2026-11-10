@@ -50,6 +50,15 @@ class DriveSession(
     /** 마지막으로 낸 주행 안내(질문에 대한 답 제외). "다시 말해 줘"에 쓴다. */
     private var lastDrivingGuidance: Guidance? = null
 
+    init {
+        // 구역 앞 과속 경고는 재생 직전에 다시 확인한다(기다리는 동안 신호가 끊겨 카메라 거리가 낡았거나 상황이 바뀌었을 수 있다).
+        // 음성 출력부는 앱에 하나라 지금 세션이 연결한다(시연과 실제 세션이 바뀔 때 새 세션이 다시 연결한다).
+        speaker.revalidate = { guidance, text ->
+            if (guidance.id == GuidanceId.SCHOOL_ZONE_APPROACH_FAST) engine.approachFastNow()?.let { it to textOf(it) } else guidance to text
+        }
+        speaker.onPlay = { guidance -> if (guidance.id == GuidanceId.SCHOOL_ZONE_APPROACH_FAST) engine.markApproachSpoken() }
+    }
+
     /**
      * 음성 질문에 답한다. [question]이 비었으면(못 알아들음) 다시 물어 달라고 답한다.
      * 운전자가 직접 물었으므로 엔진의 쿨다운을 거치지 않는다. 답한 안내를 돌려준다.
@@ -83,7 +92,19 @@ class DriveSession(
         } else {
             speaker.refreshQueued(overSpeed, textOf(overSpeed))
         }
+        // 구역 앞 과속도 같다: 감속, 진입 확인(구역 안 과속 경고로 넘어감), P, 속도 모름이면 버리고, 계속 빠르면 지금 속도로
+        val approachFast = engine.approachFastNow()
+        if (approachFast == null) {
+            speaker.drop(GuidanceId.SCHOOL_ZONE_APPROACH_FAST)
+        } else {
+            speaker.refreshQueued(approachFast, textOf(approachFast))
+        }
         out.forEach { guidance ->
+            // 구역 앞 과속은 말할 때까지 조건이 맞을 때마다 다시 나온다. 이미 기다리고 있으면 지금 값으로만 바꾼다
+            if (guidance.id == GuidanceId.SCHOOL_ZONE_APPROACH_FAST && speaker.isQueued(guidance.id)) {
+                speaker.refreshQueued(guidance, textOf(guidance))
+                return@forEach
+            }
             lastDrivingGuidance = guidance
             speak(guidance)
         }

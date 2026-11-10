@@ -87,22 +87,76 @@ class SchoolZoneLocationTest {
     }
 
     @Test
-    fun naviWarnedFirst_locationStaysSilent() {
+    fun naviWarnedFirst_forTheSameZone_locationStaysSilent() {
         val e = engine(experienced)
+        e.send(at(-700))
         assertEquals(listOf(SCHOOL_ZONE_AHEAD), e.send(schoolCaution("sz", 300)))
         clock.advanceSeconds(30)
         assertEquals(emptyList<GuidanceId>(), e.send(at(-400), at(-250)))
     }
 
     @Test
-    fun locationWarnedFirst_naviStaysSilent_andTheSpeedLimitStillFollows() {
+    fun naviWarnedForA_thenSchoolBFurtherOn_stillWarns() {
+        // 내비가 A를 알린 직후 1km 떨어진 B
+        val e = engine(experienced)
+        e.send(at(-700))
+        assertEquals(listOf(SCHOOL_ZONE_AHEAD), e.send(schoolCaution("szA", 300)))
+        clock.advanceSeconds(30)
+        assertEquals(emptyList<GuidanceId>(), e.send(at(500)))
+        assertEquals(listOf(SCHOOL_ZONE_NEARBY), e.send(at(750)))
+    }
+
+    @Test
+    fun naviWarnedWithoutKnownPosition_locationStillWarns() {
+        val e = engine(experienced)
+        assertEquals(listOf(SCHOOL_ZONE_AHEAD), e.send(schoolCaution("sz", 300)))
+        assertEquals(listOf(SCHOOL_ZONE_NEARBY), e.send(at(-250)))
+    }
+
+    @Test
+    fun locationWarnedFirst_whileApproaching_naviStaysSilent_andTheSpeedLimitStillFollows() {
         val e = engine(experienced)
         e.onEvent(DriveEvent.SpeedLimitChanged(50))
         assertEquals(listOf(SCHOOL_ZONE_NEARBY), e.send(at(-400), at(-250)))
-        clock.advanceSeconds(10)
-        assertEquals(emptyList<GuidanceId>(), e.send(schoolCaution("sz", 200)))
+        clock.advanceSeconds(5)
+        e.send(at(-200))
+        assertEquals(emptyList<GuidanceId>(), e.send(schoolCaution("sz", 150)))
         // 제한 속도는 내비 값으로 이어진다
         assertEquals(listOf(SCHOOL_ZONE_SPEED_LIMIT), e.send(DriveEvent.SpeedLimitChanged(30)))
+    }
+
+    @Test
+    fun locationWarned_thenMovingAway_aNaviZoneAhead_isAnotherZone_andWarns() {
+        val e = engine(experienced)
+        assertEquals(listOf(SCHOOL_ZONE_NEARBY), e.send(at(-250)))
+        clock.advanceSeconds(5)
+        e.send(at(-50), at(150))
+        assertEquals(listOf(SCHOOL_ZONE_AHEAD), e.send(schoolCaution("next", 300)))
+    }
+
+    @Test
+    fun locationGap_thenADifferentSchool_warns() {
+        // A 근처에서 위치가 끊겼다가 B 근처에서 다시 들어옴
+        val e = engine(experienced)
+        assertEquals(listOf(SCHOOL_ZONE_NEARBY), e.send(at(0)))
+        clock.advanceSeconds(180)
+        assertEquals(listOf(SCHOOL_ZONE_NEARBY), e.send(at(1_000)))
+    }
+
+    @Test
+    fun withoutAGap_jumpingToAFarSchool_isANewEntry() {
+        val e = engine(experienced)
+        assertEquals(listOf(SCHOOL_ZONE_NEARBY), e.send(at(0)))
+        clock.advanceSeconds(1)
+        assertEquals(listOf(SCHOOL_ZONE_NEARBY), e.send(at(1_000)))
+    }
+
+    @Test
+    fun neighbouringFacilities_areOneCluster() {
+        val near = SchoolZoneMap.LatLon(schoolA.lat + 500 * meterLat, schoolA.lon)
+        val e = engine(experienced, SchoolZoneMap(listOf(schoolA, near)))
+        assertEquals(listOf(SCHOOL_ZONE_NEARBY), e.send(at(-250)))
+        assertEquals(emptyList<GuidanceId>(), e.send(at(0), at(250), at(500), at(700)))
     }
 
     @Test
@@ -112,17 +166,5 @@ class SchoolZoneLocationTest {
         assertEquals(listOf(SCHOOL_ZONE_NEARBY), e.send(at(-250)))
         val out = e.onEvent(DriveEvent.SpeedLimitChanged(30))
         assertEquals(listOf(Guidance(SCHOOL_ZONE_SPEED_LIMIT, listOf(30))), out)
-    }
-
-    @Test
-    fun insideANaviZoneConfirmedByTheRoad_locationStaysSilent_evenLater() {
-        val e = engine(experienced)
-        e.onEvent(DriveEvent.SpeedLimitChanged(50))
-        e.send(schoolCaution("sz", 300))
-        e.send(DriveEvent.SpeedLimitChanged(30))
-        clock.advanceSeconds(70)
-        // 도로 제한이 계속 구역 제한을 확인해 주는 중
-        e.send(DriveEvent.SpeedLimitChanged(30))
-        assertEquals(emptyList<GuidanceId>(), e.send(at(-250)))
     }
 }

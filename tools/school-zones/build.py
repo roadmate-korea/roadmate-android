@@ -7,12 +7,15 @@
 - 한국 범위 밖 좌표는 버리고, 위도·경도가 뒤바뀐 줄은 바로잡는다.
 - 지정여부가 N(지정 해제)인 줄은 버린다.
 - 소수 넷째 자리(약 10m)까지 같은 좌표는 하나로 합친다(같은 건물의 학교·유치원 등).
+- 받은 폴더에 index.json(fetch.py)이 있으면 그 목록의 파일만 쓴다.
 """
 import csv
 import datetime
 import glob
 import io
+import json
 import os
+import re
 import sys
 
 LAT = (33.0, 39.0)
@@ -44,7 +47,14 @@ def main():
     src, out = sys.argv[1], sys.argv[2]
     points = set()
     stats = {"files": 0, "rows": 0, "swapped": 0, "outside": 0, "unparsed": 0, "cancelled": 0, "bad_files": []}
-    for path in sorted(glob.glob(os.path.join(src, "*.csv"))):
+    paths = sorted(glob.glob(os.path.join(src, "*.csv")))
+    # fetch.py가 남긴 목록이 있으면 지금 포털에 있는 파일만 쓴다(목록에서 빠진 옛 파일 제외)
+    index_path = os.path.join(src, "index.json")
+    if os.path.exists(index_path):
+        with open(index_path, encoding="utf-8") as f:
+            names = {re.sub(r"[^\w가-힣_.-]", "_", n) + ".csv" for n in json.load(f)}
+        paths = [p for p in paths if os.path.basename(p) in names]
+    for path in paths:
         text = read(path)
         if text is None:
             stats["bad_files"].append(os.path.basename(path))

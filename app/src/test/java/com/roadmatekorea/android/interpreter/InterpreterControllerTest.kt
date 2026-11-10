@@ -40,11 +40,14 @@ class InterpreterControllerTest {
         val requests = mutableListOf<Triple<String, Locale, Locale>>()
         val replies = mutableListOf<CompletableDeferred<String?>>()
         var cancelled = 0
-        override suspend fun translate(text: String, from: Locale, to: Locale, situation: Situation): String? {
+        var availability = TranslationAvailability.READY
+        override fun availability(from: Locale, to: Locale) = availability
+        override suspend fun translate(text: String, from: Locale, to: Locale, situation: Situation): TranslationResult {
             requests += Triple(text, from, to)
             val reply = CompletableDeferred<String?>().also { replies += it }
             try {
-                return reply.await()
+                val text = reply.await()
+                return if (text == ASK_AGAIN) TranslationResult.AskAgain else TranslationResult.of(text)
             } catch (e: CancellationException) {
                 cancelled++
                 throw e
@@ -144,6 +147,46 @@ class InterpreterControllerTest {
         runCurrent()
         assertEquals(listOf("Vous payez par carte ?" to french), r.said)
         assertEquals(Exchange("카드로 결제하시겠어요?", "Vous payez par carte ?"), r.controller.state.value.staff)
+    }
+
+    @Test
+    fun unsupportedLanguage_isToldBeforeListening() = runTest {
+        val r = rig()
+        r.client.availability = TranslationAvailability.LANGUAGE_NOT_SUPPORTED
+        r.controller.toggleListen(Side.DRIVER)
+        assertEquals(InterpreterNotice.LANGUAGE_NOT_SUPPORTED, r.controller.state.value.notice)
+        r.controller.toggleListen(Side.STAFF)
+        assertEquals(InterpreterNotice.LANGUAGE_NOT_SUPPORTED, r.controller.state.value.notice)
+        assertEquals("말하게 하지 않음", 0, r.speech.listens)
+        assertFalse(r.voice.holding)
+        assertEquals("다른 음성도 멈추지 않음", 0, r.voice.stoppedOthers)
+        assertNull(r.controller.state.value.listening)
+    }
+
+    @Test
+    fun noServer_isToldBeforeListening_driverToPhraseCards_staffToConnection() = runTest {
+        val r = rig()
+        r.client.availability = TranslationAvailability.NO_SERVER
+        r.controller.toggleListen(Side.DRIVER)
+        assertEquals(InterpreterNotice.NO_CONNECTION, r.controller.state.value.notice)
+        r.controller.toggleListen(Side.STAFF)
+        assertEquals(InterpreterNotice.STAFF_NEEDS_CONNECTION, r.controller.state.value.notice)
+        assertEquals(0, r.speech.listens)
+        assertTrue(r.client.requests.isEmpty())
+    }
+
+    @Test
+    fun serverAsksAgain_tellsTheSpeakerToSayItAgain_andSpeaksNothing() = runTest {
+        val r = rig()
+        r.controller.toggleListen(Side.STAFF)
+        r.speech.listener!!.onFinal("그거요")
+        runCurrent()
+        r.client.replies.single().complete(ASK_AGAIN)
+        runCurrent()
+        assertEquals(InterpreterNotice.SAY_AGAIN, r.controller.state.value.notice)
+        assertEquals(Exchange("그거요", null), r.controller.state.value.staff)
+        assertNull(r.controller.state.value.translating)
+        assertTrue(r.said.isEmpty())
     }
 
     @Test
@@ -335,5 +378,10 @@ class InterpreterControllerTest {
         runCurrent()
         assertEquals(listOf("가득 넣어 주세요." to Locale.KOREA), r.said)
         assertEquals("가득 넣어 주세요.", r.controller.state.value.mine?.translated)
+    }
+
+    private companion object {
+        /** FakeClient에 이 값을 답으로 주면 서버의 재질문 응답(clarification)으로 본다. */
+        const val ASK_AGAIN = "<ask again>"
     }
 }

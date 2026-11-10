@@ -16,6 +16,8 @@
     <string name="interp_no_connection">Sin conexión. Toca una frase de abajo.</string>
     <string name="interp_staff_needs_connection">Para traducir al empleado hace falta conexión.</string>
     <string name="interp_not_heard">Perdona, no te he entendido. Inténtalo de nuevo.</string>
+    <string name="interp_language_not_supported">La interpretación por voz aún no admite tu idioma. Toca una frase de abajo.</string>
+    <string name="interp_say_again">Dilo de nuevo de forma más corta y sencilla.</string>
     <string name="interp_hint_mine">Toca el botón y habla. RoadMate lo dirá en coreano.</string>
     <string name="interp_hint_staff">Pásale el botón al empleado para que responda en coreano.</string>
     <string name="help_interpreter">Intérprete</string>

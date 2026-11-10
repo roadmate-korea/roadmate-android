@@ -81,7 +81,7 @@ Pleos SDK 밖에서 쓰는 것:
 
 ## 빌드
 
-요구 사항: Android Studio(내장 JDK 21), Android SDK Platform 35
+요구 사항: Android Studio, Android SDK Platform 35. Gradle은 JDK 21에서 돌도록 정해 두었습니다(`gradle/gradle-daemon-jvm.properties`). 실행하는 JDK가 25여도(최신 Android Studio 내장 JDK) Gradle이 설치된 JDK 21을 찾고, 없으면 내려받아 씁니다.
 
 ```bash
 ./gradlew testDebugUnitTest   # 단위 테스트

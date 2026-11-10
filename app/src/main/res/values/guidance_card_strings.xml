@@ -28,6 +28,9 @@
     <string name="card_school_zone_ahead_kicker">School zone in %1$d m</string>
     <string name="card_school_zone_ahead_headline">Slow down. Watch for children.</string>
     <string name="card_school_zone_ahead_body">Follow the speed limit sign for this zone.</string>
+    <string name="card_school_zone_nearby_kicker">School zone nearby</string>
+    <string name="card_school_zone_nearby_headline">Slow down. Watch for children.</string>
+    <string name="card_school_zone_nearby_body">Follow the speed limit sign for this zone.</string>
     <string name="card_school_zone_speed_limit_kicker">School zone</string>
     <string name="card_school_zone_speed_limit_headline">Speed limit %1$d km/h.</string>
     <string name="card_school_zone_speed_limit_body">Watch for children near the road.</string>

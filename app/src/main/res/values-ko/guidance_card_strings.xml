@@ -28,6 +28,9 @@
     <string name="card_school_zone_ahead_kicker">어린이보호구역 %1$dm 앞</string>
     <string name="card_school_zone_ahead_headline">속도를 줄이고 어린이를 살피세요.</string>
     <string name="card_school_zone_ahead_body">이 구역의 제한 속도 표지를 따르세요.</string>
+    <string name="card_school_zone_nearby_kicker">근처 어린이보호구역</string>
+    <string name="card_school_zone_nearby_headline">속도를 줄이고 어린이를 살피세요.</string>
+    <string name="card_school_zone_nearby_body">이 구역의 제한 속도 표지를 따르세요.</string>
     <string name="card_school_zone_speed_limit_kicker">어린이보호구역</string>
     <string name="card_school_zone_speed_limit_headline">제한 속도 %1$dkm/h</string>
     <string name="card_school_zone_speed_limit_body">길가의 어린이를 살피세요.</string>

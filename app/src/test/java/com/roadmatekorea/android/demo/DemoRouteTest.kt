@@ -4,6 +4,7 @@ import com.roadmatekorea.android.drive.DriveSession
 import com.roadmatekorea.android.drive.RawSignal
 import com.roadmatekorea.android.profile.model.DriverProfile
 import com.roadmatekorea.android.rules.Clock
+import com.roadmatekorea.android.rules.SchoolZoneMap
 import com.roadmatekorea.android.voice.GuidanceSpeaker
 import com.roadmatekorea.android.voice.TtsEngine
 import kotlinx.coroutines.CoroutineScope
@@ -63,6 +64,15 @@ class DemoRouteTest {
             .associate { it.groupValues[1].uppercase() to it.groupValues[2].length }
     }
 
+    /** 앱에 넣은 실제 공공데이터 시설 좌표. */
+    private val schoolZones = File("src/main/assets/school_zones.csv").useLines { SchoolZoneMap.parse(it) }
+
+    @Test
+    fun demoSchool_isInTheBundledPublicData() {
+        val near = schoolZones.nearest(DemoRoute.DEMO_SCHOOL_LAT, DemoRoute.DEMO_SCHOOL_LON, 50)
+        assertTrue("시연 학교가 앱 데이터에 있음", near != null)
+    }
+
     private fun TestScope.play(persona: DemoPersona, msPerChar: Long): List<String> {
         val tts = TimedTts(backgroundScope, msPerChar)
         val clock = Clock { testScheduler.currentTime }
@@ -75,6 +85,7 @@ class DemoRouteTest {
             textOf = { g -> (listOf(g.id.name) + g.args).joinToString(":").padEnd(lengths.getValue(g.id.name)) },
             locale = Locale.US,
             clock = clock,
+            schoolZones = { schoolZones },
         )
         backgroundScope.launch {
             DemoSignalSource(awaitIdle = { speaker.idle.first { it } }).signals().collect(session::onSignal)
@@ -94,6 +105,7 @@ class DemoRouteTest {
         "RIGHT_TURN_RULE",
         "LEFT_TURN_RULE", "RIGHT_SIDE_LEFT_TURN",
         "SECTION_START:80",
+        "SCHOOL_ZONE_NEARBY", "SCHOOL_ZONE_CROSSWALK",
         "ARRIVED",
     )
 
@@ -105,6 +117,7 @@ class DemoRouteTest {
         "RIGHT_TURN_RULE",
         "LEFT_TURN_RULE",
         "SECTION_START:80",
+        "SCHOOL_ZONE_NEARBY", "SCHOOL_ZONE_CROSSWALK",
         "ARRIVED",
     )
 

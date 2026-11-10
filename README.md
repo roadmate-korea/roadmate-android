@@ -10,6 +10,7 @@
 - **개인화 규칙**: 좌측통행 국가에서 온 운전자에게는 우측통행 적응 안내를, 좌핸들 차량이 처음인 운전자에게는 좌핸들 적응 안내를 더합니다. 한국 운전 경험이 있으면 기초 설명을 줄입니다. 기타 국가는 통행 방향을 추정하지 않습니다.
 - **주행 중 안내**
   - 어린이보호구역(모든 운전자): 300m 전 경고, 제한 속도는 NaviHelper가 준 값을 그대로 씀
+  - 어린이보호구역 근처(모든 운전자): 경로 안내 없이 달려도 공공데이터의 어린이보호구역 시설 300m 안에 들어오면 알림. 위치는 기기 안에서만 비교
   - 어린이보호구역 과속(모든 운전자): 어린이보호구역 안에서 차량 속도가 제한보다 2km/h 넘게 빠르면 지금 속도와 제한 속도를 말하고, 계속 빠르면 30초마다 다시 알림(2km/h는 앱의 판단 여유이며 법적 허용 속도가 아님)
   - 우회전: 우회전 신호등, 빨간불에서 정지선 앞 일시정지, 보행자 보호
   - 비보호 좌회전: 녹색 화살표, 비보호 좌회전 표지에서 양보
@@ -39,9 +40,9 @@
 교통 상황 판단 로직, 언어별 문구, 음성 출력을 분리했습니다.
 
 ```
-Vehicle·NaviHelper SDK ─┐
-                        ├─ RawSignal ─ SignalMapper ─ DriveEvent ─ GuidanceEngine ─ 안내 ID
-DemoRoute(시연) ────────┘                                                         │
+Vehicle·NaviHelper·FusedLocation SDK ─┐
+                                      ├─ RawSignal ─ SignalMapper ─ DriveEvent ─ GuidanceEngine ─ 안내 ID
+DemoRoute(시연) ──────────────────────┘                    공공데이터 시설 좌표 ─┘         │
                                                   문구 리소스(en, fr, es, ko) ─ GuidanceSpeaker ─ Pleos TTS
                                                                                   └─ 화면 자막
 ```
@@ -49,7 +50,7 @@ DemoRoute(시연) ────────┘                                   
 - `rules/`: 판단 로직(순수 Kotlin, Android import 없음, 단위 테스트)
 - `i18n/`, `res/values*`: 언어별 문구
 - `voice/`: Pleos TTS, 음성 큐
-- `vehicle/`, `navi/`, `drive/`: SDK 어댑터와 신호 변환, 주행 세션, 포그라운드 서비스
+- `vehicle/`, `navi/`, `location/`, `drive/`: SDK 어댑터와 신호 변환, 주행 세션, 포그라운드 서비스
 - `demo/`: 시연 경로와 페르소나
 - `ui/`: 온보딩, 주행 화면, 상황 그림(`ui/scene/`)
 
@@ -61,6 +62,7 @@ DemoRoute(시연) ────────┘                                   
 | NaviHelper | 3.0.5 | 제한 속도, 어린이보호구역, 단속 카메라, 회전 안내, 도착 | `NAVI_ROUTE`, `NAVI_ROUTE_SEARCH` |
 | TextToSpeech | 3.3.1 | 음성 안내(ON_DEVICE) | `TTS_SERVICE` |
 | SpeechToText | 3.3.1 | 음성 질문(ON_DEVICE, en-US, fr-CA, es-US) | `STT_SERVICE`, `RECORD_AUDIO`(정차 중 한 번 요청, 거부하면 마이크 버튼을 숨김) |
+| FusedLocation | 1.1.3 | 공공데이터 어린이보호구역 시설과 견줄 차 위치 | `FUSED_LOCATION`(정차 중 한 번 요청, 거부하면 이 알림만 빠짐) |
 
 TTS 로케일은 Pleos 온디바이스 엔진이 지원하는 en-US, fr-CA, es-US, ko-KR을 씁니다.
 
@@ -71,7 +73,11 @@ Pleos SDK 밖에서 쓰는 것:
 | Android Automotive `CarPropertyManager` | 차량 속도(`PERF_VEHICLE_SPEED`). Vehicle SDK에 속도 API가 없음 | `android.car.permission.CAR_SPEED`(정차 중 한 번 요청, 허용 창에는 "위치 정보"로 표시) |
 | 포그라운드 서비스 | 내비를 앞에 띄워도 안내 유지 | `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE`, `POST_NOTIFICATIONS` |
 
-차량 속도는 기기 안에서만 쓰고 외부로 보내지 않습니다(위치는 앱이 직접 읽지 않습니다). 속도 권한을 거부하면 현재 속도 표시와 어린이보호구역 과속 경고가 빠지고, 내비 신호를 쓰는 나머지 안내(구간 단속 평균 속도 경고 포함)는 그대로 나갑니다.
+차량 속도와 위치는 기기 안에서만 쓰고 외부로 보내거나 기록하지 않습니다. 위치는 앱에 넣어 둔 어린이보호구역 시설 좌표와 견주는 데만 씁니다. 속도 권한을 거부하면 현재 속도 표시와 어린이보호구역 과속 경고가 빠지고, 내비 신호를 쓰는 나머지 안내(구간 단속 평균 속도 경고 포함)는 그대로 나갑니다.
+
+## 데이터 출처
+
+- 어린이보호구역 시설 좌표: 공공데이터포털 [전국어린이보호구역표준데이터](https://www.data.go.kr/data/15012891/standard.do)의 지자체별 파일. `tools/school-zones/fetch.py`로 받고 `build.py`로 위도·경도만 남겨 `app/src/main/assets/school_zones.csv`에 넣었습니다(시설 이름과 주소는 넣지 않음). 좌표는 시설 위치라 구역 경계까지 거리는 말하지 않습니다.
 
 ## 빌드
 

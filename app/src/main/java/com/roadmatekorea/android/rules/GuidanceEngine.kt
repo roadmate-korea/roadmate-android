@@ -13,9 +13,11 @@ class GuidanceEngine(
     val scope: GuidanceScope,
     private val clock: Clock = Clock.SYSTEM,
     private val cooldown: CooldownPolicy = CooldownPolicy(clock),
+    /** 공공데이터 어린이보호구역 시설. 위치([DriveEvent.LocationChanged])와 견준다. 앱이 읽어 들이는 중이면 빈 지도. */
+    private val schoolZones: () -> SchoolZoneMap = { SchoolZoneMap.EMPTY },
 ) {
-    constructor(profile: DriverProfile, clock: Clock = Clock.SYSTEM) :
-        this(GuidancePolicy.scopeFor(profile), clock)
+    constructor(profile: DriverProfile, clock: Clock = Clock.SYSTEM, schoolZones: () -> SchoolZoneMap = { SchoolZoneMap.EMPTY }) :
+        this(GuidancePolicy.scopeFor(profile), clock, schoolZones = schoolZones)
 
     private var gear = Gear.UNKNOWN
     private var turnSignal = TurnSignal.OFF
@@ -34,6 +36,18 @@ class GuidanceEngine(
     private val announcedCautionIds = mutableSetOf<String>()
     private val announcedCameraIds = mutableSetOf<String>()
     private var schoolZone: SchoolZoneContext? = null
+
+    /** 위치로 안내한(또는 같은 구역이라 조용히 지나간) 시설. 세션당 한 번만 말한다. */
+    private val announcedFacilities = mutableSetOf<SchoolZoneMap.LatLon>()
+
+    /**
+     * 지금 머물고 있는 시설 묶음의 기준 시설. null이면 근처가 아니다. 다음 위치의 가장 가까운 시설이 이 시설에서
+     * [CLUSTER_METERS] 안이면 같은 묶음(붙어 있는 학교·유치원)으로 보고 다시 말하지 않는다.
+     */
+    private var nearAnchor: SchoolZoneMap.LatLon? = null
+
+    private var lastFix: SchoolZoneMap.LatLon? = null
+    private var lastFixMs = 0L
 
     private val isParked get() = gear == Gear.PARK
 
@@ -56,6 +70,7 @@ class GuidanceEngine(
         is DriveEvent.CameraAlertsUpdated -> onCameras(event.cameras)
         is DriveEvent.TurnInstructionsUpdated -> onTurns(event.turns)
         DriveEvent.DestinationArrived -> arrive()
+        is DriveEvent.LocationChanged -> onLocation(event.lat, event.lon)
     }
 
     private fun arrive(): List<Guidance> {
@@ -236,6 +251,60 @@ class GuidanceEngine(
         return listOf(schoolZoneLimit(limit))
     }
 
+    // ---- 어린이보호구역: 공공데이터 시설 위치 (모든 사용자) ----
+    //
+    // 시설 [NEARBY_METERS] 안에 들어오는 순간 한 번 알린다. 같은 묶음([CLUSTER_METERS])의 시설 근처([NEARBY_EXIT_METERS])에
+    // 머무는 동안은 다시 말하지 않는다(위치 흔들림, 붙어 있는 학교·유치원). 거리는 시설까지라 말하지 않는다.
+    // 위치는 구역 근거(제한 속도의 수명)를 늘리지 않는다. 제한 속도와 진입 판단은 내비 값으로만 한다.
+    // 내비 경고와는 서로 생략하지 않는다. 내비 주의 지점에는 좌표가 없어 같은 구역인지 확인할 수 없다.
+    // 같은 구역을 두 번 알릴 수는 있지만 다른 구역의 필수 경고를 빠뜨리지 않는다.
+    // 제한 속도는 여전히 내비 값만 쓴다(공공데이터에는 없다).
+
+    private fun onLocation(lat: Double, lon: Double): List<Guidance> {
+        val now = clock.nowMillis()
+        val here = SchoolZoneMap.LatLon(lat, lon)
+        val previous = lastFix?.takeIf { now - lastFixMs <= LOCATION_GAP_MS }
+        // 위치가 한동안 끊겼으면 어디를 지나왔는지 모르므로 근처 상태를 버린다
+        if (previous == null) nearAnchor = null
+        lastFix = here
+        lastFixMs = now
+
+        val map = schoolZones()
+        val near = map.nearest(lat, lon, NEARBY_EXIT_METERS)
+        if (near == null) {
+            nearAnchor = null
+            return emptyList()
+        }
+        val facility = map.point(near.id)
+        val zone = activeSchoolZone()
+        val anchor = nearAnchor
+        if (anchor != null && distance(anchor, facility) <= CLUSTER_METERS) {
+            // 같은 묶음 근처에 머무는 중. 이 시설도 안내한 것으로 둔다(위치가 끊겼다가 같은 곳에서 다시 들어와도 다시 말하지 않게)
+            nearAnchor = facility
+            announcedFacilities += facility
+            return emptyList()
+        }
+        // 아직 바깥으로 본다(들어오는 반경은 더 좁다). 정차 중이면 출발한 뒤 다음 위치에서 판단한다.
+        if (near.meters > NEARBY_METERS || isParked) {
+            nearAnchor = null
+            return emptyList()
+        }
+        nearAnchor = facility
+        val silent = facility in announcedFacilities
+        announcedFacilities += facility
+        // 살아 있는 구역(내비 근거)은 건드리지 않는다: 같은 구역인지 모르므로 그 제한 속도의 수명을 위치로 늘리지 않는다
+        // 구역이 없을 때만 새로 감시를 시작해, 이어서 도로 제한이 내려오면 그 값을 안내한다.
+        if (zone == null) schoolZone = SchoolZoneContext(lastEvidenceMs = now, speedLimitBefore = currentSpeedLimit)
+        if (silent) return emptyList()
+        return buildList {
+            add(Guidance(GuidanceId.SCHOOL_ZONE_NEARBY))
+            if (scope.detail == DetailLevel.DETAILED) addIfAllowed(GuidanceId.SCHOOL_ZONE_CROSSWALK)
+        }
+    }
+
+    private fun distance(a: SchoolZoneMap.LatLon, b: SchoolZoneMap.LatLon) =
+        SchoolZoneMap.distanceMeters(a.lat, a.lon, b.lat, b.lon)
+
     // ---- 구간 단속: 시작 설명(상세 안내 대상), 평균 속도 초과(모든 사용자) ----
 
     private fun sectionCheck(cameras: List<CameraAlert>): List<Guidance> {
@@ -415,6 +484,18 @@ class GuidanceEngine(
 
         /** 어린이보호구역 접근 경고 거리. */
         const val SCHOOL_ZONE_AHEAD_METERS = 300
+
+        /** 공공데이터 시설이 이 거리 안에 들어오면 알린다. 구역은 보통 시설 출입문에서 300m 안쪽이다. */
+        const val NEARBY_METERS = 300
+
+        /** 시설에서 이 거리를 벗어나야 근처를 떠난 것으로 본다(위치 흔들림에 다시 말하지 않게). */
+        const val NEARBY_EXIT_METERS = 350
+
+        /** 직전 근처 시설에서 이 거리 안의 시설은 같은 묶음(붙어 있는 시설)으로 본다. */
+        const val CLUSTER_METERS = 700
+
+        /** 위치가 이 시간 넘게 끊기면 근처 상태를 버리고 새로 판단한다. */
+        const val LOCATION_GAP_MS = 30_000L
 
         /** 버스전용차로 안내 거리. */
         const val BUS_LANE_AHEAD_METERS = 300

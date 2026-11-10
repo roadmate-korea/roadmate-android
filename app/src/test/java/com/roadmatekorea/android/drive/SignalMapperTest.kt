@@ -1,5 +1,6 @@
 package com.roadmatekorea.android.drive
 
+import ai.pleos.playground.location.fused.model.LocationData
 import ai.pleos.playground.navi.constants.CameraType
 import ai.pleos.playground.navi.constants.CautionPointType
 import ai.pleos.playground.navi.constants.TurnType
@@ -29,6 +30,15 @@ import ai.pleos.playground.navi.data.CautionPoint as SdkCautionPoint
 
 /** 진짜 SDK 객체를 넣어 판단 로직 이벤트로 바뀌는지 확인한다. 시연 모드도 같은 변환을 쓴다. */
 class SignalMapperTest {
+
+    @Test
+    fun location_becomesCoordinatesOnly_andNeverPrintsThem() {
+        val fix = RawSignal.Location.Fix(LocationData(37.4907, 127.0154, 12.0, 90f, 5f, 1L))
+        assertEquals(DriveEvent.LocationChanged(37.4907, 127.0154), SignalMapper.map(fix))
+        assertFalse("로그에 좌표 없음", fix.toString().contains("37.49") || SignalMapper.map(fix).toString().contains("37.49"))
+        assertNull(SignalMapper.map(RawSignal.Location.Fix(LocationData(Double.NaN, 127.0, 0.0, 0f, 0f, 1L))))
+        assertNull(SignalMapper.map(RawSignal.Location.Unavailable("x")))
+    }
 
     @Test
     fun gear_parkIsPark_forwardGearsAreDrive() {

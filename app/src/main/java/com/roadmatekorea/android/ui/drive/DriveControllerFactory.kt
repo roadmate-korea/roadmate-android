@@ -25,4 +25,5 @@ fun createDriveController(app: RoadMateApplication) = DriveController(
     scope = app.appScope,
     speechInput = app.speechInput,
     micPermission = app.micPermissionGranted,
+    schoolZones = { app.schoolZones.value },
 )

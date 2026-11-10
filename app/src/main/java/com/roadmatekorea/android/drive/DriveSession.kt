@@ -8,6 +8,7 @@ import com.roadmatekorea.android.rules.GuidanceEngine
 import com.roadmatekorea.android.rules.GuidanceId
 import com.roadmatekorea.android.rules.QuestionAnswers
 import com.roadmatekorea.android.rules.QuestionMatcher
+import com.roadmatekorea.android.rules.SchoolZoneMap
 import com.roadmatekorea.android.voice.GuidanceSpeaker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,8 +28,9 @@ class DriveSession(
     private val textOf: (Guidance) -> String,
     private val locale: Locale,
     clock: Clock = Clock.SYSTEM,
+    schoolZones: () -> SchoolZoneMap = { SchoolZoneMap.EMPTY },
 ) {
-    private val engine = GuidanceEngine(profile, clock)
+    private val engine = GuidanceEngine(profile, clock, schoolZones)
 
     private val _history = MutableStateFlow<List<String>>(emptyList())
 

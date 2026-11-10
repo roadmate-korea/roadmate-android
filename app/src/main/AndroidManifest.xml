@@ -27,6 +27,9 @@
     <uses-permission android:name="pleos.car.permission.STT_SERVICE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- 공공데이터 어린이보호구역 알림: Pleos FusedLocation(사용자 허용 필요). 위치는 기기 밖으로 보내지 않는다 -->
+    <uses-permission android:name="pleos.car.permission.FUSED_LOCATION" />
+
     <!--
         내비를 앞에 띄워도 음성 안내를 계속하는 포그라운드 서비스(DriveGuidanceService). 둘 다 normal 권한.
         Pleos Connect는 화면에서 사라진 앱을 얼릴 수 있어서, 안내가 끊기지 않으려면 포그라운드 서비스가 필요하다.

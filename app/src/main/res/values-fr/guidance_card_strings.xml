@@ -28,6 +28,9 @@
     <string name="card_school_zone_ahead_kicker">Zone scolaire dans %1$d m</string>
     <string name="card_school_zone_ahead_headline">Ralentissez. Attention aux enfants.</string>
     <string name="card_school_zone_ahead_body">Respectez la limite de vitesse indiquée.</string>
+    <string name="card_school_zone_nearby_kicker">Zone scolaire à proximité</string>
+    <string name="card_school_zone_nearby_headline">Ralentissez. Attention aux enfants.</string>
+    <string name="card_school_zone_nearby_body">Respectez la limite de vitesse indiquée.</string>
     <string name="card_school_zone_speed_limit_kicker">Zone scolaire</string>
     <string name="card_school_zone_speed_limit_headline">Vitesse limitée à %1$d km/h.</string>
     <string name="card_school_zone_speed_limit_body">Attention aux enfants près de la route.</string>

@@ -16,6 +16,7 @@
     <string name="guidance_left_turn_rule">Giro a la izquierda. En los semáforos de Corea, gira a la izquierda solo con la flecha verde. Donde haya una señal de giro a la izquierda no protegido, también puedes girar con luz verde, después de ceder el paso a los vehículos que vienen de frente y a los peatones.</string>
 
     <string name="guidance_school_zone_ahead">Zona escolar a %1$d metros. Reduce la velocidad y presta atención a los niños.</string>
+    <string name="guidance_school_zone_nearby">Zona escolar cerca. Reduce la velocidad y presta atención a los niños.</string>
     <string name="guidance_school_zone_speed_limit">Zona escolar. El límite de velocidad es de %1$d kilómetros por hora.</string>
     <string name="guidance_school_zone_crosswalk">En las zonas escolares, detente siempre antes de un paso peatonal sin semáforo, aunque nadie esté cruzando.</string>
     <string name="guidance_school_zone_over_speed">Zona escolar. Vas a %1$d kilómetros por hora, por encima del límite de %2$d. Reduce la velocidad ya.</string>

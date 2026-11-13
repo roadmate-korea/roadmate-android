@@ -39,8 +39,18 @@ sealed interface CarPropertyEvent {
  * - 연결(createCar)도 전용 스레드에서 한다. 메인에서 연결하면 연결 중의 Car 내부 잠금(mLock)과 전용 스레드의
  *   관리자 획득(getCarManager, 잠금을 잡은 채 차량 서비스에 동기 호출)이 겹쳐 메인이 다시 막힐 수 있다.
  * - 변할 때만 오는 속성(기어)도 등록하면 현재 값이 한 번 온다(AAOS registerCallback 동작).
+ * - Android 14는 속성이 읽기 불가(UNAVAILABLE, ERROR)로 바뀌어도 변경 콜백을 보내지 않고(PropertyHalService가 AVAILABLE이
+ *   아닌 이벤트를 버림), CarPropertyManager 문서도 가용성 판단을 콜백에 기대지 말라고 한다. [pollMs]를 주면 그 간격으로
+ *   현재 값을 직접 다시 읽어 [CarPropertyEvent.Value]나 [CarPropertyEvent.Unavailable]로 보낸다(기어 잠금용).
+ *   받는 쪽은 같은 값이 여러 번 올 수 있음을 감안한다.
  */
-fun carPropertyEvents(context: Context, propertyId: Int, rate: Float, threadName: String): Flow<CarPropertyEvent> = callbackFlow {
+fun carPropertyEvents(
+    context: Context,
+    propertyId: Int,
+    rate: Float,
+    threadName: String,
+    pollMs: Long? = null,
+): Flow<CarPropertyEvent> = callbackFlow {
     val appContext = context.applicationContext
     if (!carSupported(appContext)) {
         trySend(CarPropertyEvent.Unavailable("no automotive feature"))
@@ -96,7 +106,26 @@ fun carPropertyEvents(context: Context, propertyId: Int, rate: Float, threadName
         }
     }
 
+    // 현재 값을 직접 다시 읽는다. 차량 서비스가 멈추면 이 스레드가 막히고 결과가 오지 않는데, 받는 쪽이 시간 제한으로 판단한다
+    val poll = object : Runnable {
+        override fun run() {
+            if (closed) return
+            manager?.let { m ->
+                val event = runCatching {
+                    if (m.isPropertyAvailable(propertyId, GLOBAL_AREA)) {
+                        CarPropertyEvent.Value(m.getProperty<Any>(propertyId, GLOBAL_AREA))
+                    } else {
+                        CarPropertyEvent.Unavailable("not available")
+                    }
+                }.getOrElse { e -> CarPropertyEvent.Unavailable("read failed: ${e.javaClass.simpleName}") }
+                trySend(event)
+            }
+            pollMs?.let { worker.postDelayed(this, it) }
+        }
+    }
+
     var car: Car? = null
+    pollMs?.let { worker.postDelayed(poll, it) }
     worker.post {
         if (closed) return@post
         car = try {
@@ -122,12 +151,16 @@ fun carPropertyEvents(context: Context, propertyId: Int, rate: Float, threadName
     awaitClose {
         worker.post {
             closed = true
+            worker.removeCallbacks(poll)
             unregister()
             car?.let { runCatching { it.disconnect() } }
             thread.quitSafely()
         }
     }
 }.buffer(capacity = 16, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+/** 차 전체에 하나뿐인 속성(기어, 속도)의 area ID. */
+private const val GLOBAL_AREA = 0
 
 private fun carSupported(context: Context): Boolean =
     Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&

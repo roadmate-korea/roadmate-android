@@ -162,7 +162,7 @@ class DemoRouteTest {
     fun demoRoute_usesOnlySdkShapedSignals_andEndsParked() {
         val all = DemoRoute.DEFAULT.flatMap { it.signals }
         assertTrue(all.none { it is RawSignal.Vehicle.Unavailable || it is RawSignal.Navi.Unavailable })
-        assertEquals(RawSignal.Vehicle.Gear(ai.pleos.playground.vehicle.constant.control.VehicleGear.GEAR_PARK), all.last())
+        assertEquals(RawSignal.Vehicle.Gear(android.car.VehicleGear.GEAR_PARK), all.last())
     }
 
     @Suppress("unused")

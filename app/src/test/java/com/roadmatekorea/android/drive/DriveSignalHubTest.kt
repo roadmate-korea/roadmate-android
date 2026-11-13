@@ -1,6 +1,6 @@
 package com.roadmatekorea.android.drive
 
-import ai.pleos.playground.vehicle.constant.control.VehicleGear
+import android.car.VehicleGear
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch

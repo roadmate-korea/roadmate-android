@@ -6,9 +6,10 @@
         필요한 것만 선언하고, 새 권한을 추가하면 README의 권한 표도 함께 고친다.
     -->
 
-    <!-- Vehicle SDK: 방향지시등(TurnSignal) CAR_LIGHTS, 기어(Gear) CAR_DRIVE. SDK의 api/Gear, api/TurnSignal에 적힌 권한 -->
+    <!-- Vehicle SDK: 방향지시등(TurnSignal) CAR_LIGHTS -->
     <uses-permission android:name="pleos.car.permission.CAR_LIGHTS" />
-    <uses-permission android:name="pleos.car.permission.CAR_DRIVE" />
+    <!-- 기어: Android Automotive GEAR_SELECTION(CarPropertyManager). 설치 때 주는 권한 -->
+    <uses-permission android:name="android.car.permission.CAR_POWERTRAIN" />
 
     <!-- NaviHelper SDK: 경로 요청, 주행 중 안내 이벤트 -->
     <uses-permission android:name="pleos.car.permission.NAVI_ROUTE" />

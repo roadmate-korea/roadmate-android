@@ -4,7 +4,7 @@ import ai.pleos.playground.navi.constants.CameraType
 import ai.pleos.playground.navi.constants.CautionPointType
 import ai.pleos.playground.navi.constants.TurnType
 import ai.pleos.playground.vehicle.constant.area.TurnSignalValue
-import ai.pleos.playground.vehicle.constant.control.VehicleGear
+import android.car.VehicleGear
 import com.roadmatekorea.android.rules.CameraAlert
 import com.roadmatekorea.android.rules.CameraKind
 import com.roadmatekorea.android.rules.CautionKind
@@ -61,15 +61,16 @@ object SignalMapper {
         is RawSignal.Location.Unavailable -> null
     }
 
-    fun gear(value: VehicleGear): Gear = when (value) {
+    /** Android Automotive `GEAR_SELECTION` 값(`android.car.VehicleGear`). 수동 1~9단은 주행으로 본다. */
+    fun gear(value: Int): Gear = when (value) {
         VehicleGear.GEAR_PARK -> Gear.PARK
         VehicleGear.GEAR_REVERSE -> Gear.REVERSE
         VehicleGear.GEAR_NEUTRAL -> Gear.NEUTRAL
         VehicleGear.GEAR_DRIVE,
-        VehicleGear.GEAR_1, VehicleGear.GEAR_2, VehicleGear.GEAR_3,
-        VehicleGear.GEAR_4, VehicleGear.GEAR_5, VehicleGear.GEAR_6,
-        VehicleGear.GEAR_7, VehicleGear.GEAR_8, VehicleGear.GEAR_9 -> Gear.DRIVE
-        VehicleGear.GEAR_UNKNOWN -> Gear.UNKNOWN
+        VehicleGear.GEAR_FIRST, VehicleGear.GEAR_SECOND, VehicleGear.GEAR_THIRD,
+        VehicleGear.GEAR_FOURTH, VehicleGear.GEAR_FIFTH, VehicleGear.GEAR_SIXTH,
+        VehicleGear.GEAR_SEVENTH, VehicleGear.GEAR_EIGHTH, VehicleGear.GEAR_NINTH -> Gear.DRIVE
+        else -> Gear.UNKNOWN
     }
 
     fun turnSignal(value: TurnSignalValue): TurnSignal = when (value) {

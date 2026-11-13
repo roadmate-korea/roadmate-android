@@ -41,7 +41,7 @@ class DriveSignalHub(
 
     private val _vehicleUnavailable = MutableStateFlow(false)
 
-    /** Vehicle SDK를 쓸 수 없다는 신호를 받은 적이 있음. */
+    /** 기어를 읽을 수 없다는 신호를 받은 적이 있음. */
     val vehicleUnavailable: StateFlow<Boolean> = _vehicleUnavailable.asStateFlow()
 
     private var unavailableSinceLastGear = false

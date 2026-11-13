@@ -8,7 +8,7 @@ import ai.pleos.playground.navi.data.CameraAlert
 import ai.pleos.playground.navi.data.CautionPoint
 import ai.pleos.playground.navi.data.TBTInfo
 import ai.pleos.playground.vehicle.constant.area.TurnSignalValue
-import ai.pleos.playground.vehicle.constant.control.VehicleGear
+import android.car.VehicleGear
 import com.roadmatekorea.android.drive.RawSignal
 import com.roadmatekorea.android.profile.model.DriverProfile
 import com.roadmatekorea.android.profile.model.Personas
@@ -24,7 +24,7 @@ data class DemoStep(val delayMs: Long, val signals: List<RawSignal>)
  */
 object DemoRoute {
 
-    private fun gear(value: VehicleGear) = RawSignal.Vehicle.Gear(value)
+    private fun gear(value: Int) = RawSignal.Vehicle.Gear(value)
     private fun turnSignal(value: TurnSignalValue) = RawSignal.Vehicle.TurnSignal(value)
 
     /** 차량 속도 신호. 실제 센서처럼 m/s로 넣는다. */

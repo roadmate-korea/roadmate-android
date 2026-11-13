@@ -3,8 +3,6 @@ package com.roadmatekorea.android.vehicle
 import ai.pleos.playground.vehicle.Vehicle
 import ai.pleos.playground.vehicle.api.model.capability.AccessType
 import ai.pleos.playground.vehicle.constant.area.TurnSignalValue
-import ai.pleos.playground.vehicle.constant.control.VehicleGear
-import ai.pleos.playground.vehicle.listener.GearSelectionListener
 import ai.pleos.playground.vehicle.listener.TurnSignalStateListener
 import android.content.Context
 import android.util.Log
@@ -18,10 +16,12 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.channels.BufferOverflow
 
 /**
- * Vehicle SDK의 기어와 방향지시등 → [RawSignal].
+ * Vehicle SDK의 방향지시등 → [RawSignal.Vehicle.TurnSignal].
  *
- * 수집을 시작하면 `initialize` → 리스너 등록 → 현재 값 한 번 읽기,
- * 수집을 멈추면 리스너 해제 → `release`. 권한: 기어 `CAR_DRIVE`, 방향지시등 `CAR_LIGHTS`.
+ * 수집을 시작하면 `initialize` → capability 확인 → 리스너 등록 → 현재 값 한 번 읽기,
+ * 수집을 멈추면 리스너 해제 → `release`. 권한: `CAR_LIGHTS`.
+ * 기어는 [VehicleGearSource]가 읽는다(공개 문서의 Vehicle SDK에 기어 API가 없다).
+ * 방향지시등은 안내에 쓰는 신호라 읽지 못해도 화면을 잠그지 않는다(로그만 남긴다).
  *
  * 주의: Vehicle SDK 2.3.2의 `release()`는 `initialize()`가 시작한 비동기 연결 작업을 취소하지 않는다.
  * 연결 중에 수집을 멈추면 해제 뒤 서비스에 다시 붙을 수 있으므로, 앱은 이 Flow를 [DriveSignalHub]에서
@@ -36,21 +36,10 @@ class VehicleSignalSource(context: Context) : DriveSignalSource {
             Vehicle(appContext).also { it.initialize() }
         } catch (e: RuntimeException) {
             Log.w(TAG, "Vehicle initialize failed", e)
-            trySend(RawSignal.Vehicle.Unavailable(e.javaClass.simpleName))
             close()
             return@callbackFlow
         }
 
-        val gearListener = object : GearSelectionListener {
-            override fun onSelected(gear: VehicleGear?) {
-                gear?.let { trySend(RawSignal.Vehicle.Gear(it)) }
-            }
-
-            override fun onFailed(e: Exception) {
-                Log.w(TAG, "gear listener failed", e)
-                trySend(RawSignal.Vehicle.Unavailable("gear: ${e.javaClass.simpleName}"))
-            }
-        }
         val turnListener = object : TurnSignalStateListener {
             override fun onTurnSignalStateUpdated(value: TurnSignalValue?) {
                 value?.let { trySend(RawSignal.Vehicle.TurnSignal(it)) }
@@ -65,18 +54,6 @@ class VehicleSignalSource(context: Context) : DriveSignalSource {
         val lock = Any()
         var closed = false
         var turnRegistered = false
-
-        runCatching {
-            val gear = vehicle.getGear()
-            gear.registerGearSelection(gearListener)
-            gear.getCurrentGearSelectionState(
-                { gear -> gear?.let { trySend(RawSignal.Vehicle.Gear(it)) } },
-                { e -> Log.w(TAG, "current gear failed", e) },
-            )
-        }.onFailure { e ->
-            Log.w(TAG, "gear register failed", e)
-            trySend(RawSignal.Vehicle.Unavailable("gear: ${e.javaClass.simpleName}"))
-        }
 
         runCatching {
             val turn = vehicle.getTurnSignal()
@@ -110,7 +87,6 @@ class VehicleSignalSource(context: Context) : DriveSignalSource {
         awaitClose {
             synchronized(lock) {
                 closed = true
-                runCatching { vehicle.getGear().unregisterGearSelection(gearListener) }
                 if (turnRegistered) runCatching { vehicle.getTurnSignal().unregisterTurnSignalState(turnListener) }
             }
             runCatching { vehicle.release() }

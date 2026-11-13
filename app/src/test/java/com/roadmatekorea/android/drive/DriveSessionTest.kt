@@ -3,7 +3,7 @@ package com.roadmatekorea.android.drive
 import ai.pleos.playground.navi.constants.CameraType
 import ai.pleos.playground.navi.constants.CautionPointType
 import ai.pleos.playground.vehicle.constant.area.TurnSignalValue
-import ai.pleos.playground.vehicle.constant.control.VehicleGear
+import android.car.VehicleGear
 import com.roadmatekorea.android.profile.model.Personas
 import com.roadmatekorea.android.rules.Clock
 import com.roadmatekorea.android.rules.GuidanceId

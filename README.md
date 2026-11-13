@@ -164,7 +164,7 @@ DemoRoute(시연) ────────────────────�
 
 | SDK | 버전 | 용도 | 권한 |
 |---|---|---|---|
-| Vehicle | 2.3.2 | 기어, 방향지시등 | `CAR_DRIVE`, `CAR_LIGHTS` |
+| Vehicle | 2.3.2 | 방향지시등 | `CAR_LIGHTS` |
 | NaviHelper | 3.0.5 | 제한 속도, 어린이보호구역, 단속 카메라, 회전 안내, 도착 | `NAVI_ROUTE`, `NAVI_ROUTE_SEARCH` |
 | TextToSpeech | 3.3.1 | 음성 안내(ON_DEVICE) | `TTS_SERVICE` |
 | SpeechToText | 3.3.1 | 음성 질문, 통역(ON_DEVICE, en-US, fr-CA, es-US, ko-KR) | `STT_SERVICE`, `RECORD_AUDIO`(정차 중 한 번 요청, 거부하면 마이크 버튼을 숨김) |
@@ -172,11 +172,12 @@ DemoRoute(시연) ────────────────────�
 
 TTS 로케일은 Pleos 온디바이스 엔진이 지원하는 en-US, fr-CA, es-US, ko-KR을 씁니다.
 
-Pleos SDK 밖에서 쓰는 기능:
+Pleos 문서의 SDK API 정책에 따라 속도와 기어 같은 표준 차량 정보는 Android Automotive 표준 API로 읽습니다. 그 밖에 Pleos SDK 밖에서 쓰는 기능도 함께 적었습니다.
 
 | 기능 | 용도 | 권한 |
 |---|---|---|
-| Android Automotive `CarPropertyManager` | 차량 속도(`PERF_VEHICLE_SPEED`). Vehicle SDK에 속도 API가 없음 | `android.car.permission.CAR_SPEED`(정차 중 한 번 요청, 허용 창에는 "위치 정보"로 표시) |
+| Android Automotive `CarPropertyManager` | 기어(`GEAR_SELECTION`). 주행 중 화면 잠금과 안내 판단에 씀 | `android.car.permission.CAR_POWERTRAIN` |
+| Android Automotive `CarPropertyManager` | 차량 속도(`PERF_VEHICLE_SPEED`) | `android.car.permission.CAR_SPEED`(정차 중 한 번 요청, 허용 창에는 "위치 정보"로 표시) |
 | 포그라운드 서비스 | 내비를 앞에 띄워도 안내 유지 | `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE`, `POST_NOTIFICATIONS` |
 
 차량 속도와 위치는 기기 안에서만 쓰고 외부로 보내거나 기록하지 않습니다. 위치는 앱에 넣어 둔 어린이보호구역 시설 좌표와 견주는 데만 씁니다. 속도 권한을 거부하면 현재 속도 표시와 어린이보호구역 과속 경고가 빠집니다. 구간 단속 평균 속도 경고를 비롯해 내비 신호를 쓰는 나머지 안내는 그대로 나갑니다.

@@ -5,7 +5,6 @@ import ai.pleos.playground.navi.data.CameraAlert
 import ai.pleos.playground.navi.data.CautionPoint
 import ai.pleos.playground.navi.data.TBTInfo
 import ai.pleos.playground.vehicle.constant.area.TurnSignalValue
-import ai.pleos.playground.vehicle.constant.control.VehicleGear
 import kotlin.math.roundToInt
 
 /**
@@ -17,8 +16,8 @@ import kotlin.math.roundToInt
 sealed interface RawSignal {
 
     sealed interface Vehicle : RawSignal {
-        /** `GearSelectionListener.onSelected`, `getCurrentGearSelectionState` */
-        data class Gear(val value: VehicleGear) : Vehicle
+        /** Android Automotive `GEAR_SELECTION` 값(`android.car.VehicleGear` 상수). */
+        data class Gear(val value: Int) : Vehicle
 
         /** `TurnSignalStateListener.onTurnSignalStateUpdated`, `getCurrentTurnSignalState` */
         data class TurnSignal(val value: TurnSignalValue) : Vehicle
@@ -34,7 +33,7 @@ sealed interface RawSignal {
         /** 속도를 지금 읽을 수 없음(센서 상태 이상, 차량 서비스 끊김). 마지막 속도를 지운다. 화면은 잠그지 않는다. */
         data object SpeedUnavailable : Vehicle
 
-        /** Vehicle SDK를 쓸 수 없음(초기화 실패, 권한 없음 등). 판단 로직에는 들어가지 않는다. */
+        /** 기어를 읽을 수 없음(차량 서비스 없음·끊김, 권한 없음 등). 화면을 잠근다. 판단 로직에는 들어가지 않는다. */
         data class Unavailable(val reason: String) : Vehicle
     }
 

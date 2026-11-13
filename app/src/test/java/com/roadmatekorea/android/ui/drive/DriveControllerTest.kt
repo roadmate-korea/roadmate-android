@@ -2,7 +2,7 @@ package com.roadmatekorea.android.ui.drive
 
 import ai.pleos.playground.navi.constants.CautionPointType
 import ai.pleos.playground.vehicle.constant.area.TurnSignalValue
-import ai.pleos.playground.vehicle.constant.control.VehicleGear
+import android.car.VehicleGear
 import com.roadmatekorea.android.demo.DemoPersona
 import com.roadmatekorea.android.drive.DriveSignalHub
 import com.roadmatekorea.android.drive.DriveSignalSource

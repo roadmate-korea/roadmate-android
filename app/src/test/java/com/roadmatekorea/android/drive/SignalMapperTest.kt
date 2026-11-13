@@ -6,7 +6,7 @@ import ai.pleos.playground.navi.constants.CautionPointType
 import ai.pleos.playground.navi.constants.TurnType
 import ai.pleos.playground.navi.data.TBTInfo
 import ai.pleos.playground.vehicle.constant.area.TurnSignalValue
-import ai.pleos.playground.vehicle.constant.control.VehicleGear
+import android.car.VehicleGear
 import com.roadmatekorea.android.rules.CameraAlert
 import com.roadmatekorea.android.rules.CameraKind
 import com.roadmatekorea.android.rules.CautionKind
@@ -52,9 +52,11 @@ class SignalMapperTest {
         assertEquals(DriveEvent.GearChanged(Gear.NEUTRAL), SignalMapper.map(RawSignal.Vehicle.Gear(VehicleGear.GEAR_NEUTRAL)))
         assertEquals(DriveEvent.GearChanged(Gear.UNKNOWN), SignalMapper.map(RawSignal.Vehicle.Gear(VehicleGear.GEAR_UNKNOWN)))
         listOf(
-            VehicleGear.GEAR_DRIVE, VehicleGear.GEAR_1, VehicleGear.GEAR_2, VehicleGear.GEAR_3, VehicleGear.GEAR_4,
-            VehicleGear.GEAR_5, VehicleGear.GEAR_6, VehicleGear.GEAR_7, VehicleGear.GEAR_8, VehicleGear.GEAR_9,
-        ).forEach { assertEquals(it.name, Gear.DRIVE, SignalMapper.gear(it)) }
+            VehicleGear.GEAR_DRIVE, VehicleGear.GEAR_FIRST, VehicleGear.GEAR_SECOND, VehicleGear.GEAR_THIRD, VehicleGear.GEAR_FOURTH,
+            VehicleGear.GEAR_FIFTH, VehicleGear.GEAR_SIXTH, VehicleGear.GEAR_SEVENTH, VehicleGear.GEAR_EIGHTH, VehicleGear.GEAR_NINTH,
+        ).forEach { assertEquals("gear $it", Gear.DRIVE, SignalMapper.gear(it)) }
+        // 모르는 값(AAOS가 나중에 더하는 값 등)은 주행으로 보지 않고 UNKNOWN(화면 잠금)
+        assertEquals(Gear.UNKNOWN, SignalMapper.gear(3))
     }
 
     @Test

@@ -23,6 +23,7 @@ import com.roadmatekorea.android.profile.model.AppLanguage
 import com.roadmatekorea.android.rules.SchoolZoneMap
 import com.roadmatekorea.android.ui.drive.DriveController
 import com.roadmatekorea.android.ui.drive.createDriveController
+import com.roadmatekorea.android.vehicle.VehicleGearSource
 import com.roadmatekorea.android.vehicle.VehicleSignalSource
 import com.roadmatekorea.android.vehicle.VehicleSpeedSource
 import com.roadmatekorea.android.voice.PleosSpeechInput
@@ -87,6 +88,7 @@ class RoadMateApplication : Application() {
     val signalHub: DriveSignalHub by lazy {
         DriveSignalHub(
             RealDriveSignalSource(
+                VehicleGearSource(this),
                 VehicleSignalSource(this),
                 NaviSignalSource(this),
                 VehicleSpeedSource(this, speedPermissionGranted),

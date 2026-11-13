@@ -161,7 +161,6 @@ private fun RoadMateContent(
                                 onPhrase = { phrase ->
                                     interpreter.showPhrase(context.getString(phrase.driverText), context.getString(phrase.korean))
                                 },
-                                onListen = interpreter::toggleListen,
                                 onEnter = interpreter::enter,
                                 onLeave = interpreter::leave,
                             )

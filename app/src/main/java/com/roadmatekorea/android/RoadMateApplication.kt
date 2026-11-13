@@ -6,20 +6,12 @@ import android.util.Log
 import com.roadmatekorea.android.drive.DriveSignalHub
 import com.roadmatekorea.android.drive.RealDriveSignalSource
 import com.roadmatekorea.android.drive.SavedSessionRestorer
-import com.roadmatekorea.android.i18n.AppLocales
-import com.roadmatekorea.android.i18n.withLanguage
-import com.roadmatekorea.android.interpreter.DemoTranslationClient
-import com.roadmatekorea.android.interpreter.HttpTranslationClient
 import com.roadmatekorea.android.interpreter.InterpreterController
 import com.roadmatekorea.android.interpreter.InterpreterVoice
-import com.roadmatekorea.android.interpreter.NoTranslationClient
-import com.roadmatekorea.android.interpreter.Phrases
-import com.roadmatekorea.android.interpreter.TranslationClient
 import com.roadmatekorea.android.location.LocationSignalSource
 import com.roadmatekorea.android.location.SchoolZoneAsset
 import com.roadmatekorea.android.navi.NaviSignalSource
 import com.roadmatekorea.android.profile.ProfileRepository
-import com.roadmatekorea.android.profile.model.AppLanguage
 import com.roadmatekorea.android.rules.SchoolZoneMap
 import com.roadmatekorea.android.ui.drive.DriveController
 import com.roadmatekorea.android.ui.drive.createDriveController
@@ -104,41 +96,23 @@ class RoadMateApplication : Application() {
         createDriveController(this)
     }
 
-    /** 음성 인식 엔진(앱에 하나). 인식 서비스는 결과를 마지막으로 만든 엔진에만 보내므로 음성 질문과 통역이 같이 쓴다. */
+    /** 음성 질문의 음성 인식 엔진(앱에 하나). 인식 서비스는 결과를 마지막으로 만든 엔진에만 보낸다. */
     val speechInput: SpeechInput by lazy { PleosSpeechInput(this) }
 
-    /** 정차 중 통역. 번역은 서버(서버 주소가 없으면 debug는 시연용 가짜 서버, release는 문장 카드만). */
+    /** 정차 중 통역(미리 번역해 둔 문장 카드). */
     val interpreter: InterpreterController by lazy {
         InterpreterController(
-            speech = speechInput,
-            client = translationClient(),
             voice = object : InterpreterVoice {
                 override fun parked() = !driveController.vehicle.value.locked
                 override fun stopOthers() = driveController.prepareForInterpreter()
-                override fun hold(onSafetyInterrupt: () -> Unit) = driveController.holdForInterpreter(onSafetyInterrupt)
-                override fun release() = driveController.releaseInterpreterHold()
                 override fun say(text: String, locale: Locale) = driveController.sayInterpreter(text, locale)
             },
-            driverLocale = { AppLocales.localeOf(driveController.uiState.value.profile?.language ?: AppLanguage.EN) },
-            scope = appScope,
         ).also { controller ->
-            // 화면이 백그라운드여도 기어가 P를 벗어나면 듣기와 기다리던 번역을 멈춘다
+            // 화면이 백그라운드여도 기어가 P를 벗어나면 고른 카드를 지운다
             appScope.launch {
                 driveController.vehicle.map { it.locked }.distinctUntilChanged().filter { it }.collect { controller.leave() }
             }
         }
-    }
-
-    private fun translationClient(): TranslationClient = when {
-        BuildConfig.SERVER_URL.isNotBlank() -> HttpTranslationClient(BuildConfig.SERVER_URL)
-        BuildConfig.DEBUG -> DemoTranslationClient(
-            // 모든 언어의 문장 카드(운전자 언어 문장 → 한국어)
-            AppLanguage.entries.flatMap { language ->
-                val res = withLanguage(language).resources
-                Phrases.all.map { res.getString(it.driverText) to res.getString(it.korean) }
-            }.toMap(),
-        )
-        else -> NoTranslationClient
     }
 
     private val restorer by lazy { SavedSessionRestorer(appScope, profileRepository.profile, driveController::ensureSession) }

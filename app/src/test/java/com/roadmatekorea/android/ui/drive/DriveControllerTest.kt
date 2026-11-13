@@ -524,22 +524,4 @@ class DriveControllerTest {
         assertEquals(listOf("가득 넣어 주세요."), r.tts.spoken)
     }
 
-    @Test
-    fun interpreterHold_queuesOtherSpeech_untilReleased_andCancellingNoQuestionKeepsIt() = runTest(dispatcher) {
-        val r = rig()
-        r.real(RawSignal.Vehicle.Gear(VehicleGear.GEAR_PARK))
-        runCurrent()
-        r.vm.ensureSession(Personas.CARLOS)
-        runCurrent()
-        r.tts.spoken.clear()
-        assertTrue(r.vm.holdForInterpreter {})
-        // 통역 화면에서 다시 부르는 정리(음성 질문이 없음)가 통역의 멈춤을 풀면 안 된다
-        r.vm.prepareForInterpreter()
-        r.vm.sayHelp(Guidance(GuidanceId.HELP_ACCIDENT_STEPS))
-        runCurrent()
-        assertTrue("통역이 듣는 동안 쌓아 둠", r.tts.spoken.isEmpty())
-        r.vm.releaseInterpreterHold()
-        runCurrent()
-        assertEquals(listOf("ES:HELP_ACCIDENT_STEPS"), r.tts.spoken)
-    }
 }

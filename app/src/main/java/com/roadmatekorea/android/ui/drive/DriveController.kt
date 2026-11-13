@@ -348,8 +348,8 @@ class DriveController(
     }
 
     /**
-     * 통역 화면의 문장을 [locale]로 읽는다. 앞의 통역 음성이 남아 있으면 버리고 새 문장을 읽는다.
-     * 같은 음성 큐를 쓰므로 안전 경고가 오면 끊긴다. 기어가 P가 아니면 읽지 않는다(늦게 온 번역).
+     * 통역 화면의 문장 카드를 [locale]로 읽는다. 앞의 통역 음성이 남아 있으면 버리고 새 문장을 읽는다.
+     * 같은 음성 큐를 쓰므로 안전 경고가 오면 끊긴다. 기어가 P가 아니면 읽지 않는다(화면보다 늦게 온 요청).
      */
     fun sayInterpreter(text: String, locale: Locale) {
         if (_vehicle.value.locked) return
@@ -357,17 +357,11 @@ class DriveController(
         speaker.say(Guidance(GuidanceId.INTERPRETER_SPEECH), text, locale)
     }
 
-    /** 통역 화면에 들어오거나 통역을 쓰기 전에: 듣던 음성 질문을 멈추고 읽던 통역 음성을 멈춘다. */
+    /** 통역 화면에 들어오거나 문장 카드를 고를 때: 듣던 음성 질문을 멈추고 읽던 통역 음성을 멈춘다. */
     fun prepareForInterpreter() {
         cancelQuestion()
         speaker.cancel(setOf(GuidanceId.INTERPRETER_SPEECH))
     }
-
-    /** 통역이 마이크를 여는 동안 음성 큐를 멈춘다(음성 질문과 같은 규칙). 안전 경고를 말하거나 기다리는 중이면 false. */
-    fun holdForInterpreter(onSafetyInterrupt: () -> Unit): Boolean = speaker.hold(onSafetyInterrupt)
-
-    /** [holdForInterpreter]를 푼다. */
-    fun releaseInterpreterHold() = speaker.resume()
 
     /** 상황 도움 화면을 닫을 때(뒤로, 기어가 P를 벗어남) 도움 음성만 멈춘다. 안전 경고와 다른 안내는 그대로다. */
     fun stopHelp() = speaker.cancel(HELP_SPEECH)

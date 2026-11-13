@@ -32,7 +32,7 @@ class VehicleGearSource(context: Context) : DriveSignalSource {
                     is CarPropertyEvent.Value -> {
                         val gear = event.value.value as? Int
                         if (event.value.status == CarPropertyValue.STATUS_AVAILABLE && gear != null) {
-                            GearReading.Value(gear)
+                            GearReading.Value(gear, confirmed = event.polled)
                         } else {
                             GearReading.Unavailable("status ${event.value.status}")
                         }

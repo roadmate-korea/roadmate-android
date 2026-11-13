@@ -17,8 +17,11 @@ import kotlinx.coroutines.flow.callbackFlow
 
 /** Android Automotive 차량 속성 하나의 변화. */
 sealed interface CarPropertyEvent {
-    /** 속성 값. 상태(`status`)가 정상이 아닐 수도 있으니 받는 쪽에서 확인한다. */
-    data class Value(val value: CarPropertyValue<*>) : CarPropertyEvent
+    /**
+     * 속성 값. 상태(`status`)가 정상이 아닐 수도 있으니 받는 쪽에서 확인한다.
+     * @param polled 직접 다시 읽은 값이면 true. 변경 콜백 값(false)은 큐에서 기다리다 늦게 도착한 옛 값일 수 있다.
+     */
+    data class Value(val value: CarPropertyValue<*>, val polled: Boolean = false) : CarPropertyEvent
 
     /** 지금 값을 읽을 수 없음(차량 서비스 없음·끊김, 등록 실패, 오류 이벤트). 다시 연결되면 [Value]가 다시 온다. */
     data class Unavailable(val reason: String) : CarPropertyEvent
@@ -41,7 +44,8 @@ sealed interface CarPropertyEvent {
  * - 변할 때만 오는 속성(기어)도 등록하면 현재 값이 한 번 온다(AAOS registerCallback 동작).
  * - Android 14는 속성이 읽기 불가(UNAVAILABLE, ERROR)로 바뀌어도 변경 콜백을 보내지 않고(PropertyHalService가 AVAILABLE이
  *   아닌 이벤트를 버림), CarPropertyManager 문서도 가용성 판단을 콜백에 기대지 말라고 한다. [pollMs]를 주면 그 간격으로
- *   현재 값을 직접 다시 읽어 [CarPropertyEvent.Value]나 [CarPropertyEvent.Unavailable]로 보낸다(기어 잠금용).
+ *   현재 값을 직접 다시 읽어 [CarPropertyEvent.Value]`(polled = true)`나 [CarPropertyEvent.Unavailable]로 보낸다(기어 잠금용).
+ *   변경 콜백을 받거나 등록이 끝나면 곧바로 한 번 더 읽는다. 이 읽기는 콜백 처리 뒤에 시작하므로 그 시점의 현재 값이다.
  *   받는 쪽은 같은 값이 여러 번 올 수 있음을 감안한다.
  */
 fun carPropertyEvents(
@@ -62,9 +66,28 @@ fun carPropertyEvents(
     val thread = HandlerThread(threadName).apply { start() }
     val worker = Handler(thread.looper)
 
+    // 아래 상태는 전용 스레드에서만 읽고 쓴다(속성 콜백 등록과 해제, 다시 읽기, 종료)
+    var manager: CarPropertyManager? = null
+    var closed = false
+
+    // 현재 값을 직접 한 번 읽는다. 차량 서비스가 멈추면 이 스레드가 막히고 결과가 오지 않는데, 받는 쪽이 시간 제한으로 판단한다
+    val readNow = Runnable {
+        val m = manager
+        if (closed || m == null) return@Runnable
+        val event = runCatching {
+            if (m.isPropertyAvailable(propertyId, GLOBAL_AREA)) {
+                CarPropertyEvent.Value(m.getProperty<Any>(propertyId, GLOBAL_AREA), polled = true)
+            } else {
+                CarPropertyEvent.Unavailable("not available")
+            }
+        }.getOrElse { e -> CarPropertyEvent.Unavailable("read failed: ${e.javaClass.simpleName}") }
+        trySend(event)
+    }
+
     val callback = object : CarPropertyManager.CarPropertyEventCallback {
         override fun onChangeEvent(value: CarPropertyValue<*>) {
             trySend(CarPropertyEvent.Value(value))
+            if (pollMs != null) worker.post(readNow)
         }
 
         override fun onErrorEvent(propertyId: Int, areaId: Int) {
@@ -72,10 +95,6 @@ fun carPropertyEvents(
             trySend(CarPropertyEvent.Unavailable("error event"))
         }
     }
-
-    // 아래 상태는 전용 스레드에서만 읽고 쓴다(속성 콜백 등록과 해제, 종료)
-    var manager: CarPropertyManager? = null
-    var closed = false
 
     fun unregister() {
         manager?.let { m -> runCatching { m.unregisterCallback(callback) } }
@@ -100,26 +119,18 @@ fun carPropertyEvents(
             .getOrDefault(false)
         if (ok) {
             manager = m
+            if (pollMs != null) worker.post(readNow)
         } else {
             Log.w(threadName, "not registered")
             trySend(CarPropertyEvent.Unavailable("not registered"))
         }
     }
 
-    // 현재 값을 직접 다시 읽는다. 차량 서비스가 멈추면 이 스레드가 막히고 결과가 오지 않는데, 받는 쪽이 시간 제한으로 판단한다
+    // 주기적 다시 읽기
     val poll = object : Runnable {
         override fun run() {
             if (closed) return
-            manager?.let { m ->
-                val event = runCatching {
-                    if (m.isPropertyAvailable(propertyId, GLOBAL_AREA)) {
-                        CarPropertyEvent.Value(m.getProperty<Any>(propertyId, GLOBAL_AREA))
-                    } else {
-                        CarPropertyEvent.Unavailable("not available")
-                    }
-                }.getOrElse { e -> CarPropertyEvent.Unavailable("read failed: ${e.javaClass.simpleName}") }
-                trySend(event)
-            }
+            readNow.run()
             pollMs?.let { worker.postDelayed(this, it) }
         }
     }
@@ -152,6 +163,7 @@ fun carPropertyEvents(
         worker.post {
             closed = true
             worker.removeCallbacks(poll)
+            worker.removeCallbacks(readNow)
             unregister()
             car?.let { runCatching { it.disconnect() } }
             thread.quitSafely()

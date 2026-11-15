@@ -196,22 +196,41 @@ Pleos 문서의 SDK API 정책에 따라 속도와 기어 같은 표준 차량 �
 ./gradlew assembleRelease     # 제출용
 ```
 
-## 실행
+## 테스트 환경과 필요한 설정
 
-Pleos Connect Emulator 2.1.0(Android Studio SDK Manager)에서 실행합니다. 일반 안드로이드 폰에서는 Pleos 차량 서비스가 없어 동작하지 않습니다.
+| 항목 | 값 |
+|---|---|
+| 에뮬레이터 | Pleos Connect Emulator 2.1.0 (`system-images;android-34;pleos_car_emulator;arm64-v8a`, 빌드 `release_connect_v2.1.0`) |
+| OS | Android 14 (API 34), arm64-v8a |
+| 화면 규격 | 2560 x 1440 px, 160 dpi (가로). RoadMate가 뜨는 앱 영역은 1682 x 1210 px |
+| AVD 설정 | RAM 4GB, Cold boot 권장 |
+| 네트워크 | 필요 없음. 음성 안내(TTS)와 음성 인식(STT)은 기기 안(ON_DEVICE)에서 동작 |
+
+일반 안드로이드 폰에서는 Pleos 차량 서비스가 없어 동작하지 않습니다.
+
+필요한 설정:
+
+- 처음 실행해 정차(P) 상태가 되면 알림, 위치 정보(차량 속도), 마이크, 위치 권한을 한 번에 묻습니다. 모두 허용해야 모든 기능이 동작합니다. 거부해도 앱은 동작하고 해당 기능만 빠집니다.
+- 온보딩과 설정은 기어가 P일 때만 열립니다. 화면이 잠겨 있으면 Virtual Console에서 기어를 Park로 바꿉니다.
+- 기어, 방향지시등, 속도는 Pleos Virtual Console로 바꿉니다(아래 실행 3번). 시연 모드는 이 설정 없이 바로 재생됩니다.
+- 앱 영역을 내비와 반반 나눠 띄우면(폭 약 841dp) 좁은 화면용 배치로 바뀝니다.
+
+## 실행
 
 ```bash
 adb install -r apk/RoadMate_RoadMate_release.apk
 ```
 
-1. 온보딩에서 언어, 국가, 경험을 고르고 START를 누르면 시작 음성이 나옵니다.
+1. 온보딩에서 언어, 국가, 경험을 고르고 Start를 누르면 시작 음성이 나옵니다.
 2. 주행 화면에서 [Play demo: Nakamura] 또는 [Play demo: Carlos]를 누르면 시연 경로가 재생됩니다.
 3. 실제 신호로 확인하려면 `adb forward tcp:8088 tcp:8088`을 실행한 뒤 `http://127.0.0.1:8088/`에서 Pleos Virtual Console을 열고 기어, 방향지시등, 속도를 바꿉니다.
 4. 내비와 함께 보려면 앱 영역 오른쪽 끝 손잡이를 끌어 내비와 RoadMate를 나란히 띄웁니다.
 5. 정차(P) 중에 [도움]을 누르면 상황 도움, 사고 대응, 통역 문장 카드를 볼 수 있습니다.
 6. 위치 기반 어린이보호구역 알림은 기어를 D로 두고 `adb emu geo fix <경도> <위도>`로 학교 근처(예: `127.0154 37.4885`, 서울교대부설초 남쪽 약 250m)로 옮기면 들을 수 있습니다.
 
-제출용 APK는 `apk/RoadMate_RoadMate_release.apk`입니다(버전 1.3.0).
+## APK 파일
+
+[`apk/RoadMate_RoadMate_release.apk`](apk/RoadMate_RoadMate_release.apk) (release 빌드, 버전 1.3.0)
 
 ## 확인한 것과 남은 것
 

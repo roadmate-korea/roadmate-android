@@ -218,7 +218,7 @@ Pleos 문서의 SDK API 정책에 따라 속도와 기어 같은 표준 차량 �
 ## 실행
 
 ```bash
-adb install -r apk/RoadMate_RoadMate_release.apk
+adb install -r apk/RoadMate_RoadMateKorea_release.apk
 ```
 
 1. 온보딩에서 언어, 국가, 경험을 고르고 Start를 누르면 시작 음성이 나옵니다.
@@ -230,7 +230,7 @@ adb install -r apk/RoadMate_RoadMate_release.apk
 
 ## APK 파일
 
-[`apk/RoadMate_RoadMate_release.apk`](apk/RoadMate_RoadMate_release.apk) (release 빌드, 버전 1.3.0)
+[`apk/RoadMate_RoadMateKorea_release.apk`](apk/RoadMate_RoadMateKorea_release.apk) (release 빌드, 버전 1.3.0)
 
 ## 확인한 것과 남은 것
 

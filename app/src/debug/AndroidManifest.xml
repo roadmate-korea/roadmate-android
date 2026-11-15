@@ -19,10 +19,6 @@
             android:exported="true"
             android:theme="@android:style/Theme.NoDisplay" />
         <activity
-            android:name=".debug.InterpretWithAudioActivity"
-            android:exported="true"
-            android:theme="@android:style/Theme.NoDisplay" />
-        <activity
             android:name=".debug.LocationProbeActivity"
             android:exported="true" />
     </application>

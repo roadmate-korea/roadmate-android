@@ -201,7 +201,7 @@ Pleos 문서의 SDK API 정책에 따라 속도와 기어 같은 표준 차량 �
 Pleos Connect Emulator 2.1.0(Android Studio SDK Manager)에서 실행합니다. 일반 안드로이드 폰에서는 Pleos 차량 서비스가 없어 동작하지 않습니다.
 
 ```bash
-adb install -r dist/roadmate-korea-1.2.0.apk
+adb install -r apk/RoadMate_RoadMate_release.apk
 ```
 
 1. 온보딩에서 언어, 국가, 경험을 고르고 START를 누르면 시작 음성이 나옵니다.
@@ -211,7 +211,7 @@ adb install -r dist/roadmate-korea-1.2.0.apk
 5. 정차(P) 중에 [도움]을 누르면 상황 도움, 사고 대응, 통역 문장 카드를 볼 수 있습니다.
 6. 위치 기반 어린이보호구역 알림은 기어를 D로 두고 `adb emu geo fix <경도> <위도>`로 학교 근처(예: `127.0154 37.4885`, 서울교대부설초 남쪽 약 250m)로 옮기면 들을 수 있습니다.
 
-제출용 APK는 `dist/` 폴더에 있습니다.
+제출용 APK는 `apk/RoadMate_RoadMate_release.apk`입니다(버전 1.3.0).
 
 ## 확인한 것과 남은 것
 
